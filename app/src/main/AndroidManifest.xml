@@ -22,6 +22,7 @@
 
         <activity
             android:name=".ui.StartPage"
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -30,63 +31,26 @@
         </activity>
 
         <activity
-            android:name=".ui.Home"
-            android:exported="true" />
-        <activity
-            android:name=".ui.Chat"
-            android:exported="true" />
-        <activity
-            android:name=".ui.Call"
+            android:name=".RegisterActivity"
             android:exported="true" />
 
         <activity
-            android:name=".ui.OngoingCallActivity"
-            android:exported="true" />
-        <activity
-            android:name=".ui.Profile"
-            android:exported="true" />
-
-        <activity
-            android:name=".ui.DmPage"
-            android:exported="true" />
-
-        <activity
-            android:name=".ui.Community"
-            android:exported="true" />
-
-        <activity
-            android:name=".ui.Contacts"
-            android:exported="true" />
-
-        <activity
-            android:name=".ui.Settings"
-            android:exported="true" />
-
-        <activity
-            android:name=".ui.FriendRequests"
-            android:exported="true" />
-
-        <activity
-            android:name=".ui.ContactCall"
-            android:exported="true" />
-
-        <activity
-            android:name=".ui.ContactProfile"
-            android:exported="true" />
-
-        <activity
+            android:name=".HomeActivity"
             android:name=".ui.AccountUpdateActivity"
             android:exported="true" />
 
         <activity
+            android:name=".CallActivity"
             android:name=".ui.SettingsAppearance"
             android:exported="true" />
 
         <activity
+            android:name=".ChatActivity"
             android:name=".ui.SettingsFontSize"
             android:exported="true" />
 
         <activity
+            android:name=".ProfileActivity"
             android:name=".ui.SettingsSound"
             android:exported="true" />
 
