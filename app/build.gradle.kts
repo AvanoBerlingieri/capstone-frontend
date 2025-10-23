@@ -68,6 +68,8 @@ dependencies {
     implementation(libs.recyclerview)
     implementation(libs.runtime)
     implementation(libs.navigation.compose)
+    implementation(libs.runtime)
+    implementation(libs.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
