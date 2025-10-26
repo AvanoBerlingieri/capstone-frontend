@@ -39,7 +39,8 @@ class Login : ComponentActivity() {
         setContent {
             LoginScreen(
                 onLoginClick = {
-                    startActivity(Intent(this, Home::class.java))
+                    //run a check before doing this intent
+                    startActivity(Intent(this, Profile::class.java))
                 },
                 onRegisterClick = {
                     startActivity(Intent(this, Register::class.java))
