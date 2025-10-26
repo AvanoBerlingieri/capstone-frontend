@@ -1,13 +1,18 @@
-package capstone.safeline.api;
+package capstone.safeline.api
+import capstone.safeline.api.dto.LoginRequest
+import capstone.safeline.api.dto.LoginResponse
+import capstone.safeline.api.dto.RegisterRequest
+import capstone.safeline.api.dto.RegisterResponse
 
-import retrofit2.Call;
-import retrofit2.http.GET;
-import retrofit2.http.POST;
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.POST
 
-public interface ApiService {
-    @POST("/createUser")
-    Call<User> createUser();
+interface ApiService {
 
-    @GET("/loginUser")
-    Call<User> loginUser();
+    @POST("api/createUser")
+    suspend fun createUser(@Body registerRequest: RegisterRequest): Response<RegisterResponse>
+
+    @POST("api/loginUser")
+    suspend fun loginUser(@Body loginRequest: LoginRequest): Response<LoginResponse>
 }

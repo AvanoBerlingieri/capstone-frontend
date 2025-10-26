@@ -2,7 +2,10 @@ package capstone.safeline.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -22,26 +25,38 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import capstone.safeline.api.ApiService
+import capstone.safeline.api.dto.LoginRequest
+import kotlinx.coroutines.launch
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class Login : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://10.0.2.2:8080/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val apiService = retrofit.create(ApiService::class.java)
+
         setContent {
             LoginScreen(
-                onLoginClick = {
-                    //run a check before doing this intent
-                    startActivity(Intent(this, Profile::class.java))
-                },
+                apiService = apiService,
                 onRegisterClick = {
                     startActivity(Intent(this, Register::class.java))
                 }
@@ -51,7 +66,7 @@ class Login : ComponentActivity() {
 }
 
 @Composable
-fun LoginScreen(onLoginClick: () -> Unit, onRegisterClick: () -> Unit) {
+fun LoginScreen(apiService: ApiService, onRegisterClick: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -91,6 +106,7 @@ fun LoginScreen(onLoginClick: () -> Unit, onRegisterClick: () -> Unit) {
                     .width(280.dp)
                     .height(55.dp),
                 shape = RoundedCornerShape(12.dp),
+                textStyle = TextStyle(color = Color.White),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )
 
@@ -106,13 +122,39 @@ fun LoginScreen(onLoginClick: () -> Unit, onRegisterClick: () -> Unit) {
                     .height(55.dp),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                textStyle = TextStyle(color = Color.White),
                 visualTransformation = PasswordVisualTransformation()
             )
 
             Spacer(modifier = Modifier.height(80.dp))
 
+            val activity = LocalActivity.current
+            val scope = rememberCoroutineScope()
             Button(
-                onClick = onLoginClick,
+                onClick = {
+                    scope.launch {
+                        try {
+                            val response = apiService.loginUser(LoginRequest(email, password))
+                            val loginResp = response.body()
+                            //check login response
+                            if (loginResp?.statusCode == "OK") {
+                                activity?.startActivity(Intent(activity, Home::class.java))
+                            } else {
+                                Toast.makeText(
+                                    activity,
+                                    "Username or Password Incorrect",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+
+                        } catch (e: Exception) {
+                            Log.e("LoginError", "Network error: ${e.message}", e)
+                            activity?.let {
+                                Toast.makeText(it, "Network error: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                },
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.Transparent,
                     contentColor = Color(0xFFFF0066)
@@ -145,3 +187,4 @@ fun LoginScreen(onLoginClick: () -> Unit, onRegisterClick: () -> Unit) {
         }
     }
 }
+

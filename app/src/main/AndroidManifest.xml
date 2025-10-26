@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -18,7 +19,8 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SafeLine">
+        android:theme="@style/Theme.SafeLine"
+        android:networkSecurityConfig="@xml/network_security_config">
 
         <activity
             android:name=".ui.StartPage"
@@ -29,6 +31,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
 
         <activity
             android:name=".RegisterActivity"
@@ -73,5 +76,5 @@
         <activity android:name=".ui.GroupCallRoom" android:exported="true" />
 
     </application>
-
+    
 </manifest>
