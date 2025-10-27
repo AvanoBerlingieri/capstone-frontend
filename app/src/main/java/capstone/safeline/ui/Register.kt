@@ -154,7 +154,7 @@ fun RegisterScreen(apiService: ApiService, onLoginClick: () -> Unit){
                             val response = apiService.createUser(RegisterRequest(email, password, username))
                             val registerResp = response.body()
                             //check register response
-                            if (registerResp?.email != null){
+                            if (registerResp != null){
                                 activity?.startActivity(Intent(activity, Login::class.java))
                             } else {
                                 Toast.makeText(
@@ -164,7 +164,7 @@ fun RegisterScreen(apiService: ApiService, onLoginClick: () -> Unit){
                                 ).show()
                             }
                         }  catch (e: Exception) {
-                            Log.e("LoginError", "Network error: ${e.message}", e)
+                            Log.e("RegisterError", "Network error: ${e.message}", e)
                         }
                     }
                 },
