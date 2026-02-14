@@ -32,8 +32,7 @@ fun SafeLineNav() {
             LoginScreen(
                 onBack = { nav.popBackStack() },
                 onDone = { email, pass ->
-                    // TODO: call API then nav.navigate("home")
-                    // nav.navigate("home") { popUpTo("start") { inclusive = true } }
+
                 }
             )
         }
@@ -42,7 +41,7 @@ fun SafeLineNav() {
             RegisterScreen(
                 onBack = { nav.popBackStack() },
                 onDone = { username, email, pass, confirm ->
-                    // TODO: validate + call API then nav.navigate("home")
+
                 }
             )
         }
