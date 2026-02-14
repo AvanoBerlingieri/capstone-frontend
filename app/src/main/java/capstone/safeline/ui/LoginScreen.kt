@@ -33,7 +33,6 @@ fun LoginScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // Background
         Image(
             painter = painterResource(R.drawable.background),
             contentDescription = null,
@@ -41,7 +40,6 @@ fun LoginScreen(
             contentScale = ContentScale.Crop
         )
 
-        // ===== TOP BAR =====
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -56,7 +54,6 @@ fun LoginScreen(
                 )
         ) {
 
-            // Back button (uses shared noRippleClickable)
             Image(
                 painter = painterResource(R.drawable.back_button),
                 contentDescription = "Back",
@@ -68,7 +65,6 @@ fun LoginScreen(
                 contentScale = ContentScale.Fit
             )
 
-            // Centered LOGIN title
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -83,7 +79,6 @@ fun LoginScreen(
             }
         }
 
-        // ===== CONTENT =====
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -93,7 +88,6 @@ fun LoginScreen(
 
             Spacer(Modifier.height(125.dp))
 
-            // Heading (Kaushan Script + blue stroke)
             Text(
                 text = "Please Enter Your",
                 fontSize = 48.sp,
@@ -107,7 +101,6 @@ fun LoginScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Email label
             GradientStrokeText(
                 text = "Email:",
                 fontSize = 28.sp,
@@ -116,7 +109,6 @@ fun LoginScreen(
 
             Spacer(Modifier.height(10.dp))
 
-            // Shared component (from ui/components/FormComponents.kt)
             ImageInputField(
                 value = email,
                 onValueChange = { email = it }
@@ -124,7 +116,6 @@ fun LoginScreen(
 
             Spacer(Modifier.height(22.dp))
 
-            // Password label
             GradientStrokeText(
                 text = "Password:",
                 fontSize = 28.sp,
@@ -140,7 +131,6 @@ fun LoginScreen(
 
             Spacer(Modifier.weight(1f))
 
-            // Shared component
             ImageDoneButton(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -35,7 +35,6 @@ fun RegisterScreen(
 
     Box(Modifier.fillMaxSize()) {
 
-        // Background
         Image(
             painter = painterResource(R.drawable.background),
             contentDescription = null,
@@ -43,7 +42,6 @@ fun RegisterScreen(
             contentScale = ContentScale.Crop
         )
 
-        // ===== TOP BAR =====
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -58,7 +56,6 @@ fun RegisterScreen(
                 )
         ) {
 
-            // Back button
             Image(
                 painter = painterResource(R.drawable.back_button),
                 contentDescription = "Back",
@@ -70,7 +67,6 @@ fun RegisterScreen(
                 contentScale = ContentScale.Fit
             )
 
-            // Centered REGISTER title (same style as LOGIN)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -85,7 +81,6 @@ fun RegisterScreen(
             }
         }
 
-        // ===== CONTENT =====
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -95,7 +90,6 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(125.dp))
 
-            // Heading (Kaushan Script with stroke)
             Text(
                 text = "Please Enter Your",
                 fontSize = 48.sp,
@@ -109,7 +103,6 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Username
             GradientStrokeText(
                 text = "Username:",
                 fontSize = 28.sp,
@@ -125,7 +118,6 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(22.dp))
 
-            // Email
             GradientStrokeText(
                 text = "Email:",
                 fontSize = 28.sp,
@@ -141,7 +133,6 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(22.dp))
 
-            // Password
             GradientStrokeText(
                 text = "Password:",
                 fontSize = 28.sp,
@@ -157,7 +148,6 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(22.dp))
 
-            // Re-enter password
             GradientStrokeText(
                 text = "Re-Enter Password:",
                 fontSize = 28.sp,
