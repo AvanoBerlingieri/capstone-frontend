@@ -23,6 +23,7 @@ import capstone.safeline.R
 import capstone.safeline.api.ApiClient
 import capstone.safeline.api.dto.LoginRequest
 import capstone.safeline.ui.components.GradientStrokeText
+import capstone.safeline.ui.components.ImageDoneButton
 import capstone.safeline.ui.components.ImageInputField
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
