@@ -13,7 +13,7 @@
         android:networkSecurityConfig="@xml/network_security_config">
 
         <activity
-            android:name=".ui.Chat"
+            android:name=".ui.StartPage"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,24 +21,18 @@
             </intent-filter>
         </activity>
 
-
-        <activity
-            android:name=".ui.Register"
-            android:exported="true" />
-
         <activity
             android:name=".ui.Home"
             android:exported="true" />
-
+        <activity
+            android:name=".ui.Chat"
+            android:exported="true"/>
         <activity
             android:name=".ui.Call"
             android:exported="true" />
         <activity
             android:name=".ui.OngoingCallActivity"
             android:exported="true"/>
-        <activity
-            android:name=".ui.Login"
-            android:exported="true" />
         <activity
             android:name=".ui.Profile"
             android:exported="true" />
