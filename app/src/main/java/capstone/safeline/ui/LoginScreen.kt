@@ -35,6 +35,7 @@ import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.GradientStrokeText
+import capstone.safeline.ui.components.ImageDoneButton
 import capstone.safeline.ui.components.ImageInputField
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
