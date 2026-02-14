@@ -106,6 +106,8 @@ class Call : ComponentActivity() {
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
+                        "calls" -> { }
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
                         "calls" -> {}
                         "chats" -> startActivity(Intent(this, Chat::class.java))
                         "profile" -> startActivity(Intent(this, Profile::class.java))
