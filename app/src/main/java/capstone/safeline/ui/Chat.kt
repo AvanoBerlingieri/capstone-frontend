@@ -55,8 +55,10 @@ class Chat : ComponentActivity() {
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
                         "calls" -> startActivity(Intent(this, Call::class.java))
-                        "messages" -> {}
+                        "chats" -> {}
                         "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
                     }
                 }
             )
@@ -79,7 +81,7 @@ fun ChatScreen(
         topBar = { TopBar(title = "Chats") },
         bottomBar = {
             BottomNavBar(
-                currentScreen = "messages",
+                currentScreen = "chats",
                 onNavigate = onNavigate
             )
         },
