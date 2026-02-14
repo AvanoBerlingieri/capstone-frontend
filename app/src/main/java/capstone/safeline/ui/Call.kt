@@ -57,8 +57,10 @@ class Call : ComponentActivity() {
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
                         "calls" -> { }
-                        "messages" -> startActivity(Intent(this, Chat::class.java))
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
                         "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
                     }
                 }
             )

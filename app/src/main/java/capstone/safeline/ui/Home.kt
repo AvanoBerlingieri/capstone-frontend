@@ -34,14 +34,18 @@ class Home : ComponentActivity() {
         setContent {
             HomeScreen(
                 onNavigate = { destination ->
-                when (destination) {
-                    "home" -> {}
-                    "calls" -> startActivity(Intent(this, Call::class.java))
-                    "messages" -> startActivity(Intent(this, Chat::class.java))
-                    "profile" -> {startActivity(Intent(this, Profile::class.java))}
+                    when (destination) {
+                        "home" -> {}
+                        "calls" -> startActivity(Intent(this, Call::class.java))
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
+                        "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                    }
                 }
-            })
+            )
         }
+
     }
 }
 
