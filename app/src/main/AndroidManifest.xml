@@ -30,15 +30,34 @@
         <activity
             android:name=".ui.Call"
             android:exported="true" />
+
         <activity
             android:name=".ui.OngoingCallActivity"
             android:exported="true"/>
         <activity
             android:name=".ui.Profile"
             android:exported="true" />
+
         <activity
             android:name=".ui.UserChat"
             android:exported="true"/>
+
+        <activity
+            android:name=".ui.Community"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.Contacts"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.Settings"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.FriendRequests"
+            android:exported="true" />
+
 
     </application>
     

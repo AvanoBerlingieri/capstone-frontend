@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     onBack: () -> Unit,
-    onSuccess: () -> Unit // ✅ call this to navigate (ex: nav.navigate("home"))
+    onSuccess: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
