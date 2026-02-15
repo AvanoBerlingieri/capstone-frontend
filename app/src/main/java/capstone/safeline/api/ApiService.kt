@@ -1,6 +1,7 @@
 package capstone.safeline.api
 
 import capstone.safeline.api.dto.LoginRequest
+import capstone.safeline.api.dto.LoginResponse
 import capstone.safeline.api.dto.RegisterRequest
 import capstone.safeline.api.dto.RegisterResponse
 import retrofit2.Response
