@@ -1,5 +1,7 @@
 package capstone.safeline.ui
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -11,27 +13,62 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.api.ApiClient
+import capstone.safeline.api.dto.RegisterRequest
 import capstone.safeline.ui.components.GradientStrokeText
-import capstone.safeline.ui.components.ImageDoneButton
 import capstone.safeline.ui.components.ImageInputField
 import capstone.safeline.ui.components.noRippleClickable
 import capstone.safeline.ui.theme.KaushanScript
 import capstone.safeline.ui.theme.VampiroOne
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
     onBack: () -> Unit,
-    onDone: (username: String, email: String, password: String, confirm: String) -> Unit
+    onSuccess: () -> Unit
 ) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val apiService = remember { ApiClient.apiService }
+
+    fun handleRegisterClick() {
+        if (email.isBlank() || username.isBlank() || password.isBlank() || confirm.isBlank()) {
+            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (password != confirm) {
+            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        scope.launch {
+            try {
+                val response = apiService.createUser(RegisterRequest(email, password, username))
+                val registerResp = response.body()
+
+                if (registerResp != null) {
+                    Toast.makeText(context, "Registered successfully!", Toast.LENGTH_SHORT).show()
+                    onSuccess()
+                } else {
+                    Toast.makeText(context, "User Registration failure", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("RegisterError", "Network error: ${e.message}", e)
+                Toast.makeText(context, "Network error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
 
@@ -55,7 +92,6 @@ fun RegisterScreen(
                     )
                 )
         ) {
-
             Image(
                 painter = painterResource(R.drawable.back_button),
                 contentDescription = "Back",
@@ -103,72 +139,43 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            GradientStrokeText(
-                text = "Username:",
-                fontSize = 28.sp,
-                fontFamily = VampiroOne
-            )
-
+            GradientStrokeText("Username:", 28.sp, VampiroOne)
             Spacer(Modifier.height(10.dp))
-
-            ImageInputField(
-                value = username,
-                onValueChange = { username = it }
-            )
+            ImageInputField(value = username, onValueChange = { username = it })
 
             Spacer(Modifier.height(22.dp))
 
-            GradientStrokeText(
-                text = "Email:",
-                fontSize = 28.sp,
-                fontFamily = VampiroOne
-            )
-
+            GradientStrokeText("Email:", 28.sp, VampiroOne)
             Spacer(Modifier.height(10.dp))
-
-            ImageInputField(
-                value = email,
-                onValueChange = { email = it }
-            )
+            ImageInputField(value = email, onValueChange = { email = it })
 
             Spacer(Modifier.height(22.dp))
 
-            GradientStrokeText(
-                text = "Password:",
-                fontSize = 28.sp,
-                fontFamily = VampiroOne
-            )
-
+            GradientStrokeText("Password:", 28.sp, VampiroOne)
             Spacer(Modifier.height(10.dp))
-
-            ImageInputField(
-                value = password,
-                onValueChange = { password = it }
-            )
+            ImageInputField(value = password, onValueChange = { password = it })
 
             Spacer(Modifier.height(22.dp))
 
-            GradientStrokeText(
-                text = "Re-Enter Password:",
-                fontSize = 28.sp,
-                fontFamily = VampiroOne
-            )
-
+            GradientStrokeText("Re-Enter Password:", 28.sp, VampiroOne)
             Spacer(Modifier.height(10.dp))
-
-            ImageInputField(
-                value = confirm,
-                onValueChange = { confirm = it }
-            )
+            ImageInputField(value = confirm, onValueChange = { confirm = it })
 
             Spacer(Modifier.weight(1f))
 
-            ImageDoneButton(
+            Image(
+                painter = painterResource(R.drawable.done_register_button),
+                contentDescription = "Register",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 50.dp),
-                onClick = { onDone(username, email, password, confirm) }
+                    .height(80.dp)
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 30.dp)
+                    .noRippleClickable { handleRegisterClick() },
+                contentScale = ContentScale.Fit
             )
+
+
         }
     }
 }

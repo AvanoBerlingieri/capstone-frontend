@@ -31,8 +31,8 @@ fun SafeLineNav() {
         composable("login") {
             LoginScreen(
                 onBack = { nav.popBackStack() },
-                onDone = { email, pass ->
-
+                onSuccess = {
+                    nav.navigate("home") { popUpTo("start") { inclusive = true } }
                 }
             )
         }
@@ -40,10 +40,11 @@ fun SafeLineNav() {
         composable("register") {
             RegisterScreen(
                 onBack = { nav.popBackStack() },
-                onDone = { username, email, pass, confirm ->
-
+                onSuccess = {
+                    nav.navigate("login") { popUpTo("start") { inclusive = false } }
                 }
             )
         }
+
     }
 }
