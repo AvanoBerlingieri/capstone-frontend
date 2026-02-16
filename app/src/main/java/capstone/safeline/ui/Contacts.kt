@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -44,14 +43,16 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.components.BackButton
+
 import capstone.safeline.ui.components.TopBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
@@ -259,9 +260,12 @@ private fun ContactRow(
             ContactsScreen(
                 contacts = contacts,
                 onBack = { startActivity(Intent(this, Home::class.java)) },
-                onContactClick = {
-                    startActivity(Intent(this, ContactProfile::class.java))
+                onContactClick = { contact ->
+                    val intent = Intent(this, ContactProfile::class.java)
+                    intent.putExtra("contactName", contact.name)
+                    startActivity(intent)
                 },
+
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))

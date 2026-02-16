@@ -39,6 +39,9 @@ import capstone.safeline.data.security.CryptoManager
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.components.BackButton
 
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
@@ -156,9 +159,6 @@ class Call : ComponentActivity() {
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
-                        "calls" -> {}
-                        "calls" -> { }
-                        "chats" -> startActivity(Intent(this, Chat::class.java))
                         "calls" -> {}
                         "chats" -> startActivity(Intent(this, Chat::class.java))
                         "profile" -> startActivity(Intent(this, Profile::class.java))
