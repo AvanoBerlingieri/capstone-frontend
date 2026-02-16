@@ -9,6 +9,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -66,6 +68,8 @@ class ContactCall : ComponentActivity() {
         }
 
         setContent {
+            ContactCallScreen(name)
+        }
             val scope = rememberCoroutineScope()
             var callStatus by remember { mutableStateOf("Calling $name...") }
 
@@ -203,44 +207,30 @@ class ContactCall : ComponentActivity() {
 }
 
 @Composable
+private fun ContactCallScreen(name: String) {
 private fun ContactCallScreen(
     name: String,
     callStatus: String,
     onEndCall: () -> Unit
 ) {
     Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
         modifier = Modifier.fillMaxSize()
     ) {
         Image(
+            painter = painterResource(R.drawable.calls_bg),
             painter = painterResource(R.drawable.contactcall_bg),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
 
-        StrokeText(
-            text = callStatus,
+        Text(
+            text = name,
             fontFamily = Vampiro,
-            fontSize = 36.sp,
-            fillColor = Color.White,
-            strokeColor = Color(0xFF0066FF),
-            strokeWidth = 2f,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(top = 90.dp)
-        )
-
-        Image(
-            painter = painterResource(R.drawable.contactcall_endcall_btn),
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 40.dp)
-                .size(width = 126.dp, height = 118.dp)
-                .clickable { onEndCall() },
-            contentScale = ContentScale.Fit
+            fontSize = 32.sp,
+            color = Color.White
         )
     }
 }
