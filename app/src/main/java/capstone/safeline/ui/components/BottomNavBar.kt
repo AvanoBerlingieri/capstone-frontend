@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import androidx.compose.ui.layout.ContentScale
+
 
 private val NavFont = FontFamily(Font(R.font.reem_kufi_fun_regular))
 
@@ -32,7 +34,8 @@ fun BottomNavBar(
         Image(
             painter = painterResource(R.drawable.navbar_bg),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
         )
 
         Row(
