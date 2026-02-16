@@ -180,7 +180,7 @@ private fun ProfileScreen(
                     leftSize = 34.sp,
                     buttonRes = R.drawable.profile_change_email_btn,
                     buttonSize = Pair(195.dp, 65.dp),
-                    buttonModifier = Modifier.offset(x = 14.dp),
+                    modifier = Modifier.offset(x = 14.dp),
                     onButtonClick = onChangeEmail
                 )
 
@@ -197,7 +197,7 @@ private fun ProfileRow(
     buttonRes: Int,
     buttonSize: Pair<androidx.compose.ui.unit.Dp, androidx.compose.ui.unit.Dp>,
     onButtonClick: () -> Unit,
-    buttonModifier: Modifier = Modifier
+    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = Modifier
@@ -217,7 +217,7 @@ private fun ProfileRow(
         Image(
             painter = painterResource(buttonRes),
             contentDescription = null,
-            modifier = buttonModifier
+            modifier = modifier
                 .size(width = buttonSize.first, height = buttonSize.second)
                 .clickable { onButtonClick() },
             contentScale = ContentScale.Fit

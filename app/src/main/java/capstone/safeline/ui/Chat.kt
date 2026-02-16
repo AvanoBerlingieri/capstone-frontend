@@ -29,7 +29,6 @@ import capstone.safeline.models.Message
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
-import androidx.compose.ui.text.style.TextAlign
 import capstone.safeline.ui.components.BackButton
 
 
