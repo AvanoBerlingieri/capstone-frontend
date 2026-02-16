@@ -32,6 +32,7 @@ import capstone.safeline.models.ChatUser
 import capstone.safeline.models.Message
 import capstone.safeline.ui.components.BottomNavBar
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.text.style.TextAlign
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
@@ -114,7 +115,7 @@ fun ChatScreen(
                 contentScale = ContentScale.Crop
             )
 
-            StrokeTitle(
+            HomeTitle(
                 text = "CHATS",
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -293,11 +294,13 @@ private fun ChatRow(
 }
 
 @Composable
-private fun StrokeTitle(
+private fun HomeTitle(
     text: String,
     modifier: Modifier = Modifier
 ) {
-    val brush = Brush.linearGradient(listOf(Color(0xFF002BFF), Color(0xFFB30FFF)))
+    val strokeBrush = Brush.linearGradient(
+        colors = listOf(Color(0xFF002BFF), Color(0xFFB30FFF))
+    )
 
     Box(modifier = modifier) {
         Text(
@@ -306,21 +309,28 @@ private fun StrokeTitle(
             fontSize = 28.sp,
             color = Color.White,
             style = TextStyle(
-                shadow = Shadow(Color.Black, blurRadius = 6f)
-            )
+                shadow = Shadow(
+                    color = Color.Black,
+                    blurRadius = 6f
+                )
+            ),
+            textAlign = TextAlign.Center
         )
+
         Text(
             text = text,
             fontFamily = Vampiro,
             fontSize = 28.sp,
             color = Color.Transparent,
             style = TextStyle(
-                brush = brush,
-                drawStyle = Stroke(3f)
-            )
+                brush = strokeBrush,
+                drawStyle = Stroke(width = 4f)
+            ),
+            textAlign = TextAlign.Center
         )
     }
 }
+
 
 @Composable
 private fun StrokeText(

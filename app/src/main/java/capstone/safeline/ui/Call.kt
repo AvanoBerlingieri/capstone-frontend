@@ -4,59 +4,74 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import capstone.safeline.models.CallEntry
+import androidx.compose.ui.unit.sp
+import capstone.safeline.R
 import capstone.safeline.ui.components.BottomNavBar
-import capstone.safeline.ui.components.CallCard
-import capstone.safeline.ui.components.TopBar
+
+
+private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+private val Tapestry = FontFamily(Font(R.font.tapestry_regular))
+
+private enum class CallType { ANSWERED, MISSED }
+
+private data class UiCallItem(
+    val type: CallType,
+    val name: String,
+    val date: String,
+    val time: String,
+    val duration: String? = null
+)
 
 class Call : ComponentActivity() {
-
-    private val callLog = listOf(
-        CallEntry("John Doe", "Incoming", "12:30 PM"),
-        CallEntry("Jane Smith", "Missed", "11:45 AM"),
-        CallEntry("Mike Lee", "Missed", "10:20 AM"),
-        CallEntry("Avano", "Missed", "5:00 PM"),
-        CallEntry("Nima", "Missed", "7:00 AM"),
-        CallEntry("Lhek", "Missed", "10:00 PM")
-    )
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val callItems = listOf(
+            UiCallItem(CallType.MISSED, "Matthew", "11/21/2025", "1:21 PM"),
+            UiCallItem(CallType.MISSED, "Matthew", "11/22/2025", "6:29 PM"),
+            UiCallItem(CallType.ANSWERED, "Matthew", "11/22/2025", "8:06 PM", "Call Duration: 32 minutes"),
+            UiCallItem(CallType.ANSWERED, "Matthew", "11/22/2025", "10:10 PM", "Call Duration: 45 minutes"),
+            UiCallItem(CallType.MISSED, "Matthew", "11/24/2025", "6:59 PM"),
+            UiCallItem(CallType.ANSWERED, "Matthew", "11/25/2025", "9:59 PM", "Call Duration: 50 minutes"),
+            UiCallItem(CallType.ANSWERED, "Matthew", "11/26/2025", "11:39 PM", "Call Duration: 52 minutes"),
+            UiCallItem(CallType.ANSWERED, "Matthew", "11/27/2025", "5:58 AM", "Call Duration: 20 minutes"),
+            UiCallItem(CallType.ANSWERED, "Matthew", "11/27/2025", "5:58 AM", "Call Duration: 20 minutes")
+        )
+
         setContent {
             CallScreen(
-                callLog = callLog,
-                onMakeCallClick = {
-                    val intent = Intent(this, OngoingCallActivity::class.java)
-                    intent.putExtra("callerName", "Unknown")
-                    startActivity(intent)
-                },
+                callItems = callItems,
+                onBack = { startActivity(Intent(this, Home::class.java)) },
                 onCallClick = { callerName ->
-                    val intent = Intent(this, OngoingCallActivity::class.java)
+                    val intent = Intent(this, ContactCall::class.java)
                     intent.putExtra("callerName", callerName)
                     startActivity(intent)
                 },
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
-                        "calls" -> { }
+                        "calls" -> {}
                         "chats" -> startActivity(Intent(this, Chat::class.java))
                         "profile" -> startActivity(Intent(this, Profile::class.java))
                         "communities" -> startActivity(Intent(this, Community::class.java))
@@ -69,18 +84,15 @@ class Call : ComponentActivity() {
 }
 
 @Composable
-fun CallScreen(
-    callLog: List<CallEntry>,
-    onMakeCallClick: () -> Unit,
+private fun CallScreen(
+    callItems: List<UiCallItem>,
+    onBack: () -> Unit,
     onCallClick: (String) -> Unit,
     onNavigate: (String) -> Unit
 ) {
-    val backgroundBrush = Brush.verticalGradient(
-        colors = listOf(Color(0xFF0B0014), Color(0xFF0D2244))
-    )
 
     Scaffold(
-        topBar = { TopBar(title = "Calls") },
+        topBar = {},
         bottomBar = {
             BottomNavBar(
                 currentScreen = "calls",
@@ -92,27 +104,279 @@ fun CallScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundBrush)
                 .padding(innerPadding)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Spacer(modifier = Modifier.height(20.dp))
+            Image(
+                painter = painterResource(R.drawable.calls_bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
 
+            HomeTitle(
+                text = "CALLS HISTORY",
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 22.dp)
+            )
+
+            Image(
+                painter = painterResource(R.drawable.back_btn),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 6.dp, top = 14.dp)
+                    .size(width = 78.55.dp, height = 36.45.dp)
+                    .clickable { onBack() }
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 120.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(30.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    items(callLog) { call ->
-                        CallCard(
-                            call = call,
-                            onClick = { onCallClick(call.name) }
+                    items(callItems) { item ->
+                        CallRow(
+                            item = item,
+                            onClick = { onCallClick(item.name) }
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Image(
+                    painter = painterResource(R.drawable.calls_make_call_btn),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(width = 127.dp, height = 76.dp)
+                        .padding(bottom = 10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
             }
         }
     }
 }
+
+@Composable
+private fun CallRow(
+    item: UiCallItem,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(width = 379.97.dp, height = 48.97.dp)
+            .clickable { onClick() }
+    ) {
+        val bg = if (item.type == CallType.ANSWERED) R.drawable.calls_anwsered_bg else R.drawable.calls_missed_bg
+
+        Image(
+            painter = painterResource(bg),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
+        )
+
+        when (item.type) {
+            CallType.MISSED -> MissedRow(item)
+            CallType.ANSWERED -> AnsweredRow(item)
+        }
+    }
+}
+
+@Composable
+private fun MissedRow(item: UiCallItem) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.width(110.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = item.date,
+                fontFamily = Tapestry,
+                fontSize = 20.sp,
+                lineHeight = 25.sp,
+                color = Color(0xFFD9D9D9),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = item.time,
+                fontFamily = Tapestry,
+                fontSize = 20.sp,
+                lineHeight = 25.sp,
+                color = Color(0xFFD9D9D9),
+                textAlign = TextAlign.Center
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        StrokeText(
+            text = item.name,
+            fontFamily = Vampiro,
+            fontSize = 32.sp,
+            fillColor = Color.White,
+            strokeColor = Color(0xFFFF0099),
+            strokeWidth = 1f
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Image(
+            painter = painterResource(R.drawable.calls_missed_icon),
+            contentDescription = null,
+            modifier = Modifier.size(36.dp),
+            contentScale = ContentScale.Fit
+        )
+    }
+}
+
+@Composable
+private fun AnsweredRow(item: UiCallItem) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(R.drawable.calls_anwsered_icon),
+            contentDescription = null,
+            modifier = Modifier.size(30.dp),
+            contentScale = ContentScale.Fit
+        )
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            StrokeText(
+                text = item.name,
+                fontFamily = Vampiro,
+                fontSize = 24.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF002BFF),
+                strokeWidth = 1f
+            )
+
+            item.duration?.let { d ->
+                StrokeText(
+                    text = d,
+                    fontFamily = Tapestry,
+                    fontSize = 16.sp,
+                    fillColor = Color.White,
+                    strokeColor = Color(0xFF0251C7),
+                    strokeWidth = 1f
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.width(110.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = item.date,
+                fontFamily = Tapestry,
+                fontSize = 20.sp,
+                lineHeight = 25.sp,
+                color = Color(0xFFD9D9D9),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = item.time,
+                fontFamily = Tapestry,
+                fontSize = 20.sp,
+                lineHeight = 25.sp,
+                color = Color(0xFFD9D9D9),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeTitle(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    val strokeBrush = Brush.linearGradient(
+        colors = listOf(Color(0xFF002BFF), Color(0xFFB30FFF))
+    )
+
+    Box(modifier = modifier) {
+        Text(
+            text = text,
+            fontFamily = Vampiro,
+            fontSize = 28.sp,
+            color = Color.White,
+            style = TextStyle(
+                shadow = Shadow(
+                    color = Color.Black,
+                    blurRadius = 6f
+                )
+            ),
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = text,
+            fontFamily = Vampiro,
+            fontSize = 28.sp,
+            color = Color.Transparent,
+            style = TextStyle(
+                brush = strokeBrush,
+                drawStyle = Stroke(width = 4f)
+            ),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+
+@Composable
+private fun StrokeText(
+    text: String,
+    fontFamily: FontFamily,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    fillColor: Color,
+    strokeColor: Color,
+    strokeWidth: Float
+) {
+    Box {
+        Text(
+            text = text,
+            fontFamily = fontFamily,
+            fontSize = fontSize,
+            color = fillColor
+        )
+        Text(
+            text = text,
+            fontFamily = fontFamily,
+            fontSize = fontSize,
+            color = Color.Transparent,
+            style = TextStyle(
+                brush = Brush.linearGradient(listOf(strokeColor, strokeColor)),
+                drawStyle = Stroke(strokeWidth)
+            )
+        )
+    }
+}
+
