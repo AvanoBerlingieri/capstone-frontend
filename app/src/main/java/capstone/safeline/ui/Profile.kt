@@ -5,7 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,43 +14,54 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
-import capstone.safeline.ui.components.TopBar
+import capstone.safeline.ui.components.StrokeTitle
+
+private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
 
 class Profile : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             ProfileScreen(
+                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onGoHome = { startActivity(Intent(this, Home::class.java)) },
+                onChangeUsername = { startActivity(Intent(this, ChangeUsername::class.java)) },
+                onChangePassword = { startActivity(Intent(this, ChangePassword::class.java)) },
+                onChangeEmail = { startActivity(Intent(this, ChangeEmail::class.java)) },
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
                         "calls" -> startActivity(Intent(this, Call::class.java))
-                        "messages" -> startActivity(Intent(this, Chat::class.java))
-                        "profile" -> {}
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
                     }
                 }
             )
@@ -59,15 +70,16 @@ class Profile : ComponentActivity() {
 }
 
 @Composable
-fun ProfileScreen(onNavigate: (String) -> Unit) {
-    val backgroundBrush = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF0B0014),
-            Color(0xFF0D2244)
-        )
-    )
+private fun ProfileScreen(
+    onBack: () -> Unit,
+    onGoHome: () -> Unit,
+    onChangeUsername: () -> Unit,
+    onChangePassword: () -> Unit,
+    onChangeEmail: () -> Unit,
+    onNavigate: (String) -> Unit
+) {
     Scaffold(
-        topBar = { TopBar(title = "Profile")},
+        topBar = {},
         bottomBar = {
             BottomNavBar(
                 currentScreen = "profile",
@@ -75,151 +87,177 @@ fun ProfileScreen(onNavigate: (String) -> Unit) {
             )
         },
         containerColor = Color.Transparent
-    ) { innerpadding ->
+    ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundBrush)
-                .padding(innerpadding)
+                .padding(innerPadding)
         ) {
+            Image(
+                painter = painterResource(R.drawable.profile_bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            StrokeTitle(
+                text = "PROFILE SETTINGS",
+                fontFamily = Vampiro,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 22.dp)
+            )
+
+            BackButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = (-15).dp)
+            )
+
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 110.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(80.dp))
+                Image(
+                    painter = painterResource(R.drawable.home_avatar_example),
+                    contentDescription = null,
+                    modifier = Modifier.size(width = 161.dp, height = 157.dp),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
 
                 Image(
-                    painter = painterResource(id = R.drawable.profile_picture),
-                    contentDescription = "Profile picture",
-                    contentScale = ContentScale.Crop,
+                    painter = painterResource(R.drawable.profile_home_btn),
+                    contentDescription = null,
                     modifier = Modifier
-                        .size(150.dp)
-                        .clip(CircleShape)
+                        .size(width = 149.dp, height = 48.dp)
+                        .clickable { onGoHome() },
+                    contentScale = ContentScale.Fit
                 )
 
-                Spacer(modifier = Modifier.height(35.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
-
-                UsernameEditor()
-                Spacer(modifier = Modifier.height(10.dp))
-                EmailEditor()
-                Spacer(modifier = Modifier.height(10.dp))
-                PasswordEditor()
-            }
-        }
-    }
-}
-
-@Composable
-fun UsernameEditor(){
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF122952)),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            //TODO: make db call for this in final
-            val name = "tempUser"
-            Text("Name: $name", color = Color.White, fontSize = 20.sp)
-
-            IconButton(
-                onClick = {},
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1976D2))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Name Change",
-                    tint = Color.White
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun EmailEditor(){
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF122952)),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            //TODO: make db call for this in final
-            val email = "tempEmail@email.com"
-            Text("Email: $email", color = Color.White, fontSize = 20.sp)
-
-            IconButton(
-                onClick = {},
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1976D2))
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Email Change",
-                    tint = Color.White
+                    ProfileStrokeText(
+                        text = "USERNAME",
+                        fontSize = 40.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                ProfileRow(
+                    leftText = "Username",
+                    leftSize = 40.sp,
+                    buttonRes = R.drawable.profile_change_username_btn,
+                    buttonSize = Pair(169.dp, 65.dp),
+                    onButtonClick = onChangeUsername
                 )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                ProfileRow(
+                    leftText = "**********",
+                    leftSize = 40.sp,
+                    buttonRes = R.drawable.profile_change_password_btn,
+                    buttonSize = Pair(169.dp, 65.dp),
+                    onButtonClick = onChangePassword
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                ProfileRow(
+                    leftText = "Email@email.com",
+                    leftSize = 34.sp,
+                    buttonRes = R.drawable.profile_change_email_btn,
+                    buttonSize = Pair(195.dp, 65.dp),
+                    buttonModifier = Modifier.offset(x = 14.dp),
+                    onButtonClick = onChangeEmail
+                )
+
+                Spacer(modifier = Modifier.height(110.dp))
             }
         }
     }
 }
 
 @Composable
-fun PasswordEditor(){
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF122952)),
-        shape = RoundedCornerShape(16.dp),
+private fun ProfileRow(
+    leftText: String,
+    leftSize: androidx.compose.ui.unit.TextUnit,
+    buttonRes: Int,
+    buttonSize: Pair<androidx.compose.ui.unit.Dp, androidx.compose.ui.unit.Dp>,
+    onButtonClick: () -> Unit,
+    buttonModifier: Modifier = Modifier
+) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-
+            .padding(horizontal = 22.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ProfileStrokeText(
+            text = leftText,
+            fontSize = leftSize,
+            modifier = Modifier.weight(1f)
+        )
 
+        Spacer(modifier = Modifier.size(12.dp))
 
-        ) {
-            val password = "********"
-            Text("Password: $password", color = Color.White, fontSize = 20.sp)
-
-            IconButton(
-                onClick = {},
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1976D2))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Password Change",
-                    tint = Color.White
-                )
-            }
-        }
+        Image(
+            painter = painterResource(buttonRes),
+            contentDescription = null,
+            modifier = buttonModifier
+                .size(width = buttonSize.first, height = buttonSize.second)
+                .clickable { onButtonClick() },
+            contentScale = ContentScale.Fit
+        )
     }
 }
+
+@Composable
+private fun ProfileStrokeText(
+    text: String,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.CenterStart) {
+        Text(
+            text = text,
+            fontFamily = Kaushan,
+            fontSize = fontSize,
+            color = Color.White,
+            textAlign = TextAlign.Start,
+            style = TextStyle(
+                shadow = Shadow(
+                    color = Color.Black,
+                    blurRadius = 6f
+                )
+            )
+        )
+        Text(
+            text = text,
+            fontFamily = Kaushan,
+            fontSize = fontSize,
+            color = Color.Transparent,
+            textAlign = TextAlign.Start,
+            style = TextStyle(
+                brush = Brush.linearGradient(listOf(Color(0xFF0066FF), Color(0xFF0066FF))),
+                drawStyle = Stroke(width = 1f)
+            )
+        )
+    }
+}
+
+
+

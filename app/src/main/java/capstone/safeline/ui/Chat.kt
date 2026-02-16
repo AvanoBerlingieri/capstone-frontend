@@ -7,22 +7,18 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -31,8 +27,11 @@ import capstone.safeline.R
 import capstone.safeline.models.ChatUser
 import capstone.safeline.models.Message
 import capstone.safeline.ui.components.BottomNavBar
-import androidx.compose.foundation.layout.statusBarsPadding
+import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.components.StrokeTitle
 import androidx.compose.ui.text.style.TextAlign
+import capstone.safeline.ui.components.BackButton
+
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
@@ -115,25 +114,18 @@ fun ChatScreen(
                 contentScale = ContentScale.Crop
             )
 
-            HomeTitle(
+            StrokeTitle(
                 text = "CHATS",
+                fontFamily = Vampiro,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 22.dp)
             )
 
-            Image(
-                painter = painterResource(R.drawable.back_btn),
-                contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .statusBarsPadding()
-                    .align(Alignment.TopStart)
-                    .padding(start = 6.dp, top = 14.dp)
-                    .size(width = 78.55.dp, height = 36.45.dp)
-                    .clickable { onBack() }
+            BackButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart)
             )
-
 
             Column(
                 modifier = Modifier
@@ -266,7 +258,14 @@ private fun ChatRow(
             Spacer(modifier = Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                StrokeText(user.name, 24.sp, Color(0xFF002BFF))
+                StrokeText(
+                    text = user.name,
+                    fontFamily = Vampiro,
+                    fontSize = 24.sp,
+                    fillColor = Color.White,
+                    strokeColor = Color(0xFF002BFF),
+                    strokeWidth = 1f
+                )
 
                 ReflectedText("Last seen: March 10", 9.sp)
             }
@@ -275,15 +274,15 @@ private fun ChatRow(
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier.padding(end = 6.dp)
             ) {
-            if (hasNew) {
-                Image(
-                    painter = painterResource(R.drawable.new_message_icon),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(56.dp)
-                        .padding(bottom = 4.dp)
-                )
-            } else {
+                if (hasNew) {
+                    Image(
+                        painter = painterResource(R.drawable.new_message_icon),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .padding(bottom = 4.dp)
+                    )
+                } else {
                     Spacer(modifier = Modifier.height(50.dp))
                 }
 
@@ -294,84 +293,34 @@ private fun ChatRow(
 }
 
 @Composable
-private fun HomeTitle(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    val strokeBrush = Brush.linearGradient(
-        colors = listOf(Color(0xFF002BFF), Color(0xFFB30FFF))
-    )
-
-    Box(modifier = modifier) {
-        Text(
-            text = text,
-            fontFamily = Vampiro,
-            fontSize = 28.sp,
-            color = Color.White,
-            style = TextStyle(
-                shadow = Shadow(
-                    color = Color.Black,
-                    blurRadius = 6f
-                )
-            ),
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = text,
-            fontFamily = Vampiro,
-            fontSize = 28.sp,
-            color = Color.Transparent,
-            style = TextStyle(
-                brush = strokeBrush,
-                drawStyle = Stroke(width = 4f)
-            ),
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-
-@Composable
-private fun StrokeText(
-    text: String,
-    size: androidx.compose.ui.unit.TextUnit,
-    strokeColor: Color
-) {
-    Box {
-        Text(
-            text = text,
-            fontFamily = Vampiro,
-            fontSize = size,
-            color = Color.White
-        )
-        Text(
-            text = text,
-            fontFamily = Vampiro,
-            fontSize = size,
-            color = Color.Transparent,
-            style = TextStyle(
-                brush = Brush.linearGradient(listOf(strokeColor, strokeColor)),
-                drawStyle = Stroke(1f)
-            )
-        )
-    }
-}
-
-@Composable
 private fun ReflectedText(
     text: String,
     size: androidx.compose.ui.unit.TextUnit
 ) {
     Column {
-        StrokeText(text, size, Color(0xFF002BFF))
+        StrokeText(
+            text = text,
+            fontFamily = Vampiro,
+            fontSize = size,
+            fillColor = Color.White,
+            strokeColor = Color(0xFF002BFF),
+            strokeWidth = 1f
+        )
         Box(
             modifier = Modifier
                 .graphicsLayer { scaleY = -1f }
                 .alpha(0.2f)
         ) {
-            StrokeText(text, size, Color(0xFFB30FFF))
+            StrokeText(
+                text = text,
+                fontFamily = Vampiro,
+                fontSize = size,
+                fillColor = Color.White,
+                strokeColor = Color(0xFFB30FFF),
+                strokeWidth = 1f
+            )
         }
     }
 }
+
 

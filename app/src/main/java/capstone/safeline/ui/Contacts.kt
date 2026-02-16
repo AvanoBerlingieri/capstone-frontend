@@ -21,24 +21,22 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.components.BackButton
+
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
@@ -65,9 +63,12 @@ class Contacts : ComponentActivity() {
             ContactsScreen(
                 contacts = contacts,
                 onBack = { startActivity(Intent(this, Home::class.java)) },
-                onContactClick = {
-                    startActivity(Intent(this, ContactProfile::class.java))
+                onContactClick = { contact ->
+                    val intent = Intent(this, ContactProfile::class.java)
+                    intent.putExtra("contactName", contact.name)
+                    startActivity(intent)
                 },
+
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
@@ -112,23 +113,18 @@ private fun ContactsScreen(
                 contentScale = ContentScale.Crop
             )
 
-            HomeTitle(
+            StrokeTitle(
                 text = "CONTACTS",
+                fontFamily = Vampiro,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
                     .padding(top = 22.dp)
             )
 
-            Image(
-                painter = painterResource(R.drawable.back_btn),
-                contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .statusBarsPadding()
-                    .padding(start = 6.dp, top = 14.dp)
-                    .size(width = 78.55.dp, height = 36.45.dp)
-                    .clickable { onBack() }
+            BackButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart)
             )
 
             Column(
@@ -214,70 +210,4 @@ private fun ContactRow(
     }
 }
 
-@Composable
-private fun HomeTitle(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    val strokeBrush = Brush.linearGradient(
-        colors = listOf(Color(0xFF002BFF), Color(0xFFB30FFF))
-    )
-
-    Box(modifier = modifier) {
-        Text(
-            text = text,
-            fontFamily = Vampiro,
-            fontSize = 28.sp,
-            color = Color.White,
-            style = TextStyle(
-                shadow = Shadow(
-                    color = Color.Black,
-                    blurRadius = 6f
-                )
-            ),
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = text,
-            fontFamily = Vampiro,
-            fontSize = 28.sp,
-            color = Color.Transparent,
-            style = TextStyle(
-                brush = strokeBrush,
-                drawStyle = Stroke(width = 4f)
-            ),
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-private fun StrokeText(
-    text: String,
-    fontFamily: FontFamily,
-    fontSize: androidx.compose.ui.unit.TextUnit,
-    fillColor: Color,
-    strokeColor: Color,
-    strokeWidth: Float
-) {
-    Box {
-        Text(
-            text = text,
-            fontFamily = fontFamily,
-            fontSize = fontSize,
-            color = fillColor
-        )
-        Text(
-            text = text,
-            fontFamily = fontFamily,
-            fontSize = fontSize,
-            color = Color.Transparent,
-            style = TextStyle(
-                brush = Brush.linearGradient(listOf(strokeColor, strokeColor)),
-                drawStyle = Stroke(strokeWidth)
-            )
-        )
-    }
-}
 
