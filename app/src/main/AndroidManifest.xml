@@ -70,6 +70,10 @@
             android:name=".ui.ContactCall"
             android:exported="true" />
 
+        <activity
+            android:name=".ui.ContactProfile"
+            android:exported="true" />
+
 
 
     </application>
