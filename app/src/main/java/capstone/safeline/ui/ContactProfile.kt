@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -100,6 +101,7 @@ private fun ContactProfileScreen(
         ) {
             Image(
                 painter = painterResource(R.drawable.profile_bg),
+                painter = painterResource(R.drawable.contacts_bg),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -185,6 +187,15 @@ private fun ContactProfileScreen(
                     )
                 }
             }
+            Image(
+                painter = painterResource(R.drawable.back_btn),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 6.dp, top = 14.dp)
+                    .size(width = 78.55.dp, height = 36.45.dp)
+                    .clickable { onBack() }
+            )
         }
     }
 }

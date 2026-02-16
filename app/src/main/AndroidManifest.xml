@@ -72,6 +72,15 @@
             android:name=".ui.CallingPage"
             android:exported="true" />
 
+        <activity
+            android:name=".ui.ContactCall"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.ContactProfile"
+            android:exported="true" />
+
+
         <activity android:name=".ui.GroupCallSetup" android:exported="true" />
         <activity android:name=".ui.GroupCallRoom" android:exported="true" />
 
