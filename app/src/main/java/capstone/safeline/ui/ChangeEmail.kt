@@ -6,12 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -22,35 +19,27 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
-import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
-class ContactProfile : ComponentActivity() {
+class ChangeEmail : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val username = intent.getStringExtra("contactName") ?: "USERNAME"
-        val email = intent.getStringExtra("contactEmail") ?: "email@email.com"
-
         setContent {
-            ContactProfileScreen(
-                username = username,
-                email = email,
-                onBack = { startActivity(Intent(this, Contacts::class.java)) },
+            SimpleProfilePlaceholder(
+                bgRes = R.drawable.profile_bg,
+                title = "CHANGE EMAIL",
+                onBack = { startActivity(Intent(this, Profile::class.java)) },
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
-                        "calls" -> startActivity(Intent(this, Call::class.java))
                         "chats" -> startActivity(Intent(this, Chat::class.java))
-                        "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "calls" -> startActivity(Intent(this, Call::class.java))
                         "communities" -> startActivity(Intent(this, Community::class.java))
                         "contacts" -> startActivity(Intent(this, Contacts::class.java))
                     }
@@ -61,9 +50,9 @@ class ContactProfile : ComponentActivity() {
 }
 
 @Composable
-private fun ContactProfileScreen(
-    username: String,
-    email: String,
+private fun SimpleProfilePlaceholder(
+    bgRes: Int,
+    title: String,
     onBack: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -71,7 +60,7 @@ private fun ContactProfileScreen(
         topBar = {},
         bottomBar = {
             BottomNavBar(
-                currentScreen = "contacts",
+                currentScreen = "profile",
                 onNavigate = onNavigate
             )
         },
@@ -83,14 +72,14 @@ private fun ContactProfileScreen(
                 .padding(innerPadding)
         ) {
             Image(
-                painter = painterResource(R.drawable.profile_bg),
+                painter = painterResource(bgRes),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
 
             StrokeTitle(
-                text = "PROFILE",
+                text = title,
                 fontFamily = Vampiro,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -100,46 +89,10 @@ private fun ContactProfileScreen(
 
             BackButton(
                 onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart)
-            )
-
-            Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 120.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.home_avatar_example),
-                    contentDescription = null,
-                    modifier = Modifier.size(width = 161.dp, height = 157.dp),
-                    contentScale = ContentScale.Fit
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                StrokeText(
-                    text = username,
-                    fontFamily = Vampiro,
-                    fontSize = 32.sp,
-                    fillColor = Color.White,
-                    strokeColor = Color(0xFF002BFF),
-                    strokeWidth = 1f,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                StrokeText(
-                    text = email,
-                    fontFamily = Vampiro,
-                    fontSize = 22.sp,
-                    fillColor = Color.White,
-                    strokeColor = Color(0xFF002BFF),
-                    strokeWidth = 1f,
-                    textAlign = TextAlign.Center
-                )
-            }
+                    .align(Alignment.TopStart)
+                    .offset(x = (-15).dp)
+            )
         }
     }
 }

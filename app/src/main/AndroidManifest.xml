@@ -74,6 +74,18 @@
             android:name=".ui.ContactProfile"
             android:exported="true" />
 
+        <activity
+            android:name=".ui.ChangeUsername"
+            android:exported="true"/>
+
+        <activity
+            android:name=".ui.ChangePassword"
+            android:exported="true"/>
+
+        <activity
+            android:name=".ui.ChangeEmail"
+            android:exported="true"/>
+
 
 
     </application>

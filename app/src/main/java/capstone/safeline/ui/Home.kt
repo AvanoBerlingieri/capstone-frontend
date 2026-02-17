@@ -21,13 +21,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.StrokeTitle
 
 private val HomeTitleFont = FontFamily(Font(R.font.vampiro_one_regular))
 private val HomeTextFont = FontFamily(Font(R.font.tapestry_regular))
@@ -90,8 +87,9 @@ fun HomeScreen(
                 contentScale = ContentScale.Crop
             )
 
-            HomeTitle(
+            StrokeTitle(
                 text = "HOME",
+                fontFamily = HomeTitleFont,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 22.dp)
@@ -208,44 +206,6 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeTitle(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    val strokeBrush = Brush.linearGradient(
-        colors = listOf(Color(0xFF002BFF), Color(0xFFB30FFF))
-    )
-
-    Box(modifier = modifier) {
-        Text(
-            text = text,
-            fontFamily = HomeTitleFont,
-            fontSize = 28.sp,
-            color = Color.White,
-            style = TextStyle(
-                shadow = Shadow(
-                    color = Color(0x99000000),
-                    blurRadius = 6f
-                )
-            ),
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = text,
-            fontFamily = HomeTitleFont,
-            fontSize = 28.sp,
-            color = Color.Transparent,
-            style = TextStyle(
-                brush = strokeBrush,
-                drawStyle = Stroke(width = 3f)
-            ),
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
 private fun HomeImageButton(
     bgRes: Int,
     text: String,
@@ -274,4 +234,5 @@ private fun HomeImageButton(
         )
     }
 }
+
 
