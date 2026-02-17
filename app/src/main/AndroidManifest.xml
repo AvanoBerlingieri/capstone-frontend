@@ -105,6 +105,9 @@
             android:name=".ui.SettingsNotifications"
             android:exported="true"/>
 
+        <activity
+            android:name=".ui.CommunityServers"
+            android:exported="true"/>
 
     </application>
     
