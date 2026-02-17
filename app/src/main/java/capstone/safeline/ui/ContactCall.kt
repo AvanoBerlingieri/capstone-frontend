@@ -2,6 +2,7 @@ package capstone.safeline.ui
 
 import android.content.Intent
 import android.content.Intent
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
@@ -270,4 +272,3 @@ private fun ContactCallScreen(
         )
     }
 }
-
