@@ -92,6 +92,24 @@
             android:name=".ui.ChangeEmail"
             android:exported="true"/>
 
+        <activity
+            android:name=".ui.SettingsAppearance"
+            android:exported="true"/>
+        <activity
+            android:name=".ui.SettingsFontSize"
+            android:exported="true"/>
+
+        <activity
+            android:name=".ui.SettingsSound"
+            android:exported="true"/>
+
+        <activity
+            android:name=".ui.SettingsPrivacy"
+            android:exported="true"/>
+
+        <activity
+            android:name=".ui.SettingsNotifications"
+            android:exported="true"/>
 
         <activity android:name=".ui.GroupCallSetup" android:exported="true" />
         <activity android:name=".ui.GroupCallRoom" android:exported="true" />
