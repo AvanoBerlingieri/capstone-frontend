@@ -90,3 +90,43 @@ fun StrokeText(
         )
     }
 }
+
+@Composable
+fun StrokeText(
+    text: String,
+    fontFamily: FontFamily,
+    fontSize: TextUnit,
+    fillColor: Color,
+    strokeColors: List<Color>,
+    strokeWidth: Float,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign? = null,
+    lineHeight: TextUnit? = null
+) {
+    val strokeBrush = Brush.linearGradient(strokeColors)
+
+    Box(modifier = modifier) {
+        Text(
+            text = text,
+            fontFamily = fontFamily,
+            fontSize = fontSize,
+            color = fillColor,
+            textAlign = textAlign,
+            lineHeight = lineHeight ?: TextUnit.Unspecified
+        )
+
+        Text(
+            text = text,
+            fontFamily = fontFamily,
+            fontSize = fontSize,
+            color = Color.Transparent,
+            textAlign = textAlign,
+            lineHeight = lineHeight ?: TextUnit.Unspecified,
+            style = TextStyle(
+                brush = strokeBrush,
+                drawStyle = Stroke(strokeWidth)
+            )
+        )
+    }
+}
+
