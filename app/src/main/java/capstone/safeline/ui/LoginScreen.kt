@@ -150,7 +150,7 @@ fun LoginScreen(
                         scope.launch {
                             try {
                                 val response = apiService.loginUser(LoginRequest(email, password))
-                                if (response.isSuccessful) {
+                                if (response.body()?.statusCode.equals("OK")) {
 
                                     Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
                                     onSuccess()
