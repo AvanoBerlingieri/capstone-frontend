@@ -166,6 +166,10 @@ fun RegisterScreen(
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(10.dp))
+            ImageInputField(
+                value = email,
+                onValueChange = { email = it }
+            )
 
             Spacer(Modifier.height(22.dp))
 
