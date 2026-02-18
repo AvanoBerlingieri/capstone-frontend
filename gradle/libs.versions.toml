@@ -13,6 +13,7 @@ navigationUi = "2.6.0"
 recyclerview = "1.4.0"
 runtime = "1.9.3"
 navigationCompose = "2.9.5"
+foundationLayout = "1.10.3"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -28,6 +29,7 @@ navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version
 recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
