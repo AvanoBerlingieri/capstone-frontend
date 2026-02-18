@@ -1,18 +1,13 @@
 package capstone.safeline.ui
 
 import android.content.Intent
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import capstone.safeline.R
-import androidx.compose.ui.graphics.graphicsLayer
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,8 +17,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
@@ -37,16 +36,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.Global
+import capstone.safeline.R
 import capstone.safeline.models.ChatUser
 import capstone.safeline.models.Message
-import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.StrokeText
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
 class DmPage : ComponentActivity() {
 
@@ -55,6 +61,7 @@ class DmPage : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val username = intent.getStringExtra("userName") ?: "Unknown"
+        val lastSeen = intent.getStringExtra("lastSeen") ?: "Last seen: March 10"
 
         val global = Global()
         val usersList = global.loadUsersChats(this)
@@ -64,6 +71,7 @@ class DmPage : ComponentActivity() {
             DmPageScreen(
                 onNavigate = {},
                 username = username,
+                lastSeen = lastSeen,
                 user = user,
                 onBack = { finish() },
                 onCall = {
@@ -75,16 +83,17 @@ class DmPage : ComponentActivity() {
         }
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DmPageScreen(
     onNavigate: (String) -> Unit,
     username: String,
+    lastSeen: String,
     user: ChatUser?,
     onBack: () -> Unit,
     onCall: () -> Unit
-)
- {
+) {
     val jsonMessages: List<Message> = user?.messages ?: emptyList()
     var chatMessages by remember { mutableStateOf(listOf<Message>()) }
     var text by remember { mutableStateOf("") }
@@ -92,20 +101,12 @@ fun DmPageScreen(
 
     Scaffold(
         topBar = {},
-        bottomBar = {
-            BottomNavBar(
-                currentScreen = "messages",
-                onNavigate = onNavigate
-            )
-        },
+        bottomBar = {},
         containerColor = Color.Transparent
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Background image
             Image(
                 painter = painterResource(id = R.drawable.dm_background),
                 contentDescription = null,
@@ -114,18 +115,18 @@ fun DmPageScreen(
             )
 
             Column(
-                modifier = Modifier.fillMaxSize()
-            )
-            {
-                // Custom DM top header like your mock
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .imePadding()
+            ) {
                 DmHeader(
                     username = username,
-                    lastSeen = "Last seen: March 10",
+                    lastSeen = lastSeen,
                     onBack = onBack,
                     onCall = onCall
                 )
 
-                // Messages list (scrollable)
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -135,8 +136,6 @@ fun DmPageScreen(
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
                 ) {
                     items(chatMessages) { msg ->
-                        // Simple: alternate like you were doing.
-                        // Better: add msg.isMine boolean in your model.
                         val isMine = (chatMessages.indexOf(msg) % 2 == 0)
                         MessageBubble(
                             message = msg.text,
@@ -145,17 +144,15 @@ fun DmPageScreen(
                     }
                 }
 
-                // Input area like your mock
                 DmInputBar(
                     value = text,
                     onValueChange = { text = it },
-                    onAttach = { /* TODO */ },
+                    onAttach = {},
                     onSend = {
                         if (text.isBlank()) return@DmInputBar
 
                         val currentTime = LocalDateTime.now()
                             .format(DateTimeFormatter.ofPattern("hh:mm a"))
-
 
                         chatMessages = chatMessages + Message(text, currentTime)
                         text = ""
@@ -177,37 +174,34 @@ private fun DmHeader(
     lastSeen: String,
     onBack: () -> Unit,
     onCall: () -> Unit
-)
- {
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .statusBarsPadding()
             .padding(top = 10.dp)
     ) {
-        // Nameplate background
         Image(
             painter = painterResource(R.drawable.friend_nameplate_background),
             contentDescription = null,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .height(90.dp),
+                .width(412.dp)
+                .height(69.dp),
             contentScale = ContentScale.FillBounds
         )
 
-        // Back button
         Image(
             painter = painterResource(R.drawable.back_for_dm),
-            contentDescription = "Back",
+            contentDescription = null,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(start = 14.dp, top = 18.dp)
-                .size(width = 90.dp, height = 38.dp)
+                .size(width = 83.09.dp, height = 31.49.dp)
                 .clickable { onBack() },
             contentScale = ContentScale.FillBounds
         )
 
-        // Right icons (avatar + call)
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -217,37 +211,47 @@ private fun DmHeader(
         ) {
             Image(
                 painter = painterResource(R.drawable.avatar),
-                contentDescription = "Avatar",
-                modifier = Modifier.size(34.dp),
-                contentScale = ContentScale.Fit
+                contentDescription = null,
+                modifier = Modifier.size(width = 39.54.dp, height = 31.81.dp),
+                contentScale = ContentScale.Crop
             )
+
             Image(
                 painter = painterResource(R.drawable.call_for_dm),
-                contentDescription = "Call",
+                contentDescription = null,
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(width = 73.dp, height = 46.dp)
                     .clickable { onCall() },
                 contentScale = ContentScale.Fit
             )
         }
 
-        // Username + last seen text (centered)
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 18.dp),
+                .padding(top = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
+            StrokeText(
                 text = username,
-                fontSize = 26.sp,
-                color = Color.White
+                fontFamily = Vampiro,
+                fontSize = 24.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF002BFF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
             )
+
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
+
+            StrokeText(
                 text = lastSeen,
+                fontFamily = Vampiro,
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.85f)
+                fillColor = Color.White,
+                strokeColor = Color(0xFF002BFF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -263,17 +267,14 @@ private fun MessageBubble(
         horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
     ) {
         Box(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
+            modifier = Modifier.widthIn(max = 280.dp)
         ) {
-            // Bubble background
             Image(
                 painter = painterResource(R.drawable.message_bubble_background),
                 contentDescription = null,
                 modifier = Modifier
                     .matchParentSize()
                     .graphicsLayer {
-                        // flip for outgoing so it "points" the other way
                         scaleX = if (isMine) -1f else 1f
                     },
                 contentScale = ContentScale.FillBounds
@@ -304,10 +305,8 @@ private fun DmInputBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 10.dp, vertical = 10.dp)
             .height(74.dp)
     ) {
-        // whole bar background
         Image(
             painter = painterResource(R.drawable.input_background),
             contentDescription = null,
@@ -321,7 +320,6 @@ private fun DmInputBar(
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // input box background (purely visual)
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -334,14 +332,18 @@ private fun DmInputBar(
                     contentScale = ContentScale.FillBounds
                 )
 
-                // transparent TextField on top of your PNG
                 TextField(
                     value = value,
                     onValueChange = onValueChange,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 14.dp),
-                    placeholder = { Text("Type a message...", color = Color.White.copy(alpha = 0.55f)) },
+                    placeholder = {
+                        Text(
+                            "Type a message...",
+                            color = Color.White.copy(alpha = 0.55f)
+                        )
+                    },
                     singleLine = true,
                     colors = androidx.compose.material3.TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
@@ -360,7 +362,7 @@ private fun DmInputBar(
 
             Image(
                 painter = painterResource(R.drawable.attach),
-                contentDescription = "Attach",
+                contentDescription = null,
                 modifier = Modifier
                     .size(34.dp)
                     .clickable { onAttach() },
@@ -371,7 +373,7 @@ private fun DmInputBar(
 
             Image(
                 painter = painterResource(R.drawable.enter_button),
-                contentDescription = "Send",
+                contentDescription = null,
                 modifier = Modifier
                     .size(46.dp)
                     .clickable { onSend() },
@@ -380,5 +382,8 @@ private fun DmInputBar(
         }
     }
 }
+
+
+
 
 

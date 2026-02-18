@@ -16,6 +16,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
@@ -23,6 +24,7 @@ import capstone.safeline.api.ApiClient
 import capstone.safeline.api.dto.RegisterRequest
 import capstone.safeline.ui.components.GradientStrokeText
 import capstone.safeline.ui.components.ImageInputField
+import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
 import capstone.safeline.ui.theme.KaushanScript
 import capstone.safeline.ui.theme.VampiroOne
@@ -126,38 +128,71 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(125.dp))
 
-            Text(
+            StrokeText(
                 text = "Please Enter Your",
-                fontSize = 48.sp,
                 fontFamily = KaushanScript,
-                color = Color.White,
-                style = TextStyle(
-                    drawStyle = Stroke(width = 2f),
-                    color = Color(0xFF002BFF)
-                )
+                fontSize = 48.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF002BFF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
             )
+
 
             Spacer(Modifier.height(24.dp))
 
-            GradientStrokeText("Username:", 28.sp, VampiroOne)
+            StrokeText(
+                text = "Username:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
             Spacer(Modifier.height(10.dp))
             ImageInputField(value = username, onValueChange = { username = it })
 
             Spacer(Modifier.height(22.dp))
 
-            GradientStrokeText("Email:", 28.sp, VampiroOne)
+            StrokeText(
+                text = "Email:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
             Spacer(Modifier.height(10.dp))
             ImageInputField(value = email, onValueChange = { email = it })
 
             Spacer(Modifier.height(22.dp))
 
-            GradientStrokeText("Password:", 28.sp, VampiroOne)
+            StrokeText(
+                text = "Password:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
+
             Spacer(Modifier.height(10.dp))
             ImageInputField(value = password, onValueChange = { password = it })
 
             Spacer(Modifier.height(22.dp))
 
-            GradientStrokeText("Re-Enter Password:", 28.sp, VampiroOne)
+            StrokeText(
+                text = "Re-Enter Password:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
             Spacer(Modifier.height(10.dp))
             ImageInputField(value = confirm, onValueChange = { confirm = it })
 

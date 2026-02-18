@@ -1,13 +1,22 @@
 package capstone.safeline.ui
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.Text
-import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,10 +24,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.ui.components.StrokeText
+
+private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
 class CallingPage : ComponentActivity() {
 
@@ -30,15 +45,17 @@ class CallingPage : ComponentActivity() {
         setContent {
             CallingFriendScreen(
                 username = username,
-                onEndCall = { finish() }, // goes back to DmPage
+                onEndCall = { finish() },
                 onGoToChat = {
-                    // Go straight to Chat list
-                    startActivity(Intent(this, Chat::class.java))
+                    val intent = Intent(this, DmPage::class.java)
+                    intent.putExtra("userName", username)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    startActivity(intent)
                     finish()
                 },
-                onShareScreen = { /* TODO */ },
-                onCamera = { /* TODO */ },
-                onMic = { /* TODO */ }
+                onShareScreen = {},
+                onCamera = {},
+                onMic = {}
             )
         }
     }
@@ -59,7 +76,6 @@ fun CallingFriendScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Top background (fills the screen nicely)
             Image(
                 painter = painterResource(R.drawable.top_background),
                 contentDescription = null,
@@ -67,79 +83,94 @@ fun CallingFriendScreen(
                 contentScale = ContentScale.Crop
             )
 
-            // Center avatar + text
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 90.dp),
+                    .padding(top = 74.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
                     painter = painterResource(R.drawable.avatar_placeholder),
-                    contentDescription = "Avatar",
-                    modifier = Modifier.size(190.dp),
+                    contentDescription = null,
+                    modifier = Modifier.size(241.26.dp, 253.dp),
                     contentScale = ContentScale.Fit
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(0.dp))
 
-                Text(
+                StrokeText(
                     text = "Calling",
-                    color = Color.White,
-                    fontSize = 22.sp
+                    fontFamily = Vampiro,
+                    fontSize = 20.sp,
+                    fillColor = Color.White,
+                    strokeColor = Color(0xFF0066FF),
+                    strokeWidth = 1f,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .offset(x = 10.dp, y = (-34).dp)
+                        .width(106.56.dp)
+                        .height(39.51.dp)
                 )
 
-                Text(
+                StrokeText(
                     text = username,
-                    color = Color.White,
-                    fontSize = 22.sp
+                    fontFamily = Vampiro,
+                    fontSize = 20.sp,
+                    fillColor = Color.White,
+                    strokeColor = Color(0xFF0066FF),
+                    strokeWidth = 1f,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .offset(x = 10.dp, y = (-44).dp)
+                        .width(106.56.dp)
+                        .height(39.51.dp)
                 )
             }
 
-            // Bottom background panel
             Image(
                 painter = painterResource(R.drawable.down_background_for_buttons),
                 contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(240.dp),
+                    .width(412.dp)
+                    .height(367.dp),
                 contentScale = ContentScale.FillBounds
             )
 
-            // Buttons laid on top of the bottom panel
-            // Layout matches your mock: 2 left, big center, 2 right
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(bottom = 54.dp, start = 26.dp, end = 26.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .width(412.dp)
+                    .height(367.dp)
+                    .padding(start = 24.dp, end = 24.dp, bottom = 34.dp),
+                verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Left column
                 Column(
+                    modifier = Modifier
+                        .width(110.dp)
+                        .offset(x = (-25).dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                    verticalArrangement = Arrangement.spacedBy(26.dp)
                 ) {
-                    IconBtn(res = R.drawable.share_screen_button, size = 58.dp, onClick = onShareScreen)
-                    IconBtn(res = R.drawable.got_to_chat_button, size = 58.dp, onClick = onGoToChat)
+                    IconBtn(R.drawable.share_screen_button, 92.dp, 94.dp, onShareScreen)
+                    IconBtn(R.drawable.go_to_chat_button, 92.dp, 94.dp, onGoToChat)
                 }
 
-                // Big center end call
-                IconBtn(
-                    res = R.drawable.end_call_button,
-                    size = 110.dp,
-                    onClick = onEndCall
-                )
-
-                // Right column
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                Box(
+                    modifier = Modifier.offset(x = (-15).dp)
                 ) {
-                    IconBtn(res = R.drawable.camera_button, size = 58.dp, onClick = onCamera)
-                    IconBtn(res = R.drawable.microphone_button, size = 58.dp, onClick = onMic)
+                    IconBtn(R.drawable.end_call_button, 181.dp, 159.dp, onEndCall, true)
+                }
+
+
+                Column(
+                    modifier = Modifier.width(110.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(26.dp)
+                ) {
+                    IconBtn(R.drawable.camera_button, 92.dp, 94.dp, onCamera)
+                    IconBtn(R.drawable.microphone_button, 92.dp, 94.dp, onMic)
                 }
             }
         }
@@ -149,15 +180,36 @@ fun CallingFriendScreen(
 @Composable
 private fun IconBtn(
     res: Int,
-    size: Dp,
-    onClick: () -> Unit
+    width: Dp,
+    height: Dp,
+    onClick: () -> Unit,
+    big: Boolean = false
 ) {
-    Image(
-        painter = painterResource(res),
-        contentDescription = null,
+    Box(
         modifier = Modifier
-            .size(size)
+            .size(width, height)
             .clickable { onClick() },
-        contentScale = ContentScale.Fit
-    )
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(res),
+            contentDescription = null,
+            modifier = Modifier.size(if (big) width else 72.dp),
+            contentScale = ContentScale.Fit
+        )
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
