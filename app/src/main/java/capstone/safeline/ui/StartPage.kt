@@ -1,9 +1,11 @@
 package capstone.safeline.ui
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -29,10 +31,18 @@ fun SafeLineNav() {
         }
 
         composable("login") {
+
+            val context = LocalContext.current
+
             LoginScreen(
                 onBack = { nav.popBackStack() },
                 onSuccess = {
-                    nav.navigate("home") { popUpTo("start") { inclusive = true } }
+                    val intent = Intent(context, Home::class.java)
+                    context.startActivity(intent)
+
+                    if (context is ComponentActivity) {
+                        context.finish()
+                    }
                 }
             )
         }
