@@ -21,6 +21,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ui.CallingPage" />
+
         <activity
             android:name=".ui.Home"
             android:exported="true" />
@@ -36,15 +38,11 @@
             android:exported="true"/>
 
         <activity
-            android:name=".ui.Login"
-            android:exported="true" />
-
-        <activity
             android:name=".ui.Profile"
             android:exported="true" />
 
         <activity
-            android:name=".ui.UserChat"
+            android:name=".ui.DmPage"
             android:exported="true"/>
 
         <activity

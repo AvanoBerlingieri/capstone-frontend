@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     onBack: () -> Unit,
-    onSuccess: () -> Unit // ✅ call this to navigate (ex: nav.navigate("home"))
+    onSuccess: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -138,8 +138,8 @@ fun LoginScreen(
                         scope.launch {
                             try {
                                 val response = apiService.loginUser(LoginRequest(email, password))
-                                if (response.isSuccessful) {
 
+                                if (response.isSuccessful) {
                                     Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
                                     onSuccess()
                                 } else {
