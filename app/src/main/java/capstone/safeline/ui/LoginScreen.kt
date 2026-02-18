@@ -28,13 +28,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.api.ApiClient
 import capstone.safeline.api.dto.LoginRequest
+import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.GradientStrokeText
 import capstone.safeline.ui.components.ImageInputField
+import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
 import capstone.safeline.ui.theme.KaushanScript
 import capstone.safeline.ui.theme.VampiroOne
@@ -74,15 +77,9 @@ fun LoginScreen(
                     )
                 )
         ) {
-            Image(
-                painter = painterResource(R.drawable.back_button),
-                contentDescription = "Back",
-                modifier = Modifier
-                    .padding(start = 12.dp, top = 18.dp)
-                    .size(64.dp)
-                    .noRippleClickable { onBack() }
-                    .align(Alignment.TopStart),
-                contentScale = ContentScale.Fit
+            BackButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart)
             )
 
             Box(
@@ -108,26 +105,44 @@ fun LoginScreen(
 
             Spacer(Modifier.height(125.dp))
 
-            Text(
+            StrokeText(
                 text = "Please Enter Your",
-                fontSize = 48.sp,
                 fontFamily = KaushanScript,
-                color = Color.White,
-                style = TextStyle(
-                    drawStyle = Stroke(width = 2f),
-                    color = Color(0xFF002BFF)
-                )
+                fontSize = 48.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF002BFF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
             )
+
 
             Spacer(Modifier.height(24.dp))
 
-            GradientStrokeText("Email:", 28.sp, VampiroOne)
+            StrokeText(
+                text = "Email:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
+
             Spacer(Modifier.height(10.dp))
             ImageInputField(value = email, onValueChange = { email = it })
 
             Spacer(Modifier.height(22.dp))
 
-            GradientStrokeText("Password:", 28.sp, VampiroOne)
+            StrokeText(
+                text = "Password:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
+
             Spacer(Modifier.height(10.dp))
             ImageInputField(value = password, onValueChange = { password = it })
 

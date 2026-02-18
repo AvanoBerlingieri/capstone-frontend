@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,22 +21,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.api.ApiClient
 import capstone.safeline.api.dto.RegisterRequest
+import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.GradientStrokeText
 import capstone.safeline.ui.components.ImageInputField
+import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
 import capstone.safeline.ui.theme.KaushanScript
 import capstone.safeline.ui.theme.VampiroOne
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun RegisterScreen(
@@ -53,6 +54,10 @@ fun RegisterScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val apiService = remember { ApiClient.apiService }
+
+    val screenH = LocalConfiguration.current.screenHeightDp
+    val scale = (screenH / 820f).coerceIn(0.72f, 1f)
+    fun s(dp: Int) = ((dp * scale).roundToInt()).dp
 
     fun handleRegisterClick() {
         if (email.isBlank() || username.isBlank() || password.isBlank() || confirm.isBlank()) {
@@ -82,8 +87,7 @@ fun RegisterScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
-
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(R.drawable.background),
             contentDescription = null,
@@ -104,15 +108,9 @@ fun RegisterScreen(
                     )
                 )
         ) {
-            Image(
-                painter = painterResource(R.drawable.back_button),
-                contentDescription = "Back",
-                modifier = Modifier
-                    .padding(start = 12.dp, top = 18.dp)
-                    .size(64.dp)
-                    .noRippleClickable { onBack() }
-                    .align(Alignment.TopStart),
-                contentScale = ContentScale.Fit
+            BackButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart)
             )
 
             Box(
@@ -135,42 +133,76 @@ fun RegisterScreen(
                 .padding(horizontal = 26.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(Modifier.height(s(105)))
 
-            Spacer(Modifier.height(125.dp))
-
-            Text(
+            StrokeText(
                 text = "Please Enter Your",
-                fontSize = 48.sp,
                 fontFamily = KaushanScript,
-                color = Color.White,
-                style = TextStyle(
-                    drawStyle = Stroke(width = 2f),
-                    color = Color(0xFF002BFF)
-                )
+                fontSize = 48.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF002BFF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(s(16)))
 
-            GradientStrokeText("Username:", 28.sp, VampiroOne)
-            Spacer(Modifier.height(10.dp))
+            StrokeText(
+                text = "Username:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(s(8)))
             ImageInputField(value = username, onValueChange = { username = it })
 
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(s(14)))
 
-            GradientStrokeText("Email:", 28.sp, VampiroOne)
-            Spacer(Modifier.height(10.dp))
+            StrokeText(
+                text = "Email:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(s(8)))
             ImageInputField(value = email, onValueChange = { email = it })
 
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(s(14)))
 
-            GradientStrokeText("Password:", 28.sp, VampiroOne)
-            Spacer(Modifier.height(10.dp))
+            StrokeText(
+                text = "Password:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(s(8)))
             ImageInputField(value = password, onValueChange = { password = it })
 
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(s(14)))
 
-            GradientStrokeText("Re-Enter Password:", 28.sp, VampiroOne)
-            Spacer(Modifier.height(10.dp))
+            StrokeText(
+                text = "Re-Enter Password:",
+                fontFamily = KaushanScript,
+                fontSize = 40.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF0066FF),
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(s(8)))
             ImageInputField(value = confirm, onValueChange = { confirm = it })
 
             Spacer(Modifier.weight(1f))
@@ -186,8 +218,6 @@ fun RegisterScreen(
                     .noRippleClickable { handleRegisterClick() },
                 contentScale = ContentScale.Fit
             )
-
-
         }
     }
 }
