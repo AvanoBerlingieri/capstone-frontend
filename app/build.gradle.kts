@@ -70,7 +70,6 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.runtime)
     implementation(libs.navigation.compose)
-    implementation(libs.foundation.layout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

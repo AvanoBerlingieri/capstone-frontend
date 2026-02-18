@@ -51,7 +51,7 @@ class Chat : ComponentActivity() {
             ChatScreen(
                 chatUsers = chatUsers,
                 onUserClick = { user ->
-                    val intent = Intent(this, DmPage::class.java)
+                    val intent = Intent(this, UserChat::class.java)
                     intent.putExtra("userName", user.name)
                     startActivity(intent)
                 },
