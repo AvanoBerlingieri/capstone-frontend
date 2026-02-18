@@ -1,17 +1,9 @@
 package capstone.safeline.ui
 
 import android.content.Intent
-<<<<<<< HEAD
-import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-=======
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
->>>>>>> origin/master
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
@@ -28,10 +20,6 @@ class StartPage : ComponentActivity() {
 @Composable
 fun SafeLineNav() {
     val nav = rememberNavController()
-<<<<<<< HEAD
-    val context = LocalContext.current
-=======
->>>>>>> origin/master
 
     NavHost(navController = nav, startDestination = "start") {
 
@@ -43,14 +31,6 @@ fun SafeLineNav() {
         }
 
         composable("login") {
-<<<<<<< HEAD
-            LoginScreen(
-                onBack = { nav.popBackStack() },
-                onSuccess = {
-                    context.startActivity(Intent(context, Home::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    })
-=======
 
             val context = LocalContext.current
 
@@ -63,7 +43,6 @@ fun SafeLineNav() {
                     if (context is ComponentActivity) {
                         context.finish()
                     }
->>>>>>> origin/master
                 }
             )
         }
@@ -72,18 +51,6 @@ fun SafeLineNav() {
             RegisterScreen(
                 onBack = { nav.popBackStack() },
                 onSuccess = {
-<<<<<<< HEAD
-                    nav.navigate("login") {
-                        popUpTo("register") { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-            )
-        }
-    }
-}
-
-=======
                     nav.navigate("login") { popUpTo("start") { inclusive = false } }
                 }
             )
@@ -91,4 +58,3 @@ fun SafeLineNav() {
 
     }
 }
->>>>>>> origin/master
