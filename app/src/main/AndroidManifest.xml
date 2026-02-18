@@ -21,8 +21,11 @@
             </intent-filter>
         </activity>
 
+<<<<<<< HEAD
         <activity android:name=".ui.CallingPage" />
 
+=======
+>>>>>>> origin/master
         <activity
             android:name=".ui.Home"
             android:exported="true" />
@@ -36,7 +39,10 @@
         <activity
             android:name=".ui.OngoingCallActivity"
             android:exported="true"/>
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
         <activity
             android:name=".ui.Profile"
             android:exported="true" />
