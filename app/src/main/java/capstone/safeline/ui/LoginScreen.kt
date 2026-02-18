@@ -16,23 +16,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-<<<<<<< HEAD
-import androidx.compose.ui.text.style.TextAlign
-=======
->>>>>>> origin/master
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.api.ApiClient
 import capstone.safeline.api.dto.LoginRequest
 import capstone.safeline.ui.components.GradientStrokeText
-<<<<<<< HEAD
-import capstone.safeline.ui.components.ImageDoneButton
 import capstone.safeline.ui.components.ImageInputField
-import capstone.safeline.ui.components.StrokeText
-=======
-import capstone.safeline.ui.components.ImageInputField
->>>>>>> origin/master
 import capstone.safeline.ui.components.noRippleClickable
 import capstone.safeline.ui.theme.KaushanScript
 import capstone.safeline.ui.theme.VampiroOne
@@ -106,16 +96,6 @@ fun LoginScreen(
 
             Spacer(Modifier.height(125.dp))
 
-<<<<<<< HEAD
-            StrokeText(
-                text = "Please Enter Your",
-                fontFamily = KaushanScript,
-                fontSize = 48.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF002BFF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
-=======
             Text(
                 text = "Please Enter Your",
                 fontSize = 48.sp,
@@ -125,42 +105,17 @@ fun LoginScreen(
                     drawStyle = Stroke(width = 2f),
                     color = Color(0xFF002BFF)
                 )
->>>>>>> origin/master
             )
 
             Spacer(Modifier.height(24.dp))
 
-<<<<<<< HEAD
-            StrokeText(
-                text = "Email:",
-                fontFamily = KaushanScript,
-                fontSize = 40.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
-            )
-=======
             GradientStrokeText("Email:", 28.sp, VampiroOne)
->>>>>>> origin/master
             Spacer(Modifier.height(10.dp))
             ImageInputField(value = email, onValueChange = { email = it })
 
             Spacer(Modifier.height(22.dp))
 
-<<<<<<< HEAD
-            StrokeText(
-                text = "Password:",
-                fontFamily = KaushanScript,
-                fontSize = 40.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
-            )
-=======
             GradientStrokeText("Password:", 28.sp, VampiroOne)
->>>>>>> origin/master
             Spacer(Modifier.height(10.dp))
             ImageInputField(value = password, onValueChange = { password = it })
 
@@ -183,13 +138,8 @@ fun LoginScreen(
                         scope.launch {
                             try {
                                 val response = apiService.loginUser(LoginRequest(email, password))
-<<<<<<< HEAD
-
-                                if (response.isSuccessful) {
-=======
                                 if (response.isSuccessful) {
 
->>>>>>> origin/master
                                     Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
                                     onSuccess()
                                 } else {
