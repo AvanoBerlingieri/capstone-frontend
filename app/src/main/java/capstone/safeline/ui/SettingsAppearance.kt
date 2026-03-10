@@ -5,7 +5,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -23,6 +25,8 @@ import capstone.safeline.R
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.theme.ThemeManager
+import androidx.compose.material3.Text
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
@@ -89,6 +93,34 @@ private fun SettingsPlaceholder(
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.TopStart)
             )
+
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Text(
+                    text = "Classic Theme",
+                    color = Color.White,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clickable {
+                            ThemeManager.currentTheme = ThemeManager.Theme.CLASSIC
+                            onNavigate("home")
+                        }
+                )
+
+                Text(
+                    text = "Gray Theme",
+                    color = Color.White,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clickable {
+                            ThemeManager.currentTheme = ThemeManager.Theme.GRAY
+                            onNavigate("home")
+                        }
+                )
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -27,6 +29,7 @@ import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.components.BackButton
+import capstone.safeline.ui.theme.ThemeManager
 
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
@@ -105,20 +108,63 @@ private fun CallScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.calls_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
 
-            StrokeTitle(
-                text = "CALLS HISTORY",
-                fontFamily = Vampiro,
+                Image(
+                    painter = painterResource(R.drawable.calls_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
+
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(Color.White)
+                    )
+                }
+
+                StrokeTitle(
+                    text = "CALLS HISTORY",
+                    fontFamily = Vampiro,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             BackButton(
                 onClick = onBack,
@@ -173,14 +219,35 @@ private fun CallRow(
             .size(width = 379.97.dp, height = 48.97.dp)
             .clickable { onClick() }
     ) {
-        val bg = if (item.type == CallType.ANSWERED) R.drawable.calls_anwsered_bg else R.drawable.calls_missed_bg
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
 
-        Image(
-            painter = painterResource(bg),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+            val bg =
+                if (item.type == CallType.ANSWERED)
+                    R.drawable.calls_anwsered_bg
+                else
+                    R.drawable.calls_missed_bg
+
+            Image(
+                painter = painterResource(bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            ThemeManager.buttonGradient
+                        ),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+                    )
+            )
+
+        }
 
         when (item.type) {
             CallType.MISSED -> MissedRow(item)

@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import capstone.safeline.ui.theme.ThemeManager
 
 @Composable
 fun StrokeTitle(
@@ -22,11 +23,16 @@ fun StrokeTitle(
     fontSize: TextUnit = 28.sp,
     strokeWidth: Float = 4f
 ) {
+
     val strokeBrush = Brush.linearGradient(
-        colors = listOf(Color(0xFF002BFF), Color(0xFFB30FFF))
+        listOf(
+            ThemeManager.titleStroke,
+            ThemeManager.titleStroke
+        )
     )
 
     Box(modifier = modifier) {
+
         Text(
             text = text,
             fontFamily = fontFamily,
@@ -64,9 +70,13 @@ fun StrokeText(
     textAlign: TextAlign? = null,
     lineHeight: TextUnit? = null
 ) {
-    val strokeBrush = Brush.linearGradient(listOf(strokeColor, strokeColor))
+
+    val strokeBrush = Brush.linearGradient(
+        listOf(strokeColor, strokeColor)
+    )
 
     Box(modifier = modifier) {
+
         Text(
             text = text,
             fontFamily = fontFamily,
@@ -103,9 +113,11 @@ fun StrokeText(
     textAlign: TextAlign? = null,
     lineHeight: TextUnit? = null
 ) {
+
     val strokeBrush = Brush.linearGradient(strokeColors)
 
     Box(modifier = modifier) {
+
         Text(
             text = text,
             fontFamily = fontFamily,

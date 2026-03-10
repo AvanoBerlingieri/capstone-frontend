@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -33,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.theme.ThemeManager
 
 private val HomeTitleFont = FontFamily(Font(R.font.vampiro_one_regular))
 private val HomeTextFont = FontFamily(Font(R.font.tapestry_regular))
@@ -80,20 +84,64 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.home_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
 
-            StrokeTitle(
-                text = "HOME",
-                fontFamily = HomeTitleFont,
+                Image(
+                    painter = painterResource(id = R.drawable.home_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
+
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(Color.White)
+                    )
+
+                }
+
+                StrokeTitle(
+                    text = "HOME",
+                    fontFamily = HomeTitleFont,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             Row(
                 modifier = Modifier
@@ -185,6 +233,7 @@ fun HomeScreen(
                     bgRes = R.drawable.home_btn2,
                     text = "You Have 2 New friend Requests",
                     fontSize = 20.sp,
+                    horizontalGradient = true,
                     modifier = Modifier
                         .size(width = 400.dp, height = 50.dp)
                         .clickable { onOpenFriendRequests() }
@@ -196,6 +245,7 @@ fun HomeScreen(
                     bgRes = R.drawable.home_btn3,
                     text = "Community 1: You Have 36 Notifications!\nCommunity 2: You Have 5 Notifications!",
                     fontSize = 20.sp,
+                    horizontalGradient = true,
                     modifier = Modifier
                         .size(width = 400.dp, height = 80.dp)
                         .clickable { onNavigate("communities") }
@@ -210,18 +260,47 @@ private fun HomeImageButton(
     bgRes: Int,
     text: String,
     fontSize: TextUnit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    horizontalGradient: Boolean = false
 ) {
+
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = bgRes),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(id = bgRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            val brush =
+                if (horizontalGradient) {
+                    Brush.horizontalGradient(
+                        ThemeManager.buttonGradient
+                    )
+                } else {
+                    Brush.verticalGradient(
+                        ThemeManager.buttonGradient
+                    )
+                }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = brush,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+                    )
+            )
+
+        }
 
         Text(
             text = text,
