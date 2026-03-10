@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -42,6 +44,7 @@ import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.components.BackButton
+import capstone.safeline.ui.theme.ThemeManager
 
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
@@ -198,6 +201,69 @@ fun CallScreen(
                 .background(backgroundBrush)
                 .padding(innerPadding)
         ) {
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                Image(
+                    painter = painterResource(R.drawable.calls_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(Color.White)
+                    )
+                }
+
+                StrokeTitle(
+                    text = "CALLS HISTORY",
+                    fontFamily = Vampiro,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+
+            BackButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart)
+            )
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxSize()
@@ -215,7 +281,186 @@ fun CallScreen(
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Image(
+                    painter = painterResource(R.drawable.calls_make_call_btn),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(width = 127.dp, height = 76.dp)
+                        .padding(bottom = 10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
             }
         }
     }
 }
+
+@Composable
+private fun CallRow(
+    item: UiCallItem,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(width = 379.97.dp, height = 48.97.dp)
+            .clickable { onClick() }
+    ) {
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            val bg =
+                if (item.type == CallType.ANSWERED)
+                    R.drawable.calls_anwsered_bg
+                else
+                    R.drawable.calls_missed_bg
+
+            Image(
+                painter = painterResource(bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            ThemeManager.buttonGradient
+                        ),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+                    )
+            )
+
+        }
+
+        when (item.type) {
+            CallType.MISSED -> MissedRow(item)
+            CallType.ANSWERED -> AnsweredRow(item)
+        }
+    }
+}
+
+@Composable
+private fun MissedRow(item: UiCallItem) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.width(110.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = item.date,
+                fontFamily = Tapestry,
+                fontSize = 20.sp,
+                lineHeight = 25.sp,
+                color = Color(0xFFD9D9D9),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = item.time,
+                fontFamily = Tapestry,
+                fontSize = 20.sp,
+                lineHeight = 25.sp,
+                color = Color(0xFFD9D9D9),
+                textAlign = TextAlign.Center
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        StrokeText(
+            text = item.name,
+            fontFamily = Vampiro,
+            fontSize = 32.sp,
+            fillColor = Color.White,
+            strokeColor = Color(0xFFFF0099),
+            strokeWidth = 1f
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Image(
+            painter = painterResource(R.drawable.calls_missed_icon),
+            contentDescription = null,
+            modifier = Modifier.size(36.dp),
+            contentScale = ContentScale.Fit
+        )
+    }
+}
+
+@Composable
+private fun AnsweredRow(item: UiCallItem) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(R.drawable.calls_anwsered_icon),
+            contentDescription = null,
+            modifier = Modifier.size(30.dp),
+            contentScale = ContentScale.Fit
+        )
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            StrokeText(
+                text = item.name,
+                fontFamily = Vampiro,
+                fontSize = 24.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFF002BFF),
+                strokeWidth = 1f
+            )
+
+            item.duration?.let { d ->
+                StrokeText(
+                    text = d,
+                    fontFamily = Tapestry,
+                    fontSize = 16.sp,
+                    fillColor = Color.White,
+                    strokeColor = Color(0xFF0251C7),
+                    strokeWidth = 1f
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.width(110.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = item.date,
+                fontFamily = Tapestry,
+                fontSize = 20.sp,
+                lineHeight = 25.sp,
+                color = Color(0xFFD9D9D9),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = item.time,
+                fontFamily = Tapestry,
+                fontSize = 20.sp,
+                lineHeight = 25.sp,
+                color = Color(0xFFD9D9D9),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+

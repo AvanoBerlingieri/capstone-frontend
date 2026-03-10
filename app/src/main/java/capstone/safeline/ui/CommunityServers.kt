@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -36,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.theme.ThemeManager
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
@@ -85,12 +89,28 @@ private fun CommunityServersScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.community_servers_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                Image(
+                    painter = painterResource(R.drawable.community_servers_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
 
             Row(modifier = Modifier.fillMaxSize()) {
                 LeftServersPanel(
@@ -167,14 +187,31 @@ private fun LeftServersPanel(
             .width(75.dp)
             .fillMaxSize()
     ) {
-        Image(
-            painter = painterResource(R.drawable.community_servers_leftside_bg),
-            contentDescription = null,
-            modifier = Modifier
-                .width(75.dp)
-                .fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.community_servers_leftside_bg),
+                contentDescription = null,
+                modifier = Modifier
+                    .width(75.dp)
+                    .fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            Box(
+                modifier = Modifier
+                    .width(75.dp)
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.buttonGradient
+                        )
+                    )
+            )
+
+        }
 
         Box(
             modifier = Modifier
@@ -182,12 +219,28 @@ private fun LeftServersPanel(
                 .width(75.dp)
                 .height(57.dp)
         ) {
-            Image(
-                painter = painterResource(R.drawable.community_servers_backtomessages_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                Image(
+                    painter = painterResource(R.drawable.community_servers_backtomessages_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.buttonGradient
+                            )
+                        )
+                )
+
+            }
 
             Image(
                 painter = painterResource(R.drawable.community_servers_backtomessages_btn),
@@ -212,16 +265,33 @@ private fun LeftServersPanel(
 
                 Box(
                     modifier = Modifier
-                        .size(width = 84.dp, height = 46.dp)
+                        .size(60.dp)
                         .clickable { onSelectServer(letter) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.community_servers_icon_btn),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
-                    )
+
+                    if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                        Image(
+                            painter = painterResource(R.drawable.community_servers_icon_btn),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.FillBounds
+                        )
+
+                    } else {
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                .background(
+                                    Brush.verticalGradient(
+                                        ThemeManager.buttonGradient
+                                    )
+                                )
+                        )
+                    }
 
                     StrokeText(
                         text = "SERVER\n$letter",
@@ -250,12 +320,29 @@ private fun SpaceHeader(
             .clickable { onClick() },
         contentAlignment = Alignment.CenterStart
     ) {
-        Image(
-            painter = painterResource(R.drawable.community_servers_voice_text_space),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.community_servers_voice_text_space),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.buttonGradient
+                        ),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+                    )
+            )
+
+        }
 
         StrokeText(
             text = text,
@@ -290,12 +377,29 @@ private fun OverlapChannels(
                     .size(width = 214.dp, height = 44.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
-                Image(
-                    painter = painterResource(R.drawable.community_servers_channel),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.FillBounds
-                )
+                if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                    Image(
+                        painter = painterResource(R.drawable.community_servers_channel),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.FillBounds
+                    )
+
+                } else {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    ThemeManager.buttonGradient
+                                ),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+                            )
+                    )
+
+                }
 
                 StrokeText(
                     text = title,
