@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +42,7 @@ import capstone.safeline.R
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.theme.ThemeManager
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
@@ -93,21 +95,63 @@ private fun ProfileScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.profile_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
 
-            StrokeTitle(
-                text = "PROFILE SETTINGS",
-                fontFamily = Vampiro,
+                Image(
+                    painter = painterResource(R.drawable.profile_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
+
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(Color.White)
+                    )
+                }
+
+                StrokeTitle(
+                    text = "PROFILE SETTINGS",
+                    fontFamily = Vampiro,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             BackButton(
                 onClick = onBack,

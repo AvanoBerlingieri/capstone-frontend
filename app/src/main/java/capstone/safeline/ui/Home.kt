@@ -44,6 +44,7 @@ private val HomeTextFont = FontFamily(Font(R.font.tapestry_regular))
 class Home : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ThemeManager.loadTheme(this)
         setContent {
             HomeScreen(
                 onNavigate = { destination ->

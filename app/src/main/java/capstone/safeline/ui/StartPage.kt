@@ -9,10 +9,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import capstone.safeline.ui.theme.ThemeManager
 
 class StartPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ThemeManager.loadTheme(this)
         setContent { SafeLineNav() }
     }
 }
