@@ -39,7 +39,7 @@
             android:exported="true" />
 
         <activity
-            android:name=".ui.UserChat"
+            android:name=".ui.DmPage"
             android:exported="true"/>
 
         <activity
@@ -99,6 +99,9 @@
 
         <activity
             android:name=".ui.CommunityServers"
+            android:exported="true"/>
+        <activity
+            android:name=".ui.CallingPage"
             android:exported="true"/>
 
     </application>
