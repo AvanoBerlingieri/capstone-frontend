@@ -1,62 +1,56 @@
 package capstone.safeline.ui
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import capstone.safeline.R
-import capstone.safeline.api.ApiClient
-import capstone.safeline.api.dto.LoginRequest
-import capstone.safeline.ui.components.BackButton
-import capstone.safeline.ui.components.GradientStrokeText
-import capstone.safeline.ui.components.ImageInputField
-import capstone.safeline.ui.components.StrokeText
-import capstone.safeline.ui.components.noRippleClickable
-import capstone.safeline.ui.theme.KaushanScript
-import capstone.safeline.ui.theme.VampiroOne
-import kotlinx.coroutines.launch
+import capstone.safeline.ui.components.*
+import capstone.safeline.ui.theme.*
+import capstone.safeline.ui.viewmodel.AuthViewModelFactory
+import capstone.safeline.data.local.DataStoreManager
+import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.security.CryptoManager
+import capstone.safeline.ui.viewmodel.AuthViewModel
 
 @Composable
 fun LoginScreen(
     onBack: () -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
 ) {
-    var email by remember { mutableStateOf("") }
+    var usernameOrEmail by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val apiService = remember { ApiClient.apiService }
+
+    val authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory(
+            repository = AuthRepository(
+                DataStoreManager(context, CryptoManager()),
+                ApiClient.provideApiService(context, DataStoreManager(context, CryptoManager()))
+            ),
+            apiService = ApiClient.provideApiService(context, DataStoreManager(context, CryptoManager()))
+        )
+    )
+
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            onSuccess()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         Image(
             painter = painterResource(R.drawable.background),
             contentDescription = null,
@@ -70,82 +64,42 @@ fun LoginScreen(
                 .height(88.dp)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF6A2CFF).copy(alpha = 0.85f),
-                            Color.Transparent
-                        )
+                        colors = listOf(Color(0xFF6A2CFF).copy(alpha = 0.85f), Color.Transparent)
                     )
                 )
         ) {
-            BackButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart)
-            )
-
+            BackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 24.dp),
+                modifier = Modifier.fillMaxSize().padding(top = 24.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                GradientStrokeText(
-                    text = "LOGIN",
-                    fontSize = 28.sp,
-                    fontFamily = VampiroOne
-                )
+                GradientStrokeText(text = "LOGIN", fontSize = 28.sp, fontFamily = VampiroOne)
             }
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 26.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 26.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Spacer(Modifier.height(125.dp))
-
             StrokeText(
-                text = "Please Enter Your",
-                fontFamily = KaushanScript,
-                fontSize = 48.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF002BFF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
+                text = "Please Enter Your", fontFamily = KaushanScript, fontSize = 48.sp,
+                fillColor = Color.White, strokeColor = Color(0xFF002BFF), strokeWidth = 1f, textAlign = TextAlign.Center
             )
-
-
             Spacer(Modifier.height(24.dp))
-
             StrokeText(
-                text = "Email:",
-                fontFamily = KaushanScript,
-                fontSize = 40.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
+                text = "Username/Email:", fontFamily = KaushanScript, fontSize = 40.sp,
+                fillColor = Color.White, strokeColor = Color(0xFF0066FF), strokeWidth = 1f, textAlign = TextAlign.Center
             )
-
             Spacer(Modifier.height(10.dp))
-            ImageInputField(value = email, onValueChange = { email = it })
-
+            ImageInputField(value = usernameOrEmail, onValueChange = { usernameOrEmail = it })
             Spacer(Modifier.height(22.dp))
-
             StrokeText(
-                text = "Password:",
-                fontFamily = KaushanScript,
-                fontSize = 40.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
+                text = "Password:", fontFamily = KaushanScript, fontSize = 40.sp,
+                fillColor = Color.White, strokeColor = Color(0xFF0066FF), strokeWidth = 1f, textAlign = TextAlign.Center
             )
-
             Spacer(Modifier.height(10.dp))
             ImageInputField(value = password, onValueChange = { password = it })
-
             Spacer(Modifier.weight(1f))
 
             Image(
@@ -157,25 +111,10 @@ fun LoginScreen(
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 30.dp)
                     .noRippleClickable {
-                        if (email.isBlank() || password.isBlank()) {
-                            Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
-                            return@noRippleClickable
-                        }
-
-                        scope.launch {
-                            try {
-                                val response = apiService.loginUser(LoginRequest(email, password))
-                                if (response.body()?.statusCode.equals("OK")) {
-
-                                    Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
-                                    onSuccess()
-                                } else {
-                                    Toast.makeText(context, "Username or Password Incorrect", Toast.LENGTH_SHORT).show()
-                                }
-                            } catch (e: Exception) {
-                                Log.e("LoginError", "Network error: ${e.message}", e)
-                                Toast.makeText(context, "Network error: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
+                        if (usernameOrEmail.isBlank() || password.isBlank()) {
+                            Toast.makeText(context, "Fill all fields", Toast.LENGTH_SHORT).show()
+                        } else {
+                            authViewModel.login(usernameOrEmail, password)
                         }
                     },
                 contentScale = ContentScale.Fit
