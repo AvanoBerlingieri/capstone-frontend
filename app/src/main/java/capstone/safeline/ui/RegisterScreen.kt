@@ -1,6 +1,5 @@
 package capstone.safeline.ui
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,8 +28,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.api.ApiClient
-import capstone.safeline.api.dto.RegisterRequest
+import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.data.local.DataStoreManager
+import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.GradientStrokeText
 import capstone.safeline.ui.components.ImageInputField
@@ -44,48 +45,21 @@ import kotlin.math.roundToInt
 @Composable
 fun RegisterScreen(
     onBack: () -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
 ) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var confirm by remember { mutableStateOf("") }
+    var passwordConfirm by remember { mutableStateOf("") }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val apiService = remember { ApiClient.apiService }
+    val dsManager = remember { DataStoreManager(context, CryptoManager()) }
+    val repo = remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
 
     val screenH = LocalConfiguration.current.screenHeightDp
     val scale = (screenH / 820f).coerceIn(0.72f, 1f)
     fun s(dp: Int) = ((dp * scale).roundToInt()).dp
-
-    fun handleRegisterClick() {
-        if (email.isBlank() || username.isBlank() || password.isBlank() || confirm.isBlank()) {
-            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (password != confirm) {
-            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        scope.launch {
-            try {
-                val response = apiService.createUser(RegisterRequest(email, password, username))
-                val registerResp = response.body()
-
-                if (registerResp != null) {
-                    Toast.makeText(context, "Registered successfully!", Toast.LENGTH_SHORT).show()
-                    onSuccess()
-                } else {
-                    Toast.makeText(context, "User Registration failure", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Log.e("RegisterError", "Network error: ${e.message}", e)
-                Toast.makeText(context, "Network error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -108,22 +82,14 @@ fun RegisterScreen(
                     )
                 )
         ) {
-            BackButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart)
-            )
-
+            BackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = 24.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                GradientStrokeText(
-                    text = "REGISTER",
-                    fontSize = 28.sp,
-                    fontFamily = VampiroOne
-                )
+                GradientStrokeText(text = "REGISTER", fontSize = 28.sp, fontFamily = VampiroOne)
             }
         }
 
@@ -134,7 +100,6 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(s(105)))
-
             StrokeText(
                 text = "Please Enter Your",
                 fontFamily = KaushanScript,
@@ -145,65 +110,10 @@ fun RegisterScreen(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(s(16)))
-
-            StrokeText(
-                text = "Username:",
-                fontFamily = KaushanScript,
-                fontSize = 40.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(s(8)))
-            ImageInputField(value = username, onValueChange = { username = it })
-
-            Spacer(Modifier.height(s(14)))
-
-            StrokeText(
-                text = "Email:",
-                fontFamily = KaushanScript,
-                fontSize = 40.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(s(8)))
-            ImageInputField(value = email, onValueChange = { email = it })
-
-            Spacer(Modifier.height(s(14)))
-
-            StrokeText(
-                text = "Password:",
-                fontFamily = KaushanScript,
-                fontSize = 40.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(s(8)))
-            ImageInputField(value = password, onValueChange = { password = it })
-
-            Spacer(Modifier.height(s(14)))
-
-            StrokeText(
-                text = "Re-Enter Password:",
-                fontFamily = KaushanScript,
-                fontSize = 40.sp,
-                fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
-                strokeWidth = 1f,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(s(8)))
-            ImageInputField(value = confirm, onValueChange = { confirm = it })
+            RegistrationField("Username:", username) { username = it }
+            RegistrationField("Email:", email) { email = it }
+            RegistrationField("Password:", password) { password = it }
+            RegistrationField("Re-Enter Password:", passwordConfirm) { passwordConfirm = it }
 
             Spacer(Modifier.weight(1f))
 
@@ -215,9 +125,39 @@ fun RegisterScreen(
                     .height(80.dp)
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 30.dp)
-                    .noRippleClickable { handleRegisterClick() },
-                contentScale = ContentScale.Fit
+                    .noRippleClickable {
+                        if (password != passwordConfirm) {
+                            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                        } else if (username.isBlank() || email.isBlank()) {
+                            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                        } else {
+                            scope.launch {
+                                val success = repo.register(username, email, password)
+                                if (success) {
+                                    Toast.makeText(context, "Account Created!", Toast.LENGTH_SHORT).show()
+                                    onSuccess()
+                                } else {
+                                    Toast.makeText(context, "Registration Failed", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
             )
         }
     }
+}
+
+// made this because register fields were repeated
+@Composable
+fun RegistrationField(label: String, value: String, onValueChange: (String) -> Unit) {
+    Spacer(Modifier.height(8.dp))
+    StrokeText(
+        text = label,
+        fontFamily = KaushanScript,
+        fontSize = 32.sp,
+        fillColor = Color.White,
+        strokeColor = Color(0xFF0066FF),
+        strokeWidth = 1f
+    )
+    ImageInputField(value = value, onValueChange = onValueChange)
 }
