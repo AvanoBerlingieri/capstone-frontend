@@ -67,4 +67,12 @@ class DataStoreManager(
             context.dataStore.edit { it.clear() }
         }
     }
+
+    suspend fun clearUsername(){
+        context.dataStore.edit { it.clear()}
+    }
+
+    suspend fun clearEmail(){
+        context.dataStore.edit { it.clear()}
+    }
 }
