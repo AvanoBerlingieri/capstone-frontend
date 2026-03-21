@@ -26,6 +26,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -68,8 +70,8 @@ class Profile : ComponentActivity() {
             val scope = rememberCoroutineScope()
 
             ProfileScreen(
+                repo = repo,
                 onBack = { finish() },
-                onGoHome = { startActivity(Intent(this, Home::class.java)) },
                 onChangeUsername = { openUpdate("username") },
                 onChangePassword = { openUpdate("password") },
                 onChangeEmail = { openUpdate("email") },
@@ -78,7 +80,8 @@ class Profile : ComponentActivity() {
                         val success = repo.deleteAccount()
                         if (success) {
                             val intent = Intent(this@Profile, StartPage::class.java).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                flags =
+                                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                             }
                             startActivity(intent)
                             finish()
@@ -110,19 +113,24 @@ class Profile : ComponentActivity() {
 
 @Composable
 private fun ProfileScreen(
+    repo: AuthRepository,
     onBack: () -> Unit,
-    onGoHome: () -> Unit,
     onChangeUsername: () -> Unit,
     onChangePassword: () -> Unit,
     onChangeEmail: () -> Unit,
     onDeleteAccount: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    val username by repo.usernameFlow.collectAsState(initial = "Loading...")
+    val email by repo.emailFlow.collectAsState(initial = "Loading...")
+
     Scaffold(
         bottomBar = { BottomNavBar(currentScreen = "profile", onNavigate = onNavigate) },
         containerColor = Color.Transparent
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)) {
             Image(
                 painter = painterResource(R.drawable.profile_bg),
                 contentDescription = null,
@@ -133,12 +141,17 @@ private fun ProfileScreen(
             StrokeTitle(
                 text = "PROFILE SETTINGS",
                 fontFamily = Vampiro,
-                modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 22.dp)
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 22.dp)
             )
 
             BackButton(
                 onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart).offset(x = (-15).dp)
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = (-15).dp)
             )
 
             Column(
@@ -148,7 +161,6 @@ private fun ProfileScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // ... (Previous Avatar and Home Button code) ...
                 Image(
                     painter = painterResource(R.drawable.home_avatar_example),
                     contentDescription = null,
@@ -158,28 +170,39 @@ private fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                Image(
-                    painter = painterResource(R.drawable.profile_home_btn),
-                    contentDescription = null,
-                    modifier = Modifier.size(width = 149.dp, height = 48.dp).clickable { onGoHome() },
-                    contentScale = ContentScale.Fit
-                )
-
                 Spacer(modifier = Modifier.height(18.dp))
 
-                ProfileStrokeText(text = "USERNAME", fontSize = 40.sp)
+                ProfileStrokeText(text = username, fontSize = 40.sp)
 
                 Spacer(modifier = Modifier.height(22.dp))
 
-                ProfileRow("Username", 40.sp, R.drawable.profile_change_username_btn, Pair(169.dp, 65.dp), onChangeUsername)
+                ProfileRow(
+                    username,
+                    40.sp,
+                    R.drawable.profile_change_username_btn,
+                    Pair(169.dp, 65.dp),
+                    onChangeUsername
+                )
                 Spacer(modifier = Modifier.height(18.dp))
-                ProfileRow("**********", 40.sp, R.drawable.profile_change_password_btn, Pair(169.dp, 65.dp), onChangePassword)
+                ProfileRow(
+                    "**********",
+                    40.sp,
+                    R.drawable.profile_change_password_btn,
+                    Pair(169.dp, 65.dp),
+                    onChangePassword
+                )
                 Spacer(modifier = Modifier.height(18.dp))
-                ProfileRow("Email@email.com", 34.sp, R.drawable.profile_change_email_btn, Pair(195.dp, 65.dp), onChangeEmail, Modifier.offset(x = 14.dp))
+                ProfileRow(
+                    email,
+                    34.sp,
+                    R.drawable.profile_change_email_btn,
+                    Pair(195.dp, 65.dp),
+                    onChangeEmail,
+                    Modifier.offset(x = 14.dp)
+                )
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // NEW DELETE ACCOUNT BUTTON
                 DeleteAccountButton(onClick = onDeleteAccount)
 
                 Spacer(modifier = Modifier.height(110.dp))
@@ -194,7 +217,10 @@ fun DeleteAccountButton(onClick: () -> Unit) {
         modifier = Modifier
             .width(250.dp)
             .height(55.dp)
-            .background(Color(0xFFFF3B30), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+            .background(
+                Color(0xFFFF3B30),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+            )
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
@@ -206,8 +232,6 @@ fun DeleteAccountButton(onClick: () -> Unit) {
         )
     }
 }
-
-// ... (Rest of your ProfileRow and ProfileStrokeText remains the same) ...
 
 @Composable
 private fun ProfileRow(

@@ -1,6 +1,7 @@
 package capstone.safeline.data.repository
 
 import capstone.safeline.apis.ApiServiceAuth
+import capstone.safeline.apis.dto.LoginRequest
 import capstone.safeline.apis.dto.RegisterRequest
 import capstone.safeline.apis.dto.UpdateEmailDto
 import capstone.safeline.apis.dto.UpdatePasswordDto
@@ -15,6 +16,8 @@ class AuthRepository(
 ) {
     val tokenFlow: Flow<String?> = dataStoreManager.tokenFlow
     val isLoggedIn: Flow<Boolean> = tokenFlow.map { !it.isNullOrBlank() }
+    val usernameFlow = dataStoreManager.usernameFlow
+    val emailFlow = dataStoreManager.emailFlow
 
     suspend fun saveToken(token: String) = dataStoreManager.saveToken(token)
 
@@ -46,14 +49,44 @@ class AuthRepository(
         }
     }
 
+    suspend fun login(usernameOrEmail: String, password: String): Boolean {
+        return try {
+            val response = apiServiceAuth.login(LoginRequest(usernameOrEmail, password))
+            val body = response.body()
+
+            println("Status Code: ${response.code()}")
+            println("Parsed Body: $body")
+
+            if (response.isSuccessful && body != null) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                    dataStoreManager.saveToken(body.token)
+                    dataStoreManager.saveUserInfo(body.username, body.email)
+                }
+                return true
+            }
+            false
+        } catch (e: Exception) {
+            println("Exception during login: ${e.message}")
+            false
+        }
+    }
+
     suspend fun changeUsername(dto: UpdateUsernameDto) = try {
-        apiServiceAuth.changeUsername(dto).isSuccessful
+        val response = apiServiceAuth.changeUsername(dto)
+        if (response.isSuccessful) {
+            response.body()?.let { dataStoreManager.saveUserInfo(it.username, it.email) }
+            true
+        } else false
     } catch (e: Exception) {
         false
     }
 
     suspend fun changeEmail(dto: UpdateEmailDto) = try {
-        apiServiceAuth.changeEmail(dto).isSuccessful
+        val response = apiServiceAuth.changeEmail(dto)
+        if (response.isSuccessful) {
+            response.body()?.let { dataStoreManager.saveUserInfo(it.username, it.email) }
+            true
+        } else false
     } catch (e: Exception) {
         false
     }
@@ -66,7 +99,9 @@ class AuthRepository(
 
     suspend fun deleteAccount() = try {
         val response = apiServiceAuth.deleteAccount()
-        if (response.isSuccessful) dataStoreManager.clearToken()
+        if (response.isSuccessful)
+            dataStoreManager.clearToken()
+
         response.isSuccessful
     } catch (e: Exception) {
         false
