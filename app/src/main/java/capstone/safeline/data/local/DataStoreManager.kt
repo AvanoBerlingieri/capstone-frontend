@@ -52,15 +52,19 @@ class DataStoreManager(
         }
     }
 
+
+    // clear just the token
     suspend fun clearToken() {
-        context.dataStore.edit { it.clear() }
+        context.dataStore.edit { prefs ->
+            prefs.remove(ENCRYPTED_TOKEN)
+            prefs.remove(IV_KEY)
+        }
     }
 
-    suspend fun clearUsername(){
-        context.dataStore.edit { it.clear()}
-    }
-
-    suspend fun clearEmail(){
-        context.dataStore.edit { it.clear()}
+    // clears everything from datastore
+    suspend fun clearAll() {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            context.dataStore.edit { it.clear() }
+        }
     }
 }

@@ -19,23 +19,21 @@ class AuthRepository(
     val usernameFlow = dataStoreManager.usernameFlow
     val emailFlow = dataStoreManager.emailFlow
 
-    suspend fun saveToken(token: String) = dataStoreManager.saveToken(token)
-
     suspend fun logout(): Result<Unit> {
         return try {
             val response = apiServiceAuth.logout()
 
             // Clear local data
             if (response.isSuccessful || response.code() == 401) {
-                dataStoreManager.clearToken()
+                dataStoreManager.clearAll()
                 Result.success(Unit)
             } else {
-                dataStoreManager.clearToken()
+                dataStoreManager.clearAll()
                 Result.failure(Exception("Server error during logout"))
             }
         } catch (e: Exception) {
             // still clear token
-            dataStoreManager.clearToken()
+            dataStoreManager.clearAll()
             Result.failure(e)
         }
     }
@@ -99,9 +97,9 @@ class AuthRepository(
 
     suspend fun deleteAccount() = try {
         val response = apiServiceAuth.deleteAccount()
-        if (response.isSuccessful)
-            dataStoreManager.clearToken()
-
+        if (response.isSuccessful){
+            dataStoreManager.clearAll()
+        }
         response.isSuccessful
     } catch (e: Exception) {
         false
