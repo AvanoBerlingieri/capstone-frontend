@@ -1,9 +1,13 @@
 package capstone.safeline.data.repository
 
-import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.apis.ApiServiceAuth
 import capstone.safeline.apis.dto.RegisterRequest
-import kotlinx.coroutines.flow.*
+import capstone.safeline.apis.dto.UpdateEmailDto
+import capstone.safeline.apis.dto.UpdatePasswordDto
+import capstone.safeline.apis.dto.UpdateUsernameDto
+import capstone.safeline.data.local.DataStoreManager
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class AuthRepository(
     private val dataStoreManager: DataStoreManager,
@@ -40,5 +44,31 @@ class AuthRepository(
         } catch (e: Exception) {
             false
         }
+    }
+
+    suspend fun changeUsername(dto: UpdateUsernameDto) = try {
+        apiServiceAuth.changeUsername(dto).isSuccessful
+    } catch (e: Exception) {
+        false
+    }
+
+    suspend fun changeEmail(dto: UpdateEmailDto) = try {
+        apiServiceAuth.changeEmail(dto).isSuccessful
+    } catch (e: Exception) {
+        false
+    }
+
+    suspend fun updatePassword(dto: UpdatePasswordDto) = try {
+        apiServiceAuth.updatePassword(dto).isSuccessful
+    } catch (e: Exception) {
+        false
+    }
+
+    suspend fun deleteAccount() = try {
+        val response = apiServiceAuth.deleteAccount()
+        if (response.isSuccessful) dataStoreManager.clearToken()
+        response.isSuccessful
+    } catch (e: Exception) {
+        false
     }
 }

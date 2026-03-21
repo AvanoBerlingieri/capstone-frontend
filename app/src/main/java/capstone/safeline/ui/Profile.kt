@@ -2,9 +2,11 @@ package capstone.safeline.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,11 +20,14 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -30,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -38,9 +44,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.data.local.DataStoreManager
+import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
+import kotlinx.coroutines.launch
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
@@ -49,12 +60,33 @@ class Profile : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val context = LocalContext.current
+            val dsManager = remember { DataStoreManager(context, CryptoManager()) }
+            val repo = remember {
+                AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager))
+            }
+            val scope = rememberCoroutineScope()
+
             ProfileScreen(
-                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onBack = { finish() },
                 onGoHome = { startActivity(Intent(this, Home::class.java)) },
-                onChangeUsername = { startActivity(Intent(this, ChangeUsername::class.java)) },
-                onChangePassword = { startActivity(Intent(this, ChangePassword::class.java)) },
-                onChangeEmail = { startActivity(Intent(this, ChangeEmail::class.java)) },
+                onChangeUsername = { openUpdate("username") },
+                onChangePassword = { openUpdate("password") },
+                onChangeEmail = { openUpdate("email") },
+                onDeleteAccount = {
+                    scope.launch {
+                        val success = repo.deleteAccount()
+                        if (success) {
+                            val intent = Intent(this@Profile, StartPage::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            }
+                            startActivity(intent)
+                            finish()
+                        } else {
+                            Toast.makeText(context, "Delete failed", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
@@ -67,6 +99,13 @@ class Profile : ComponentActivity() {
             )
         }
     }
+
+    private fun openUpdate(mode: String) {
+        val intent = Intent(this, AccountUpdateActivity::class.java).apply {
+            putExtra("UPDATE_MODE", mode)
+        }
+        startActivity(intent)
+    }
 }
 
 @Composable
@@ -76,23 +115,14 @@ private fun ProfileScreen(
     onChangeUsername: () -> Unit,
     onChangePassword: () -> Unit,
     onChangeEmail: () -> Unit,
+    onDeleteAccount: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     Scaffold(
-        topBar = {},
-        bottomBar = {
-            BottomNavBar(
-                currentScreen = "profile",
-                onNavigate = onNavigate
-            )
-        },
+        bottomBar = { BottomNavBar(currentScreen = "profile", onNavigate = onNavigate) },
         containerColor = Color.Transparent
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Image(
                 painter = painterResource(R.drawable.profile_bg),
                 contentDescription = null,
@@ -103,17 +133,12 @@ private fun ProfileScreen(
             StrokeTitle(
                 text = "PROFILE SETTINGS",
                 fontFamily = Vampiro,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 22.dp)
+                modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 22.dp)
             )
 
             BackButton(
                 onClick = onBack,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .offset(x = (-15).dp)
+                modifier = Modifier.align(Alignment.TopStart).offset(x = (-15).dp)
             )
 
             Column(
@@ -123,6 +148,7 @@ private fun ProfileScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // ... (Previous Avatar and Home Button code) ...
                 Image(
                     painter = painterResource(R.drawable.home_avatar_example),
                     contentDescription = null,
@@ -135,60 +161,53 @@ private fun ProfileScreen(
                 Image(
                     painter = painterResource(R.drawable.profile_home_btn),
                     contentDescription = null,
-                    modifier = Modifier
-                        .size(width = 149.dp, height = 48.dp)
-                        .clickable { onGoHome() },
+                    modifier = Modifier.size(width = 149.dp, height = 48.dp).clickable { onGoHome() },
                     contentScale = ContentScale.Fit
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ProfileStrokeText(
-                        text = "USERNAME",
-                        fontSize = 40.sp
-                    )
-                }
+                ProfileStrokeText(text = "USERNAME", fontSize = 40.sp)
 
                 Spacer(modifier = Modifier.height(22.dp))
 
-                ProfileRow(
-                    leftText = "Username",
-                    leftSize = 40.sp,
-                    buttonRes = R.drawable.profile_change_username_btn,
-                    buttonSize = Pair(169.dp, 65.dp),
-                    onButtonClick = onChangeUsername
-                )
-
+                ProfileRow("Username", 40.sp, R.drawable.profile_change_username_btn, Pair(169.dp, 65.dp), onChangeUsername)
                 Spacer(modifier = Modifier.height(18.dp))
-
-                ProfileRow(
-                    leftText = "**********",
-                    leftSize = 40.sp,
-                    buttonRes = R.drawable.profile_change_password_btn,
-                    buttonSize = Pair(169.dp, 65.dp),
-                    onButtonClick = onChangePassword
-                )
-
+                ProfileRow("**********", 40.sp, R.drawable.profile_change_password_btn, Pair(169.dp, 65.dp), onChangePassword)
                 Spacer(modifier = Modifier.height(18.dp))
+                ProfileRow("Email@email.com", 34.sp, R.drawable.profile_change_email_btn, Pair(195.dp, 65.dp), onChangeEmail, Modifier.offset(x = 14.dp))
 
-                ProfileRow(
-                    leftText = "Email@email.com",
-                    leftSize = 34.sp,
-                    buttonRes = R.drawable.profile_change_email_btn,
-                    buttonSize = Pair(195.dp, 65.dp),
-                    modifier = Modifier.offset(x = 14.dp),
-                    onButtonClick = onChangeEmail
-                )
+                Spacer(modifier = Modifier.height(40.dp))
+
+                // NEW DELETE ACCOUNT BUTTON
+                DeleteAccountButton(onClick = onDeleteAccount)
 
                 Spacer(modifier = Modifier.height(110.dp))
             }
         }
     }
 }
+
+@Composable
+fun DeleteAccountButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .width(250.dp)
+            .height(55.dp)
+            .background(Color(0xFFFF3B30), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Delete Account",
+            fontFamily = Kaushan,
+            fontSize = 20.sp,
+            color = Color.White
+        )
+    }
+}
+
+// ... (Rest of your ProfileRow and ProfileStrokeText remains the same) ...
 
 @Composable
 private fun ProfileRow(

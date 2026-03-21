@@ -59,10 +59,4 @@ class AuthViewModel(
             onResult(success)
         }
     }
-
-    fun logout() {
-        viewModelScope.launch {
-            repository.logout()
-        }
-    }
 }
