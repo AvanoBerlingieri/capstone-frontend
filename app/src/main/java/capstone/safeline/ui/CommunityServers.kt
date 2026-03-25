@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -281,14 +282,25 @@ private fun LeftServersPanel(
 
                     } else {
 
+                        val shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                .clip(shape)
                                 .background(
                                     Brush.verticalGradient(
                                         ThemeManager.buttonGradient
                                     )
+                                )
+                                .then(
+                                    ThemeManager.buttonStroke?.let {
+                                        Modifier.border(
+                                            1.dp,
+                                            it,
+                                            shape
+                                        )
+                                    } ?: Modifier
                                 )
                         )
                     }
@@ -331,6 +343,8 @@ private fun SpaceHeader(
 
         } else {
 
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -338,7 +352,16 @@ private fun SpaceHeader(
                         Brush.verticalGradient(
                             ThemeManager.buttonGradient
                         ),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+                        shape = shape
+                    )
+                    .then(
+                        ThemeManager.buttonStroke?.let {
+                            Modifier.border(
+                                1.dp,
+                                it,
+                                shape
+                            )
+                        } ?: Modifier
                     )
             )
 
@@ -388,6 +411,8 @@ private fun OverlapChannels(
 
                 } else {
 
+                    val shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -395,7 +420,16 @@ private fun OverlapChannels(
                                 Brush.verticalGradient(
                                     ThemeManager.buttonGradient
                                 ),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+                                shape = shape
+                            )
+                            .then(
+                                ThemeManager.buttonStroke?.let {
+                                    Modifier.border(
+                                        1.dp,
+                                        it,
+                                        shape
+                                    )
+                                } ?: Modifier
                             )
                     )
 

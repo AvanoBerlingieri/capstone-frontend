@@ -10,7 +10,8 @@ object ThemeManager {
 
     enum class Theme {
         CLASSIC,
-        GRAY
+        GRAY,
+        BLUE_GRAY
     }
 
     var currentTheme by mutableStateOf(Theme.CLASSIC)
@@ -42,6 +43,11 @@ object ThemeManager {
                 Color(0xFF1E1E1E),
                 Color(0xFFFFFFFF)
             )
+
+            Theme.BLUE_GRAY -> listOf(
+                Color(0xFF0066FF),
+                Color(0xFF1E1E1E)
+            )
         }
 
     val headerGradient: List<Color>
@@ -54,6 +60,11 @@ object ThemeManager {
 
             Theme.GRAY -> listOf(
                 Color(0xFF0B0000),
+                Color(0xFF848484)
+            )
+
+            Theme.BLUE_GRAY -> listOf(
+                Color(0xFF0251C7),
                 Color(0xFF848484)
             )
         }
@@ -70,6 +81,35 @@ object ThemeManager {
                 Color(0xFF0B0000),
                 Color(0xFF848484)
             )
+
+            Theme.BLUE_GRAY -> listOf(
+                Color(0xFF0251C7),
+                Color(0xFF848484)
+            )
+        }
+
+    val buttonStroke: Color?
+        get() = when (currentTheme) {
+
+            Theme.CLASSIC -> null
+
+            Theme.GRAY -> null
+
+            Theme.BLUE_GRAY -> Color(0xFF05E6FF)
+
+            // Theme.NEW_THEME -> Color(...)
+        }
+
+    val topBarStroke: Color
+        get() = when (currentTheme) {
+
+            Theme.CLASSIC -> Color.White
+
+            Theme.GRAY -> Color(0xFF848484)
+
+            Theme.BLUE_GRAY -> Color(0xFF05E6FF)
+
+            // Theme.NEW_THEME -> Color(...)
         }
 
     val navbarGradient: List<Color>
@@ -84,6 +124,11 @@ object ThemeManager {
                 Color(0xFF0B0000),
                 Color(0xFF848484)
             )
+
+            Theme.BLUE_GRAY -> listOf(
+                Color(0xFF0251C7),
+                Color(0xFF848484)
+            )
         }
 
     val titleStroke: Color
@@ -92,5 +137,7 @@ object ThemeManager {
             Theme.CLASSIC -> Color(0xFF002BFF)
 
             Theme.GRAY -> Color(0xFF0B0000)
+
+            Theme.BLUE_GRAY -> Color(0xFF0DA2FF)
         }
 }

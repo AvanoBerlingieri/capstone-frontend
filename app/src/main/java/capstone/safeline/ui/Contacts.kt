@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
@@ -190,7 +191,7 @@ private fun ContactsScreen(
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
                             .height(2.dp)
-                            .background(Color.White)
+                            .background(ThemeManager.topBarStroke)
                     )
                 }
 
@@ -432,15 +433,25 @@ private fun ContactRow(
 
         } else {
 
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
                     .fillMaxSize()
                     .background(
-                        Brush.horizontalGradient(
+                        Brush.verticalGradient(
                             ThemeManager.buttonGradient
                         ),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+                        shape = shape
+                    )
+                    .then(
+                        ThemeManager.buttonStroke?.let {
+                            Modifier.border(
+                                1.dp,
+                                it,
+                                shape
+                            )
+                        } ?: Modifier
                     )
             )
 
