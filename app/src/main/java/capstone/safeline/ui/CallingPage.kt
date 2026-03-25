@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,10 +18,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -32,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.theme.ThemeManager
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
@@ -76,12 +80,28 @@ fun CallingFriendScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.top_background),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                Image(
+                    painter = painterResource(R.drawable.top_background),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
 
             Column(
                 modifier = Modifier
@@ -103,7 +123,7 @@ fun CallingFriendScreen(
                     fontFamily = Vampiro,
                     fontSize = 20.sp,
                     fillColor = Color.White,
-                    strokeColor = Color(0xFF0066FF),
+                    strokeColor = ThemeManager.titleStroke,
                     strokeWidth = 1f,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -117,12 +137,12 @@ fun CallingFriendScreen(
                     fontFamily = Vampiro,
                     fontSize = 20.sp,
                     fillColor = Color.White,
-                    strokeColor = Color(0xFF0066FF),
+                    strokeColor = ThemeManager.titleStroke,
                     strokeWidth = 1f,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .offset(x = 10.dp, y = (-44).dp)
-                        .width(106.56.dp)
+                        .widthIn(min = 100.dp, max = 220.dp)
                         .height(39.51.dp)
                 )
             }

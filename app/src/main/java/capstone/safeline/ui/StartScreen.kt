@@ -67,9 +67,8 @@ fun StartScreen(
     }
 }
 
-@Composable
 private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
     this.clickable(
         indication = null,
-        interactionSource = remember { MutableInteractionSource() }
+        interactionSource = MutableInteractionSource()
     ) { onClick() }

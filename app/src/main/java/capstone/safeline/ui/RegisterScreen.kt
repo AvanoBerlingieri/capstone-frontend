@@ -37,6 +37,7 @@ import capstone.safeline.ui.components.ImageInputField
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
 import capstone.safeline.ui.theme.KaushanScript
+import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.ui.theme.VampiroOne
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -88,24 +89,45 @@ fun RegisterScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(R.drawable.background),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.background),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+        } else {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.backgroundGradient
+                        )
+                    )
+            )
+
+        }
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(88.dp)
                 .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF6A2CFF).copy(alpha = 0.85f),
-                            Color.Transparent
+                    if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC)
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(0xFF6A2CFF).copy(alpha = 0.85f),
+                                Color.Transparent
+                            )
                         )
-                    )
+                    else
+                        Brush.horizontalGradient(
+                            ThemeManager.headerGradient
+                        )
                 )
         ) {
             BackButton(
@@ -140,7 +162,7 @@ fun RegisterScreen(
                 fontFamily = KaushanScript,
                 fontSize = 48.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF002BFF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )
@@ -152,7 +174,7 @@ fun RegisterScreen(
                 fontFamily = KaushanScript,
                 fontSize = 40.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )
@@ -167,7 +189,7 @@ fun RegisterScreen(
                 fontFamily = KaushanScript,
                 fontSize = 40.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )
@@ -182,7 +204,7 @@ fun RegisterScreen(
                 fontFamily = KaushanScript,
                 fontSize = 40.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )
@@ -197,7 +219,7 @@ fun RegisterScreen(
                 fontFamily = KaushanScript,
                 fontSize = 40.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )

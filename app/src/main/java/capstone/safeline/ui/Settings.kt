@@ -139,7 +139,7 @@ fun SettingsScreen(
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
                             .height(2.dp)
-                            .background(Color.White)
+                            .background(ThemeManager.topBarStroke)
                     )
                 }
 
