@@ -154,7 +154,10 @@ private fun NavBarItem(
             Text(
                 text = label,
                 style = TextStyle(
-                    fontFamily = NavFont,
+                    fontFamily = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
+                        NavFont
+                    else
+                        ThemeManager.fontFamily,
                     fontSize = 12.sp,
                     lineHeight = 12.sp,
                     color = if (selected) selectedColor else defaultColor

@@ -38,9 +38,7 @@ import capstone.safeline.ui.components.GradientStrokeText
 import capstone.safeline.ui.components.ImageInputField
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
-import capstone.safeline.ui.theme.KaushanScript
 import capstone.safeline.ui.theme.ThemeManager
-import capstone.safeline.ui.theme.VampiroOne
 import kotlinx.coroutines.launch
 
 @Composable
@@ -97,7 +95,7 @@ fun LoginScreen(
                 contentAlignment = Alignment.Center
             ) {
                 StrokeText(text = "Logging in...",
-                    fontFamily = KaushanScript,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 48.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF002BFF),
@@ -131,7 +129,7 @@ fun LoginScreen(
                     .padding(top = 24.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                GradientStrokeText(text = "LOGIN", fontSize = 28.sp, fontFamily = VampiroOne)
+                GradientStrokeText(text = "LOGIN", fontSize = 28.sp, fontFamily = ThemeManager.fontFamily)
             }
         }
 
@@ -144,7 +142,7 @@ fun LoginScreen(
             Spacer(Modifier.height(125.dp))
             StrokeText(
                 text = "Please Enter Your",
-                fontFamily = KaushanScript,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 48.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -154,7 +152,7 @@ fun LoginScreen(
             Spacer(Modifier.height(24.dp))
             StrokeText(
                 text = "Username/Email:",
-                fontFamily = KaushanScript,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 40.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -166,7 +164,7 @@ fun LoginScreen(
             Spacer(Modifier.height(22.dp))
             StrokeText(
                 text = "Password:",
-                fontFamily = KaushanScript,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 40.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,

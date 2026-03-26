@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,8 +42,11 @@ import capstone.safeline.R
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.drawscope.Stroke
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class CommunityServers : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,15 +132,32 @@ private fun CommunityServersScreen(
                         .padding(top = 22.dp, start = 12.dp, end = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    StrokeText(
-                        text = "SERVER $selectedServer",
-                        fontFamily = Vampiro,
-                        fontSize = 32.sp,
-                        fillColor = Color.White,
-                        strokeColors = listOf(Color(0xFF0DA2FF), Color(0xFFEA00FF)),
-                        strokeWidth = 3f,
-                        textAlign = TextAlign.Center
-                    )
+                    Box {
+
+                        Text(
+                            text = "SERVER $selectedServer",
+                            fontFamily = ThemeManager.fontFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 32.sp,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = "SERVER $selectedServer",
+                            fontFamily = ThemeManager.fontFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 32.sp,
+                            color = Color.Transparent,
+                            textAlign = TextAlign.Center,
+                            style = TextStyle(
+                                brush = Brush.linearGradient(
+                                    listOf(Color(0xFF0DA2FF), Color(0xFFEA00FF))
+                                ),
+                                drawStyle = Stroke(3f)
+                            )
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
@@ -307,7 +328,7 @@ private fun LeftServersPanel(
 
                     StrokeText(
                         text = "SERVER\n$letter",
-                        fontFamily = Vampiro,
+                        fontFamily = ThemeManager.fontFamily,
                         fontSize = 12.sp,
                         fillColor = Color.White,
                         strokeColor = Color(0xFF0251C7),
@@ -369,7 +390,7 @@ private fun SpaceHeader(
 
         StrokeText(
             text = text,
-            fontFamily = Vampiro,
+            fontFamily = ThemeManager.fontFamily,
             fontSize = 24.sp,
             fillColor = Color.White,
             strokeColor = Color(0xFF193DEF),
@@ -437,7 +458,7 @@ private fun OverlapChannels(
 
                 StrokeText(
                     text = title,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 16.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF193DEF),

@@ -39,7 +39,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class SettingsAppearance : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -139,7 +139,7 @@ private fun SettingsPlaceholder(
 
                 StrokeTitle(
                     text = title,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -158,7 +158,6 @@ private fun SettingsPlaceholder(
             ) {
 
                 item {
-
                     ThemeCard(
                         name = "Classic",
                         image = R.drawable.theme_classic_preview,
@@ -166,7 +165,9 @@ private fun SettingsPlaceholder(
                     ) {
                         ThemeManager.saveTheme(context, ThemeManager.Theme.CLASSIC)
                     }
+                }
 
+                item {
                     ThemeCard(
                         name = "Gray",
                         image = R.drawable.theme_gray_preview,
@@ -174,7 +175,9 @@ private fun SettingsPlaceholder(
                     ) {
                         ThemeManager.saveTheme(context, ThemeManager.Theme.GRAY)
                     }
+                }
 
+                item {
                     ThemeCard(
                         name = "Blue Gray",
                         image = R.drawable.theme_bluegray_preview,
@@ -182,7 +185,26 @@ private fun SettingsPlaceholder(
                     ) {
                         ThemeManager.saveTheme(context, ThemeManager.Theme.BLUE_GRAY)
                     }
+                }
 
+                item {
+                    ThemeCard(
+                        name = "Blue",
+                        image = R.drawable.theme_blue_preview,
+                        selected = ThemeManager.currentTheme == ThemeManager.Theme.BLUE
+                    ) {
+                        ThemeManager.saveTheme(context, ThemeManager.Theme.BLUE)
+                    }
+                }
+
+                item {
+                    ThemeCard(
+                        name = "Light Blue",
+                        image = R.drawable.theme_lightblue_preview,
+                        selected = ThemeManager.currentTheme == ThemeManager.Theme.LIGHT_BLUE
+                    ) {
+                        ThemeManager.saveTheme(context, ThemeManager.Theme.LIGHT_BLUE)
+                    }
                 }
 
             }
@@ -219,7 +241,7 @@ private fun ThemeCard(
 
         Text(
             text = name,
-            fontFamily = Vampiro,
+            fontFamily = ThemeManager.fontFamily,
             fontSize = 28.sp,
             color = if (selected) Color(0xFF05E6FF) else Color.White,
             modifier = Modifier.padding(top = 10.dp)

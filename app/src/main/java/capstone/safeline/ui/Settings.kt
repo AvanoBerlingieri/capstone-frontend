@@ -45,7 +45,7 @@ import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
 
 class Settings : ComponentActivity() {
@@ -63,7 +63,7 @@ class Settings : ComponentActivity() {
             }
 
             SettingsScreen(
-                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onBack = { finish() },
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
@@ -75,7 +75,7 @@ class Settings : ComponentActivity() {
                     }
                 },
                 onOpenAppearance = { startActivity(Intent(this, SettingsAppearance::class.java)) },
-                onOpenFontSize = { startActivity(Intent(this, SettingsFontSize::class.java)) },
+                onOpenFontSize = { startActivity(Intent(this, SettingsFonts::class.java)) },
                 onOpenSound = { startActivity(Intent(this, SettingsSound::class.java)) },
                 onOpenPrivacy = { startActivity(Intent(this, SettingsPrivacy::class.java)) },
                 onOpenNotifications = {
@@ -186,7 +186,7 @@ fun SettingsScreen(
 
                 StrokeTitle(
                     text = "SETTINGS",
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -204,7 +204,7 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(30.dp)
             ) {
                 SettingsButton(text = "Appearance", onClick = onOpenAppearance)
-                SettingsButton(text = "Font size", onClick = onOpenFontSize)
+                SettingsButton(text = "Fonts", onClick = onOpenFontSize)
                 SettingsButton(text = "Sound", onClick = onOpenSound)
                 SettingsButton(text = "Privacy", onClick = onOpenPrivacy)
                 SettingsButton(text = "Notifications", onClick = onOpenNotifications)

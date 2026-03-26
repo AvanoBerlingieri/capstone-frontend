@@ -36,7 +36,7 @@ import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.theme.ThemeManager
 
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class Chat : ComponentActivity() {
 
@@ -69,7 +69,7 @@ class Chat : ComponentActivity() {
                         "contacts" -> startActivity(Intent(this, Contacts::class.java))
                     }
                 },
-                onBack = { startActivity(Intent(this, Home::class.java)) }
+                onBack = { finish() }
             )
         }
     }
@@ -163,7 +163,7 @@ fun ChatScreen(
 
                 StrokeTitle(
                     text = "CHATS",
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -334,7 +334,7 @@ private fun ChatRow(
             Column(modifier = Modifier.weight(1f)) {
                 StrokeText(
                     text = user.name,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 24.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF002BFF),
@@ -374,7 +374,7 @@ private fun ReflectedText(
     Column {
         StrokeText(
             text = text,
-            fontFamily = Vampiro,
+            fontFamily = ThemeManager.fontFamily,
             fontSize = size,
             fillColor = Color.White,
             strokeColor = Color(0xFF002BFF),
@@ -387,7 +387,7 @@ private fun ReflectedText(
         ) {
             StrokeText(
                 text = text,
-                fontFamily = Vampiro,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = size,
                 fillColor = Color.White,
                 strokeColor = Color(0xFFB30FFF),

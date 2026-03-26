@@ -42,7 +42,7 @@ import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.theme.ThemeManager
 
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 private data class UiContactItem(
     val name: String
@@ -66,7 +66,7 @@ class Contacts : ComponentActivity() {
         setContent {
             ContactsScreen(
                 contacts = contacts,
-                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onBack = { finish() },
                 onContactClick = { contact ->
                     val intent = Intent(this, ContactProfile::class.java)
                     intent.putExtra("contactName", contact.name)
@@ -162,7 +162,7 @@ private fun ContactsScreen(
 
                 StrokeTitle(
                     text = "CONTACTS",
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -273,7 +273,7 @@ private fun ContactRow(
 
             StrokeText(
                 text = contact.name,
-                fontFamily = Vampiro,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 24.sp,
                 fillColor = Color.White,
                 strokeColor = Color(0xFF002BFF),

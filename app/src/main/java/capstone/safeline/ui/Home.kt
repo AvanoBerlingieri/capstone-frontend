@@ -140,7 +140,10 @@ fun HomeScreen(
 
                 StrokeTitle(
                     text = "HOME",
-                    fontFamily = HomeTitleFont,
+                    fontFamily = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
+                        HomeTitleFont
+                    else
+                        ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -190,7 +193,10 @@ fun HomeScreen(
 
                 Text(
                     text = "WELCOME BACK\nUSERNAME",
-                    fontFamily = HomeTextFont,
+                    fontFamily = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
+                        HomeTextFont
+                    else
+                        ThemeManager.fontFamily,
                     fontSize = 28.sp,
                     color = Color.White,
                     textAlign = TextAlign.Center,
@@ -317,7 +323,10 @@ private fun HomeImageButton(
 
         Text(
             text = text,
-            fontFamily = HomeTextFont,
+            fontFamily = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
+                HomeTextFont
+            else
+                ThemeManager.fontFamily,
             fontSize = fontSize,
             color = Color.White,
             textAlign = TextAlign.Center,

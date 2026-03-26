@@ -32,7 +32,7 @@ import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class Community : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,7 +49,7 @@ class Community : ComponentActivity() {
 
         setContent {
             CommunityIntroScreen(
-                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onBack = { finish() },
                 onContinue = {
                     prefs.edit().putBoolean("seen_communities_intro", true).apply()
                     startActivity(Intent(this, CommunityServers::class.java))
@@ -129,7 +129,7 @@ private fun CommunityIntroScreen(
 
                 StrokeTitle(
                     text = "Your\nCOMMUNITY PAGE",
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }

@@ -56,7 +56,7 @@ import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
 
 class Profile : ComponentActivity() {
@@ -188,7 +188,7 @@ private fun ProfileScreen(
 
                 StrokeTitle(
                     text = "PROFILE SETTINGS",
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }

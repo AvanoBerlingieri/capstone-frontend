@@ -33,7 +33,7 @@ import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.theme.ThemeManager
 
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 private val Tapestry = FontFamily(Font(R.font.tapestry_regular))
 
 private enum class CallType { ANSWERED, MISSED }
@@ -65,7 +65,7 @@ class Call : ComponentActivity() {
         setContent {
             CallScreen(
                 callItems = callItems,
-                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onBack = { finish() },
                 onCallClick = { callerName ->
                     val intent = Intent(this, ContactCall::class.java)
                     intent.putExtra("callerName", callerName)
@@ -162,7 +162,7 @@ private fun CallScreen(
 
                 StrokeTitle(
                     text = "CALLS HISTORY",
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -302,7 +302,7 @@ private fun MissedRow(item: UiCallItem) {
 
         StrokeText(
             text = item.name,
-            fontFamily = Vampiro,
+            fontFamily = ThemeManager.fontFamily,
             fontSize = 32.sp,
             fillColor = Color.White,
             strokeColor = Color(0xFFFF0099),
@@ -343,7 +343,7 @@ private fun AnsweredRow(item: UiCallItem) {
         ) {
             StrokeText(
                 text = item.name,
-                fontFamily = Vampiro,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 24.sp,
                 fillColor = Color.White,
                 strokeColor = Color(0xFF002BFF),

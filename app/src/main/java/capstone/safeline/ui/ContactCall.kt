@@ -30,7 +30,7 @@ import capstone.safeline.R
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class ContactCall : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,7 +83,7 @@ private fun ContactCallScreen(
 
         StrokeText(
             text = "Calling $name...",
-            fontFamily = Vampiro,
+            fontFamily = ThemeManager.fontFamily,
             fontSize = 36.sp,
             fillColor = Color.White,
             strokeColor = Color(0xFF0066FF),

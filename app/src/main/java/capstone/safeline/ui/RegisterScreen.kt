@@ -37,9 +37,7 @@ import capstone.safeline.ui.components.GradientStrokeText
 import capstone.safeline.ui.components.ImageInputField
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
-import capstone.safeline.ui.theme.KaushanScript
 import capstone.safeline.ui.theme.ThemeManager
-import capstone.safeline.ui.theme.VampiroOne
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -111,7 +109,7 @@ fun RegisterScreen(
                     .padding(top = 24.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                GradientStrokeText(text = "REGISTER", fontSize = 28.sp, fontFamily = VampiroOne)
+                GradientStrokeText(text = "REGISTER", fontSize = 28.sp, fontFamily = ThemeManager.fontFamily)
             }
         }
 
@@ -124,7 +122,7 @@ fun RegisterScreen(
             Spacer(Modifier.height(s(105)))
             StrokeText(
                 text = "Please Enter Your",
-                fontFamily = KaushanScript,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 48.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -177,7 +175,7 @@ fun RegistrationField(label: String, value: String, onValueChange: (String) -> U
     Spacer(Modifier.height(8.dp))
     StrokeText(
         text = label,
-        fontFamily = KaushanScript,
+        fontFamily = ThemeManager.fontFamily,
         fontSize = 32.sp,
         fillColor = Color.White,
         strokeColor = ThemeManager.titleStroke,

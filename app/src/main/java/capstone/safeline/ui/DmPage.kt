@@ -55,7 +55,7 @@ import capstone.safeline.ui.theme.ThemeManager
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class DmPage : ComponentActivity() {
 
@@ -268,7 +268,7 @@ private fun DmHeader(
         ) {
             StrokeText(
                 text = username,
-                fontFamily = Vampiro,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 24.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -280,7 +280,7 @@ private fun DmHeader(
 
             StrokeText(
                 text = lastSeen,
-                fontFamily = Vampiro,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 12.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
