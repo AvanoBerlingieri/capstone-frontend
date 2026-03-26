@@ -95,7 +95,7 @@
             android:exported="true" />
 
         <activity
-            android:name=".ui.SettingsFontSize"
+            android:name=".ui.SettingsFonts"
             android:exported="true" />
 
         <activity

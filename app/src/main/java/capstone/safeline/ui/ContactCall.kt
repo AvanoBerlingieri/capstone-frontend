@@ -52,7 +52,7 @@ import org.webrtc.MediaConstraints
 import org.webrtc.SessionDescription
 import org.webrtc.SdpObserver
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class ContactCall : ComponentActivity() {
 
@@ -273,7 +273,7 @@ private fun ContactCallScreen(
 
         StrokeText(
             text = "Calling $name...",
-            fontFamily = Vampiro,
+            fontFamily = ThemeManager.fontFamily,
             fontSize = 36.sp,
             fillColor = Color.White,
             strokeColor = Color(0xFF0066FF),

@@ -37,7 +37,7 @@ import capstone.safeline.R
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class CallingPage : ComponentActivity() {
 
@@ -120,7 +120,7 @@ fun CallingFriendScreen(
 
                 StrokeText(
                     text = "Calling",
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 20.sp,
                     fillColor = Color.White,
                     strokeColor = ThemeManager.titleStroke,
@@ -134,7 +134,7 @@ fun CallingFriendScreen(
 
                 StrokeText(
                     text = username,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 20.sp,
                     fillColor = Color.White,
                     strokeColor = ThemeManager.titleStroke,

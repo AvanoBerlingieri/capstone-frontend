@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,15 +27,22 @@ import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
-class SettingsFontSize : ComponentActivity() {
+
+class SettingsFonts : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SettingsPlaceholder(
-                title = "FONT SIZE",
+                title = "FONTS",
                 onBack = { startActivity(Intent(this, Settings::class.java)) },
                 onNavigate = { destination ->
                     when (destination) {
@@ -127,7 +133,7 @@ private fun SettingsPlaceholder(
 
                 StrokeTitle(
                     text = title,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -136,6 +142,72 @@ private fun SettingsPlaceholder(
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.TopStart)
             )
+
+            val context = LocalContext.current
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 120.dp, bottom = 120.dp),
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Text(
+                    text = "CHOOSE YOUR FONT",
+                    fontSize = 36.sp,
+                    fontFamily = ThemeManager.fontFamily,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+
+                FontItem("Vampiro", FontFamily(Font(R.font.vampiro_one_regular))) {
+                    ThemeManager.saveFont(context, ThemeManager.FontType.DEFAULT)
+                }
+
+                FontItem("Oswald", FontFamily(Font(R.font.oswald_regular))) {
+                    ThemeManager.saveFont(context, ThemeManager.FontType.OSWALD)
+                }
+
+                FontItem("Roboto", FontFamily(Font(R.font.roboto_regular))) {
+                    ThemeManager.saveFont(context, ThemeManager.FontType.ROBOTO)
+                }
+
+                FontItem("Nunito", FontFamily(Font(R.font.nunito_regular))) {
+                    ThemeManager.saveFont(context, ThemeManager.FontType.NUNITO)
+                }
+            }
         }
+    }
+}
+
+@Composable
+fun FontItem(
+    name: String,
+    font: FontFamily,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(vertical = 12.dp)
+    ) {
+
+        Text(
+            text = name,
+            fontFamily = font,
+            fontSize = 24.sp,
+            color = Color.White
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Sample Text",
+            fontFamily = font,
+            fontSize = 16.sp,
+            color = Color.LightGray
+        )
     }
 }

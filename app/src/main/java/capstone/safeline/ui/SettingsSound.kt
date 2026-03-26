@@ -29,7 +29,7 @@ import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class SettingsSound : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,7 +128,7 @@ private fun SettingsPlaceholder(
 
                 StrokeTitle(
                     text = title,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }

@@ -15,6 +15,8 @@ runtime = "1.9.3"
 navigationCompose = "2.9.5"
 foundation = "1.10.4"
 foundationLayout = "1.10.4"
+foundationLayoutVersion = "1.10.5"
+material3 = "1.4.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -32,6 +34,8 @@ runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = 
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
+androidx-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayoutVersion" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -47,7 +47,7 @@ import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 private val Tapestry = FontFamily(Font(R.font.tapestry_regular))
 
 private data class UiFriendRequest(
@@ -60,7 +60,7 @@ class FriendRequests : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             FriendRequestsScreen(
-                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onBack = { finish() },
                 onOpenProfile = { request ->
                     val intent = Intent(this, ContactProfile::class.java)
                     intent.putExtra("contactName", request.name)
@@ -163,7 +163,7 @@ private fun FriendRequestsScreen(
 
                 StrokeTitle(
                     text = "FRIENDS REQUESTS",
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -349,7 +349,7 @@ private fun FriendRequestRow(
             ) {
                 StrokeText(
                     text = request.name,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 24.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF009DFF),

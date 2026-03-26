@@ -41,7 +41,7 @@ import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class ContactProfile : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -158,7 +158,7 @@ private fun ContactProfileScreen(
 
                 StrokeTitle(
                     text = "PROFILE",
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -185,7 +185,7 @@ private fun ContactProfileScreen(
 
                 StrokeText(
                     text = username,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 32.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF002BFF),
@@ -197,7 +197,7 @@ private fun ContactProfileScreen(
 
                 StrokeText(
                     text = email,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 22.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF002BFF),
