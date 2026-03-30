@@ -5,14 +5,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -23,8 +27,9 @@ import capstone.safeline.R
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.theme.ThemeManager
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class SettingsPrivacy : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,26 +69,70 @@ private fun SettingsPlaceholder(
         },
         containerColor = Color.Transparent
     ) { innerPadding ->
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.settings_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
 
-            StrokeTitle(
-                text = title,
-                fontFamily = Vampiro,
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                Image(
+                    painter = painterResource(R.drawable.settings_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
+
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(ThemeManager.topBarStroke)
+                    )
+                }
+
+                StrokeTitle(
+                    text = title,
+                    fontFamily = ThemeManager.fontFamily,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             BackButton(
                 onClick = onBack,

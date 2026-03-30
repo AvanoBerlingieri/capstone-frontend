@@ -10,9 +10,11 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import capstone.safeline.ui.theme.ThemeManager
 
 @Composable
 fun StrokeTitle(
@@ -20,16 +22,25 @@ fun StrokeTitle(
     fontFamily: FontFamily,
     modifier: Modifier = Modifier,
     fontSize: TextUnit = 28.sp,
-    strokeWidth: Float = 4f
+    strokeWidth: Float = ThemeManager.titleStrokeWidth
 ) {
+
     val strokeBrush = Brush.linearGradient(
-        colors = listOf(Color(0xFF002BFF), Color(0xFFB30FFF))
+        listOf(
+            ThemeManager.titleStroke,
+            ThemeManager.titleStroke
+        )
     )
 
     Box(modifier = modifier) {
+
         Text(
             text = text,
             fontFamily = fontFamily,
+            fontWeight = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
+                FontWeight.Normal
+            else
+                FontWeight.Bold,
             fontSize = fontSize,
             color = Color.White,
             style = TextStyle(
@@ -38,17 +49,23 @@ fun StrokeTitle(
             textAlign = TextAlign.Center
         )
 
-        Text(
-            text = text,
-            fontFamily = fontFamily,
-            fontSize = fontSize,
-            color = Color.Transparent,
-            style = TextStyle(
-                brush = strokeBrush,
-                drawStyle = Stroke(strokeWidth)
-            ),
-            textAlign = TextAlign.Center
-        )
+        if (strokeWidth > 0f) {
+            Text(
+                text = text,
+                fontFamily = fontFamily,
+                fontWeight = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
+                    FontWeight.Normal
+                else
+                    FontWeight.Bold,
+                fontSize = fontSize,
+                color = Color.Transparent,
+                textAlign = TextAlign.Center,
+                style = TextStyle(
+                    brush = strokeBrush,
+                    drawStyle = Stroke(strokeWidth)
+                )
+            )
+        }
     }
 }
 
@@ -64,9 +81,13 @@ fun StrokeText(
     textAlign: TextAlign? = null,
     lineHeight: TextUnit? = null
 ) {
-    val strokeBrush = Brush.linearGradient(listOf(strokeColor, strokeColor))
+
+    val strokeBrush = Brush.linearGradient(
+        listOf(strokeColor, strokeColor)
+    )
 
     Box(modifier = modifier) {
+
         Text(
             text = text,
             fontFamily = fontFamily,
@@ -76,18 +97,20 @@ fun StrokeText(
             lineHeight = lineHeight ?: TextUnit.Unspecified
         )
 
-        Text(
-            text = text,
-            fontFamily = fontFamily,
-            fontSize = fontSize,
-            color = Color.Transparent,
-            textAlign = textAlign,
-            lineHeight = lineHeight ?: TextUnit.Unspecified,
-            style = TextStyle(
-                brush = strokeBrush,
-                drawStyle = Stroke(strokeWidth)
+        if (strokeWidth > 0f) {
+            Text(
+                text = text,
+                fontFamily = fontFamily,
+                fontSize = fontSize,
+                color = Color.Transparent,
+                textAlign = textAlign,
+                lineHeight = lineHeight ?: TextUnit.Unspecified,
+                style = TextStyle(
+                    brush = strokeBrush,
+                    drawStyle = Stroke(strokeWidth)
+                )
             )
-        )
+        }
     }
 }
 
@@ -103,9 +126,11 @@ fun StrokeText(
     textAlign: TextAlign? = null,
     lineHeight: TextUnit? = null
 ) {
+
     val strokeBrush = Brush.linearGradient(strokeColors)
 
     Box(modifier = modifier) {
+
         Text(
             text = text,
             fontFamily = fontFamily,
@@ -115,18 +140,19 @@ fun StrokeText(
             lineHeight = lineHeight ?: TextUnit.Unspecified
         )
 
-        Text(
-            text = text,
-            fontFamily = fontFamily,
-            fontSize = fontSize,
-            color = Color.Transparent,
-            textAlign = textAlign,
-            lineHeight = lineHeight ?: TextUnit.Unspecified,
-            style = TextStyle(
-                brush = strokeBrush,
-                drawStyle = Stroke(strokeWidth)
+        if (strokeWidth > 0f) {
+            Text(
+                text = text,
+                fontFamily = fontFamily,
+                fontSize = fontSize,
+                color = Color.Transparent,
+                textAlign = textAlign,
+                lineHeight = lineHeight ?: TextUnit.Unspecified,
+                style = TextStyle(
+                    brush = strokeBrush,
+                    drawStyle = Stroke(strokeWidth)
+                )
             )
-        )
+        }
     }
 }
-

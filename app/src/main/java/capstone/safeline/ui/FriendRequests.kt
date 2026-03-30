@@ -5,6 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +31,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -42,8 +45,9 @@ import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.theme.ThemeManager
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 private val Tapestry = FontFamily(Font(R.font.tapestry_regular))
 
 private data class UiFriendRequest(
@@ -56,7 +60,7 @@ class FriendRequests : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             FriendRequestsScreen(
-                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onBack = { finish() },
                 onOpenProfile = { request ->
                     val intent = Intent(this, ContactProfile::class.java)
                     intent.putExtra("contactName", request.name)
@@ -106,21 +110,63 @@ private fun FriendRequestsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.requests_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
 
-            StrokeTitle(
-                text = "FRIENDS REQUESTS",
-                fontFamily = Vampiro,
+                Image(
+                    painter = painterResource(R.drawable.requests_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
+
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(ThemeManager.topBarStroke)
+                    )
+                }
+
+                StrokeTitle(
+                    text = "FRIENDS REQUESTS",
+                    fontFamily = ThemeManager.fontFamily,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             BackButton(
                 onClick = onBack,
@@ -167,12 +213,40 @@ private fun FriendRequestsHeader(count: Int) {
             .height(69.dp),
         contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(R.drawable.request_new),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.request_new),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.buttonGradient
+                        ),
+                        shape = shape
+                    )
+                    .then(
+                        ThemeManager.buttonStroke?.let {
+                            Modifier.border(
+                                1.dp,
+                                it,
+                                shape
+                            )
+                        } ?: Modifier
+                    )
+            )
+
+        }
 
         Text(
             text = "You Have $count New friend Requests",
@@ -196,12 +270,40 @@ private fun FriendRequestRow(
             .width(330.dp)
             .height(69.dp)
     ) {
-        Image(
-            painter = painterResource(R.drawable.requst_new_bg),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.requst_new_bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.buttonGradient
+                        ),
+                        shape = shape
+                    )
+                    .then(
+                        ThemeManager.buttonStroke?.let {
+                            Modifier.border(
+                                1.dp,
+                                it,
+                                shape
+                            )
+                        } ?: Modifier
+                    )
+            )
+
+        }
 
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -247,7 +349,7 @@ private fun FriendRequestRow(
             ) {
                 StrokeText(
                     text = request.name,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 24.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF009DFF),

@@ -27,8 +27,9 @@ import capstone.safeline.apis.network.ApiClient
 import capstone.safeline.ui.components.*
 import capstone.safeline.ui.theme.KaushanScript
 import kotlinx.coroutines.launch
+import capstone.safeline.ui.theme.ThemeManager
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class AccountUpdateActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -135,7 +136,7 @@ private fun UpdateWrapper(
                         onClick = onBack,
                         modifier = Modifier.align(Alignment.TopStart).offset(x = (-15).dp)
                     )
-                    StrokeTitle(text = title, fontFamily = Vampiro, modifier = Modifier.align(Alignment.TopCenter))
+                    StrokeTitle(text = title, fontFamily = ThemeManager.fontFamily, modifier = Modifier.align(Alignment.TopCenter))
                 }
                 content()
             }
