@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.2.20"
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.20"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"
+    id("com.google.devtools.ksp") version "1.9.22-1.0.17"
 }
 
 android {
@@ -79,4 +80,10 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.navigation:navigation-compose:2.8.0")
     implementation("androidx.compose.foundation:foundation")
+
+    val room_version = "2.6.1"
+
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
 }
