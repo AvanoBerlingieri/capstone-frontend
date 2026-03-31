@@ -144,7 +144,7 @@ private fun FriendRequestsScreen(
             .getPendingRequests(userId)
             .onSuccess { pendingUserIds ->
                 pendingUserIds.forEach { pendingId ->
-                    authRepo.getUserById(pendingId)
+                    authRepo.getUserById(java.util.UUID.fromString(pendingId))
                         .onSuccess { user ->
                             requests.add(
                                 UiFriendRequest(
@@ -311,7 +311,7 @@ private fun FriendRequestsScreen(
                                             "FriendRequests",
                                             "getIdByUsername success: username=$username id=$foundId"
                                         )
-                                        authRepo.getUserById(foundId)
+                                        authRepo.getUserById(java.util.UUID.fromString(foundId))
                                             .onSuccess { user ->
                                                 Log.d(
                                                     "FriendRequests",

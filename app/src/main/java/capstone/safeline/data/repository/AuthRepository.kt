@@ -12,6 +12,7 @@ import capstone.safeline.apis.dto.UpdateUsernameDto
 import capstone.safeline.data.local.DataStoreManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 class AuthRepository(
     private val dataStoreManager: DataStoreManager,
@@ -108,7 +109,7 @@ class AuthRepository(
         false
     }
 
-    suspend fun getUserById(id: String): Result<GetUserByIdResponse> {
+    suspend fun getUserById(id: UUID): Result<GetUserByIdResponse> {
         return try {
             val primary = apiServiceAuth.getUserById(id)
             val primaryBody = primary.body()
