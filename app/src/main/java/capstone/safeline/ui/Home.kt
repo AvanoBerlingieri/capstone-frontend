@@ -214,7 +214,7 @@ fun HomeScreen(
 
                 HomeImageButton(
                     bgRes = R.drawable.home_btn2,
-                    text = "You Have 2 New friend Requests",
+                    text = "Check all Friend Requests",
                     fontSize = 20.sp,
                     modifier = Modifier
                         .size(width = 400.dp, height = 50.dp)

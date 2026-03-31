@@ -1,9 +1,9 @@
 package capstone.safeline.apis.network
 
 import android.content.Context
-import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.apis.ApiServiceAuth
 import capstone.safeline.apis.AuthInterceptor
+import capstone.safeline.data.local.DataStoreManager
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
