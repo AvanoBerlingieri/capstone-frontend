@@ -1,7 +1,11 @@
 package capstone.safeline.data.repository
 
+import android.util.Log
 import capstone.safeline.apis.ApiServiceFriends
 import capstone.safeline.apis.dto.FriendRequest
+import com.google.gson.Gson
+import com.google.gson.JsonParser
+import com.google.gson.reflect.TypeToken
 
 class FriendRepository(
     private val apiServiceFriends: ApiServiceFriends
@@ -19,7 +23,12 @@ class FriendRepository(
             if (response.isSuccessful && body != null) {
                 Result.success(body)
             } else {
-                Result.failure(Exception("Failed to fetch pending requests: ${response.code()}"))
+                val detail = response.errorBody()?.use { it.string() }?.trim().orEmpty()
+                val msg = buildString {
+                    append("Failed to fetch pending requests: ${response.code()}")
+                    if (detail.isNotEmpty()) append(" — ").append(detail)
+                }
+                Result.failure(Exception(msg))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -54,12 +63,56 @@ class FriendRepository(
     }
 
     /**
-     * Fetches the full list of accepted friends.
+     * Fetches accepted friend user ids. Accepts common JSON shapes from the friends service:
      */
-    suspend fun getAllFriends(userId: String) = try {
-        val response = apiServiceFriends.getAllFriends(userId)
-        if (response.isSuccessful) response.body() else null
-    } catch (e: Exception) {
-        null
+    suspend fun getAllFriends(userId: String): Result<List<String>> {
+        return try {
+            val response = apiServiceFriends.getAllFriends(userId)
+            if (!response.isSuccessful) {
+                val detail = response.errorBody()?.use { it.string() }?.trim().orEmpty()
+                Log.e(
+                    "FriendRepository",
+                    "getAllFriends HTTP ${response.code()} userId=$userId detail=$detail"
+                )
+                return Result.failure(
+                    Exception(
+                        buildString {
+                            append("Friends list failed: ${response.code()}")
+                            if (detail.isNotEmpty()) append(" — ").append(detail)
+                        }
+                    )
+                )
+            }
+            val raw = response.body()?.use { it.string() }?.trim().orEmpty()
+            if (raw.isEmpty()) {
+                return Result.success(emptyList())
+            }
+            val ids = parseFriendIdsJson(raw)
+            Log.d("FriendRepository", "getAllFriends userId=$userId count=${ids.size}")
+            Result.success(ids)
+        } catch (e: Exception) {
+            Log.e("FriendRepository", "getAllFriends exception userId=$userId", e)
+            Result.failure(e)
+        }
+    }
+
+    private fun parseFriendIdsJson(raw: String): List<String> {
+        val trimmed = raw.trim()
+        val gson = Gson()
+        val listType = object : TypeToken<List<String>>() {}.type
+        return when {
+            trimmed.startsWith("[") -> gson.fromJson(trimmed, listType) ?: emptyList()
+            trimmed.startsWith("{") -> {
+                val obj = JsonParser.parseString(trimmed).asJsonObject
+                val arr = when {
+                    obj.has("friendIds") -> obj.get("friendIds")
+                    obj.has("friend_ids") -> obj.get("friend_ids")
+                    obj.has("friends") -> obj.get("friends")
+                    else -> null
+                } ?: return emptyList()
+                gson.fromJson(arr, listType) ?: emptyList()
+            }
+            else -> emptyList()
+        }
     }
 }
