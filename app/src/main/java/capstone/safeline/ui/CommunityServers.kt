@@ -23,6 +23,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,14 +47,49 @@ import capstone.safeline.ui.theme.ThemeManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.drawscope.Stroke
-
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalContext
+import capstone.safeline.ui.CommunityData.channelsMap
 
 
 class CommunityServers : ComponentActivity() {
+    private val serversState = CommunityData.servers
+    private val channelsMap = CommunityData.channelsMap
+    private var selectedServerState = mutableStateOf("")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val selectedFromChannel = intent.getStringExtra("server_name")
+        if (!selectedFromChannel.isNullOrEmpty()) {
+            selectedServerState.value = selectedFromChannel
+        }
+        if (serversState.isEmpty()) {
+            serversState.addAll(listOf("A", "B", "C", "D"))
+        }
+        if (channelsMap.isEmpty()) {
+            channelsMap["A"] = mutableStateListOf("CHANNEL 1", "CHANNEL 2")
+            channelsMap["B"] = mutableStateListOf()
+            channelsMap["C"] = mutableStateListOf()
+            channelsMap["D"] = mutableStateListOf()
+        }
         setContent {
             CommunityServersScreen(
+                onOpenChannel = { channelName ->
+                    val intent = Intent(this, ChannelScreen::class.java)
+                    intent.putExtra("channel_name", channelName)
+                    intent.putExtra("server_name", selectedServerState.value)
+                    startActivity(intent)
+                },
+                servers = serversState,
+                channels = channelsMap[selectedServerState.value] ?: emptyList(),
+                onAddChannel = {
+                    if (selectedServerState.value.isNotEmpty()) {
+                        val intent = Intent(this, AddChannel::class.java)
+                        startActivityForResult(intent, 2)
+                    }
+                },
+                selectedServer = selectedServerState.value,
+                onSelectServer = { selectedServerState.value = it },
                 onBackToMessages = { startActivity(Intent(this, Chat::class.java)) },
                 onNavigate = { destination ->
                     when (destination) {
@@ -63,20 +100,59 @@ class CommunityServers : ComponentActivity() {
                         "communities" -> {}
                         "contacts" -> startActivity(Intent(this, Contacts::class.java))
                     }
+                },
+                onOpenSettings = {
+                    startActivity(Intent(this, ServerSettings::class.java))
+                },
+                onAddServer = {
+                    val intent = Intent(this, AddServer::class.java)
+                    startActivityForResult(intent, 1)
                 }
             )
+        }
+    }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 2 && resultCode == RESULT_OK) {
+            val name = data?.getStringExtra("channel_name")
+
+            if (!name.isNullOrEmpty()) {
+                val server = selectedServerState.value
+
+                if (!channelsMap.containsKey(server)) {
+                    channelsMap[server] = mutableStateListOf()
+                }
+
+                channelsMap[server]?.add(name)
+            }
+        }
+
+        if (requestCode == 1 && resultCode == RESULT_OK) {
+            val name = data?.getStringExtra("server_name")
+
+            if (!name.isNullOrEmpty()) {
+                serversState.add(name)
+                selectedServerState.value = name
+            }
         }
     }
 }
 
 @Composable
 private fun CommunityServersScreen(
+    servers: MutableList<String>,
+    channels: List<String>,
+    selectedServer: String,
+    onSelectServer: (String) -> Unit,
     onBackToMessages: () -> Unit,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    onOpenSettings: () -> Unit,
+    onAddServer: () -> Unit,
+    onAddChannel: () -> Unit,
+    onOpenChannel: (String) -> Unit
 ) {
-    val servers = listOf("A", "B", "C", "D")
-    var selectedServer by remember { mutableStateOf("A") }
-    var textOpen by remember { mutableStateOf(false) }
+    var textOpen by remember(selectedServer) { mutableStateOf(false) }
     var voiceOpen by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -114,15 +190,17 @@ private fun CommunityServersScreen(
                             )
                         )
                 )
-
             }
 
             Row(modifier = Modifier.fillMaxSize()) {
+
                 LeftServersPanel(
                     servers = servers,
                     selectedServer = selectedServer,
-                    onSelectServer = { selectedServer = it },
-                    onBackToMessages = onBackToMessages
+                    onSelectServer = onSelectServer,
+                    onBackToMessages = onBackToMessages,
+                    onAddServer = onAddServer,
+                    backIcon = R.drawable.community_servers_backtomessages_btn
                 )
 
                 Column(
@@ -132,65 +210,98 @@ private fun CommunityServersScreen(
                         .padding(top = 22.dp, start = 12.dp, end = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box {
 
-                        Text(
-                            text = "SERVER $selectedServer",
-                            fontFamily = ThemeManager.fontFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
 
-                        Text(
-                            text = "SERVER $selectedServer",
-                            fontFamily = ThemeManager.fontFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp,
-                            color = Color.Transparent,
-                            textAlign = TextAlign.Center,
-                            style = TextStyle(
-                                brush = Brush.linearGradient(
-                                    listOf(Color(0xFF0DA2FF), Color(0xFFEA00FF))
-                                ),
-                                drawStyle = Stroke(3f)
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+
+                            Text(
+                                text = selectedServer,
+                                fontFamily = ThemeManager.fontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 32.sp,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
                             )
+
+                            Text(
+                                text = selectedServer,
+                                fontFamily = ThemeManager.fontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 32.sp,
+                                color = Color.Transparent,
+                                textAlign = TextAlign.Center,
+                                style = TextStyle(
+                                    brush = Brush.linearGradient(
+                                        listOf(Color(0xFF0DA2FF), Color(0xFFEA00FF))
+                                    ),
+                                    drawStyle = Stroke(3f)
+                                )
+                            )
+                        }
+
+                        Image(
+                            painter = painterResource(R.drawable.community_servers_settings_btn),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clickable { onOpenSettings() }
                         )
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.Start
-                    ) {
+                    if (selectedServer.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+
                         SpaceHeader(
                             text = "TEXT SPACES",
-                            onClick = { textOpen = !textOpen }
+                            onClick = {
+                                if (selectedServer.isNotEmpty()) {
+                                    textOpen = !textOpen
+                                }
+                            },
+                            onAddChannel = onAddChannel
                         )
 
-                        if (textOpen) {
-                            OverlapChannels(
-                                channels = listOf("CHANNEL 1", "CHANNEL 2", "CHANNEL 3", "CHANNEL 4"),
-                                startX = 0.dp
-                            )
-                        }
+                            if (textOpen && selectedServer.isNotEmpty()) {
+                                OverlapChannels(
+                                    channels = channels,
+                                    startX = 0.dp,
+                                    onChannelClick = onOpenChannel,
+                                    onRemoveChannel = { channel ->
+                                        channelsMap[selectedServer]?.remove(channel)
+                                    }
+                                )
+                            }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
                         SpaceHeader(
                             text = "VOICE SPACES",
-                            onClick = { voiceOpen = !voiceOpen }
+                            onClick = {
+                                if (selectedServer.isNotEmpty()) {
+                                    voiceOpen = !voiceOpen
+                                }
+                            },
+                            onAddChannel = {}
                         )
 
                         if (voiceOpen) {
                             OverlapChannels(
                                 channels = listOf("CHANNEL 1", "CHANNEL 2", "CHANNEL 3"),
-                                startX = 0.dp
+                                startX = 0.dp,
+                                onChannelClick = {},
+                                onRemoveChannel = {}
                             )
                         }
-                    }
+                    } }
                 }
             }
         }
@@ -198,17 +309,20 @@ private fun CommunityServersScreen(
 }
 
 @Composable
-private fun LeftServersPanel(
+fun LeftServersPanel(
     servers: List<String>,
     selectedServer: String,
     onSelectServer: (String) -> Unit,
-    onBackToMessages: () -> Unit
+    onBackToMessages: () -> Unit,
+    onAddServer: () -> Unit,
+    backIcon: Int
 ) {
     Box(
         modifier = Modifier
             .width(75.dp)
             .fillMaxSize()
     ) {
+
         if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
 
             Image(
@@ -232,7 +346,6 @@ private fun LeftServersPanel(
                         )
                     )
             )
-
         }
 
         Box(
@@ -261,17 +374,15 @@ private fun LeftServersPanel(
                             )
                         )
                 )
-
             }
 
             Image(
-                painter = painterResource(R.drawable.community_servers_backtomessages_btn),
+                painter = painterResource(backIcon),
                 contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(width = 38.dp, height = 36.dp)
-                    .clickable { onBackToMessages() },
-                contentScale = ContentScale.Fit
+                    .clickable { onBackToMessages() }
             )
         }
 
@@ -282,13 +393,14 @@ private fun LeftServersPanel(
                 .padding(top = 76.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            servers.forEachIndexed { index, letter ->
+
+            servers.forEachIndexed { index, serverName ->
                 if (index != 0) Spacer(modifier = Modifier.height(18.dp))
 
                 Box(
                     modifier = Modifier
                         .size(60.dp)
-                        .clickable { onSelectServer(letter) },
+                        .clickable { onSelectServer(serverName) },
                     contentAlignment = Alignment.Center
                 ) {
 
@@ -297,8 +409,7 @@ private fun LeftServersPanel(
                         Image(
                             painter = painterResource(R.drawable.community_servers_icon_btn),
                             contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.FillBounds
+                            modifier = Modifier.fillMaxSize()
                         )
 
                     } else {
@@ -316,20 +427,16 @@ private fun LeftServersPanel(
                                 )
                                 .then(
                                     ThemeManager.buttonStroke?.let {
-                                        Modifier.border(
-                                            1.dp,
-                                            it,
-                                            shape
-                                        )
+                                        Modifier.border(1.dp, it, shape)
                                     } ?: Modifier
                                 )
                         )
                     }
 
                     StrokeText(
-                        text = "SERVER\n$letter",
+                        serverName.firstOrNull()?.uppercase() ?: "?",
                         fontFamily = ThemeManager.fontFamily,
-                        fontSize = 12.sp,
+                        fontSize = 24.sp,
                         fillColor = Color.White,
                         strokeColor = Color(0xFF0251C7),
                         strokeWidth = 1f,
@@ -338,13 +445,24 @@ private fun LeftServersPanel(
                 }
             }
         }
+
+        Image(
+            painter = painterResource(R.drawable.community_servers_add_btn),
+            contentDescription = null,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 20.dp)
+                .size(50.dp)
+                .clickable { onAddServer() }
+        )
     }
 }
 
 @Composable
 private fun SpaceHeader(
     text: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onAddChannel: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -388,6 +506,16 @@ private fun SpaceHeader(
 
         }
 
+        Text(
+            text = "+",
+            color = Color.White,
+            fontSize = 22.sp,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 12.dp)
+                .clickable { onAddChannel() }
+        )
+
         StrokeText(
             text = text,
             fontFamily = ThemeManager.fontFamily,
@@ -404,21 +532,32 @@ private fun SpaceHeader(
 @Composable
 private fun OverlapChannels(
     channels: List<String>,
-    startX: androidx.compose.ui.unit.Dp
+    startX: Dp,
+    onChannelClick: (String) -> Unit,
+    onRemoveChannel: (String) -> Unit
 ) {
     Box(
         modifier = Modifier
             .padding(top = 10.dp)
             .width(297.dp)
+            .height(
+                if (channels.isNotEmpty())
+                    (39.dp * (channels.size - 1)) + 44.dp
+                else
+                    0.dp
+            )
     ) {
         channels.forEachIndexed { index, title ->
+
+            key(title) {
             val x = startX + (20.dp * index)
             val y = (39.dp * index)
 
-            Box(
-                modifier = Modifier
-                    .offset(x = x, y = y)
-                    .size(width = 214.dp, height = 44.dp),
+                Box(
+                    modifier = Modifier
+                        .offset(x = x, y = y)
+                        .size(width = 214.dp, height = 44.dp)
+                        .clickable { onChannelClick(title) },
                 contentAlignment = Alignment.CenterStart
             ) {
                 if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
@@ -466,11 +605,20 @@ private fun OverlapChannels(
                     textAlign = TextAlign.Start,
                     modifier = Modifier.padding(start = 26.dp)
                 )
+                    Text(
+                        text = "−",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 12.dp)
+                            .clickable { onRemoveChannel(title) }
+                    )
+
             }
         }
-
-        Spacer(modifier = Modifier.height((39.dp * (channels.size - 1)) + 44.dp))
+        }
     }
-}
+    }
 
 

@@ -15,7 +15,7 @@
         android:theme="@style/Theme.SafeLine">
 
         <activity
-            android:name=".ui.StartPage"
+            android:name=".ui.Home"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,7 +24,7 @@
         </activity>
 
         <activity
-            android:name=".ui.Home"
+            android:name=".ui.StartPage"
             android:exported="true" />
         <activity
             android:name=".ui.Chat"
@@ -98,6 +98,22 @@
         <activity
             android:name=".ui.CallingPage"
             android:exported="true" />
+
+        <activity
+            android:name=".ui.AddServer"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.ServerSettings"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.AddChannel"
+            android:exported="true"/>
+
+        <activity
+            android:name=".ui.ChannelScreen"
+            android:exported="true"/>
 
     </application>
 

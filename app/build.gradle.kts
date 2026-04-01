@@ -47,6 +47,8 @@ dependencies {
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.foundation.foundation.layout)
 
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
