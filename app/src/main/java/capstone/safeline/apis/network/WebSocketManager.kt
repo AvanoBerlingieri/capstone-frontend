@@ -19,7 +19,7 @@ class WebSocketManager {
             }
         }
     }
-    private val gatewayWsUrl = "ws://10.0.2.2:9000/ws"
+    private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
 
