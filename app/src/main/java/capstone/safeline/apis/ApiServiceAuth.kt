@@ -15,27 +15,27 @@ import retrofit2.http.PUT
 
 interface ApiServiceAuth {
 
-    @POST("auth/login")
+    @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest):
             retrofit2.Response<LoginResponse>
 
-    @POST("auth/register")
+    @POST("api/auth/register")
     suspend fun register(@Body request: RegisterRequest):
             retrofit2.Response<RegisterResponse>
 
-    @POST("auth/logout")
+    @POST("api/auth/logout")
     suspend fun logout(): retrofit2.Response<Void>
 
-    @DELETE("auth/delete")
+    @DELETE("api/auth/delete")
     suspend fun deleteAccount(): retrofit2.Response<Void>
 
-    @PUT("auth/password")
+    @PUT("api/auth/password")
     suspend fun updatePassword(@Body request: UpdatePasswordDto): retrofit2.Response<Void>
 
-    @PUT("auth/username")
+    @PUT("api/auth/username")
     suspend fun changeUsername(@Body request: UpdateUsernameDto): retrofit2.Response<UpdateResponseDto>
 
-    @PUT("auth/email")
+    @PUT("api/auth/email")
     suspend fun changeEmail(@Body request: UpdateEmailDto): retrofit2.Response<UpdateResponseDto>
 
 }
