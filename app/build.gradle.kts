@@ -43,14 +43,23 @@ android {
 }
 
 dependencies {
+// STOMP Client
+    implementation("com.github.NaikSoftware:StompProtocolAndroid:1.6.6")
+
+    // The library depends on RxJava 2 to handle the data streams
+    implementation("io.reactivex.rxjava2:rxjava:2.2.21")
+    implementation("io.reactivex.rxjava2:rxandroid:2.1.1")
 
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
     implementation("com.google.android.material:material:1.13.0")
     implementation("com.google.code.gson:gson:2.13.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
     implementation("androidx.datastore:datastore:1.2.1")
     implementation("androidx.datastore:datastore-preferences:1.2.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
     implementation(libs.recyclerview)
     implementation(libs.appcompat)
     implementation(libs.material)
