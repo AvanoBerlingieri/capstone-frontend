@@ -13,7 +13,7 @@ import retrofit2.converter.gson.GsonConverterFactory
  * Dedicated Client for Friends API.
  */
 object ApiClientFriends {
-    private const val BASE_URL = "http://10.0.2.2:8092/api/"
+    private const val BASE_URL = "http://10.0.2.2:9000/api/friends/"
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
