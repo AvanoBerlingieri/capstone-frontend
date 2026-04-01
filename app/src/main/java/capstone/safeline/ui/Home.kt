@@ -2,11 +2,10 @@ package capstone.safeline.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,11 +20,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -35,9 +37,15 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.apis.TokenProvider.token
+import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.apis.network.WebSocketManager
+import capstone.safeline.data.local.DataStoreManager
+import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
-import capstone.safeline.ui.theme.ThemeManager
+import kotlinx.coroutines.flow.Flow
 
 private val HomeTitleFont = FontFamily(Font(R.font.vampiro_one_regular))
 private val HomeTextFont = FontFamily(Font(R.font.tapestry_regular))
@@ -45,7 +53,6 @@ private val HomeTextFont = FontFamily(Font(R.font.tapestry_regular))
 class Home : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ThemeManager.loadTheme(this)
         setContent {
             HomeScreen(
                 onNavigate = { destination ->
@@ -71,6 +78,23 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenFriendRequests: () -> Unit
 ) {
+    val context = LocalContext.current
+    val dsManager = remember { DataStoreManager(context, CryptoManager()) }
+    val wsManager = remember { WebSocketManager.getInstance() }
+    val repo = remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
+
+    val token by repo.tokenFlow.collectAsState(initial = null)
+
+    LaunchedEffect(token) {
+        if (!token.isNullOrBlank()) {
+            Log.d("WS", "Token detected, initiating connection...")
+            wsManager.connect(token!!)
+        } else {
+            Log.d("WS", "No token found, ensuring disconnected.")
+            wsManager.disconnect()
+        }
+    }
+
     Scaffold(
         topBar = {},
         bottomBar = {
@@ -86,67 +110,20 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+            Image(
+                painter = painterResource(id = R.drawable.home_bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
 
-                Image(
-                    painter = painterResource(id = R.drawable.home_bg),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-            } else {
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                ThemeManager.backgroundGradient
-                            )
-                        )
-                )
-
-            }
-
-            Box(
+            StrokeTitle(
+                text = "HOME",
+                fontFamily = HomeTitleFont,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .height(70.dp)
-            ) {
-
-                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    ThemeManager.headerGradient
-                                )
-                            )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(ThemeManager.topBarStroke)
-                    )
-
-                }
-
-                StrokeTitle(
-                    text = "HOME",
-                    fontFamily = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
-                        HomeTitleFont
-                    else
-                        ThemeManager.fontFamily,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+                    .padding(top = 22.dp)
+            )
 
             Row(
                 modifier = Modifier
@@ -193,10 +170,7 @@ fun HomeScreen(
 
                 Text(
                     text = "WELCOME BACK\nUSERNAME",
-                    fontFamily = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
-                        HomeTextFont
-                    else
-                        ThemeManager.fontFamily,
+                    fontFamily = HomeTextFont,
                     fontSize = 28.sp,
                     color = Color.White,
                     textAlign = TextAlign.Center,
@@ -239,9 +213,8 @@ fun HomeScreen(
 
                 HomeImageButton(
                     bgRes = R.drawable.home_btn2,
-                    text = "Check all Friend Requests",
+                    text = "You Have 2 New friend Requests",
                     fontSize = 20.sp,
-                    horizontalGradient = true,
                     modifier = Modifier
                         .size(width = 400.dp, height = 50.dp)
                         .clickable { onOpenFriendRequests() }
@@ -253,7 +226,6 @@ fun HomeScreen(
                     bgRes = R.drawable.home_btn3,
                     text = "Community 1: You Have 36 Notifications!\nCommunity 2: You Have 5 Notifications!",
                     fontSize = 20.sp,
-                    horizontalGradient = true,
                     modifier = Modifier
                         .size(width = 400.dp, height = 80.dp)
                         .clickable { onNavigate("communities") }
@@ -268,65 +240,22 @@ private fun HomeImageButton(
     bgRes: Int,
     text: String,
     fontSize: TextUnit,
-    modifier: Modifier = Modifier,
-    horizontalGradient: Boolean = false
+    modifier: Modifier = Modifier
 ) {
-
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-
-        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
-            Image(
-                painter = painterResource(id = bgRes),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
-            )
-
-        } else {
-
-            val brush =
-                if (horizontalGradient) {
-                    Brush.horizontalGradient(
-                        ThemeManager.buttonGradient
-                    )
-                } else {
-                    Brush.verticalGradient(
-                        ThemeManager.buttonGradient
-                    )
-                }
-
-            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = brush,
-                        shape = shape
-                    )
-                    .then(
-                        ThemeManager.buttonStroke?.let {
-                            Modifier.border(
-                                width = 1.dp,
-                                color = it,
-                                shape = shape
-                            )
-                        } ?: Modifier
-                    )
-            )
-
-        }
+        Image(
+            painter = painterResource(id = bgRes),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
+        )
 
         Text(
             text = text,
-            fontFamily = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
-                HomeTextFont
-            else
-                ThemeManager.fontFamily,
+            fontFamily = HomeTextFont,
             fontSize = fontSize,
             color = Color.White,
             textAlign = TextAlign.Center,

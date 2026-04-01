@@ -1,45 +1,68 @@
 package capstone.safeline.apis.network
 
-import capstone.safeline.data.repository.MessageRepository
-import capstone.safeline.data.local.entity.MessageEntity
-import okhttp3.*
-import org.json.JSONObject
-import java.util.UUID
+import android.annotation.SuppressLint
+import android.util.Log
+import ua.naiksoftware.stomp.Stomp
+import ua.naiksoftware.stomp.StompClient
+import ua.naiksoftware.stomp.dto.LifecycleEvent
+import ua.naiksoftware.stomp.dto.StompHeader
+import ua.naiksoftware.stomp.dto.StompMessage
 
-class WebSocketManager(private val repository: MessageRepository) {
+class WebSocketManager {
+    companion object {
+        @Volatile
+        private var INSTANCE: WebSocketManager? = null
 
-    private val client = OkHttpClient()
-    private var webSocket: WebSocket? = null
-
-    fun connect() {
-        val request = Request.Builder().url("ws://10.0.2.2:8091/ws").build()
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                // 1. We "Catch" the message from the server
-                val json = JSONObject(text)
-
-                // 2. Convert JSON to our MessageEntity
-                val incomingMessage = MessageEntity(
-                    messageUuid = json.optString("id", UUID.randomUUID().toString()),
-                    senderId = json.getString("senderId"),
-                    receiverId = json.getString("receiverId"),
-                    content = json.getString("content"),
-                    timestamp = System.currentTimeMillis(),
-                    status = "RECEIVED"
-                )
-
-                // 3. Hand it to the repository to save in Room!
-                // (Note: This needs to be in a Coroutine scope, which we'll add next)
+        fun getInstance(): WebSocketManager {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: WebSocketManager().also { INSTANCE = it }
             }
+        }
+    }
+    private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
+    private var stompClient: StompClient? = null
+    private var isConnecting = false
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                println("WebSocket Connection Failed: ${t.message}")
+    @SuppressLint("CheckResult")
+    fun connect(token: String) {
+        // Prevent multiple simultaneous connection attempts
+        if (stompClient?.isConnected == true || isConnecting) return
+
+        isConnecting = true
+        stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, gatewayWsUrl)
+
+        val headers = listOf(StompHeader("Authorization", "Bearer $token"))
+
+        stompClient?.lifecycle()?.subscribe { lifecycleEvent ->
+            when (lifecycleEvent.type) {
+                LifecycleEvent.Type.OPENED -> {
+                    isConnecting = false
+                    Log.d("WS", "Connected to Gateway!")
+                    subscribeToMessages()
+                }
+                LifecycleEvent.Type.ERROR -> {
+                    isConnecting = false
+                    Log.e("WS", "Connection Error", lifecycleEvent.exception)
+                }
+                LifecycleEvent.Type.CLOSED -> {
+                    isConnecting = false
+                    Log.d("WS", "Connection Closed")
+                }
+                else -> {}
             }
-        })
+        }
+
+        stompClient?.connect(headers)
     }
 
-    fun sendMessage(text: String) {
-        webSocket?.send(text)
+    @SuppressLint("CheckResult")
+    private fun subscribeToMessages() {
+        stompClient?.topic("/user/queue/messages")?.subscribe { topicMessage: StompMessage ->
+            Log.d("WS", "Received: ${topicMessage.payload}")
+        }
+    }
+
+    fun disconnect() {
+        stompClient?.disconnect()
     }
 }
