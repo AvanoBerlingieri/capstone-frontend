@@ -1,9 +1,11 @@
 package capstone.safeline.ui
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,11 +24,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import capstone.safeline.R
+import capstone.safeline.SafelineApplication
 import capstone.safeline.models.ChatUser
 import capstone.safeline.models.Message
 import capstone.safeline.ui.components.BottomNavBar
@@ -34,43 +36,88 @@ import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.theme.ThemeManager
-
-
-
+import capstone.safeline.ui.viewmodels.ChatListViewModel
+import capstone.safeline.ui.viewmodels.ChatListViewModelFactory
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class Chat : ComponentActivity() {
 
-    private val chatUsers = listOf(
-        ChatUser("Friend 1", messages = listOf(Message("Hi", "12:49 PM"))),
-        ChatUser("Friend 2", messages = listOf(Message("Yo", "12:30 PM"))),
-        ChatUser("Friend 3", messages = listOf(Message("Hello", "11:58 AM"))),
-        ChatUser("Friend 4", messages = listOf(Message("Hey", "10:12 AM"))),
-        ChatUser("Friend 5", messages = listOf(Message("Sup", "9:40 AM"))),
-        ChatUser("Friend 6", messages = listOf(Message("Ping", "8:15 AM")))
-    )
-
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 1. Get the app and repository
+        val app = applicationContext as SafelineApplication
+        val repository = app.messageRepository
+
         setContent {
-            ChatScreen(
-                chatUsers = chatUsers,
-                onUserClick = { user ->
-                    val intent = Intent(this, DmPage::class.java)
-                    intent.putExtra("userName", user.name)
-                    startActivity(intent)
-                },
-                onNavigate = { destination ->
-                    when (destination) {
-                        "home" -> startActivity(Intent(this, Home::class.java))
-                        "calls" -> startActivity(Intent(this, Call::class.java))
-                        "chats" -> {}
-                        "profile" -> startActivity(Intent(this, Profile::class.java))
-                        "communities" -> startActivity(Intent(this, Community::class.java))
-                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
-                    }
-                },
-                onBack = { finish() }
-            )
+            // 2. Read the REAL User ID from the DataStore!
+            val myUserId by app.dataStoreManager.userIdFlow.collectAsState(initial = "")
+
+            // 3. Only load the chat list once we actually have the ID
+            if (myUserId.isNotEmpty()) {
+
+                val viewModel: ChatListViewModel = viewModel(
+                    factory = ChatListViewModelFactory(repository)
+                )
+
+                val recentMessages by viewModel.recentMessages.collectAsState()
+
+                // Map database entities to UI models
+                val chatUsers = recentMessages.map { entity ->
+                    val friendId = if (entity.senderId == myUserId) entity.receiverId else entity.senderId
+
+                    val timeString = Instant.ofEpochMilli(entity.timestamp)
+                        .atZone(ZoneId.systemDefault())
+                        .format(DateTimeFormatter.ofPattern("hh:mm a"))
+
+                    ChatUser(
+                        id = friendId,
+                        name = "User ${friendId.take(5)}...",
+                        messages = listOf(Message(entity.content, timeString))
+                    )
+                }.toMutableList()
+
+                // --- TEMPORARY FIX FOR TESTING ---
+                // If the database is empty, add a fake user so we can open DmPage
+                if (chatUsers.isEmpty()) {
+                    chatUsers.add(
+                        ChatUser(
+                            id = "test_friend_uuid_123",
+                            name = "Test Friend",
+                            messages = listOf(Message("Tap here to test sending!", "Just now"))
+                        )
+                    )
+                }
+                // ----------------------------------
+
+                ChatScreen(
+                    chatUsers = chatUsers,
+                    onUserClick = { user ->
+                        // Pass the UUID to DmPage
+                        val intent = Intent(this@Chat, DmPage::class.java)
+                        intent.putExtra("userName", user.name)
+                        intent.putExtra("friendId", user.id)
+                        startActivity(intent)
+                    },
+                    onNavigate = { destination ->
+                        when (destination) {
+                            "home" -> startActivity(Intent(this, Home::class.java))
+                            "calls" -> startActivity(Intent(this, Call::class.java))
+                            "chats" -> {}
+                            "profile" -> startActivity(Intent(this, Profile::class.java))
+                            "communities" -> startActivity(Intent(this, Community::class.java))
+                            "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                        }
+                    },
+                    onBack = { finish() }
+                )
+            } else {
+                // While waiting for DataStore to load the ID, show a blank background
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+            }
         }
     }
 }
@@ -111,16 +158,13 @@ fun ChatScreen(
                 .padding(innerPadding)
         ) {
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
                 Image(
                     painter = painterResource(R.drawable.chats_bg),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
             } else {
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -130,7 +174,6 @@ fun ChatScreen(
                             )
                         )
                 )
-
             }
 
             Box(
@@ -139,9 +182,7 @@ fun ChatScreen(
                     .fillMaxWidth()
                     .height(70.dp)
             ) {
-
                 if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
-
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -151,7 +192,6 @@ fun ChatScreen(
                                 )
                             )
                     )
-
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -195,7 +235,6 @@ fun ChatScreen(
                             onClick = { onUserClick(user) }
                         )
                     }
-
                     item { Spacer(modifier = Modifier.height(90.dp)) }
                 }
             }
@@ -249,7 +288,6 @@ private fun ChatFilters(
                 selected = selected == ChatsTab.GROUPS,
                 modifier = Modifier.size(70.dp, 18.dp)
             ) { onSelect(ChatsTab.GROUPS) }
-
         }
     }
 }
@@ -283,38 +321,27 @@ private fun ChatRow(
             .clickable { onClick() }
     ) {
         if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
             Image(
                 painter = painterResource(R.drawable.chats_dm_bg),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds
             )
-
         } else {
-
             val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
-
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.horizontalGradient(
-                            ThemeManager.buttonGradient
-                        ),
+                        Brush.horizontalGradient(ThemeManager.buttonGradient),
                         shape = shape
                     )
                     .then(
                         ThemeManager.buttonStroke?.let {
-                            Modifier.border(
-                                width = 1.dp,
-                                color = it,
-                                shape = shape
-                            )
+                            Modifier.border(width = 1.dp, color = it, shape = shape)
                         } ?: Modifier
                     )
             )
-
         }
 
         Row(
@@ -341,7 +368,12 @@ private fun ChatRow(
                     strokeWidth = 1f
                 )
 
-                ReflectedText("Last seen: March 10", 9.sp)
+                // Replaced "Last seen" with the actual preview of the last message!
+                val lastMessageText = user.messages.firstOrNull()?.text ?: ""
+                ReflectedText(
+                    text = if (lastMessageText.length > 25) lastMessageText.take(25) + "..." else lastMessageText,
+                    size = 12.sp // Slightly larger for readability
+                )
             }
 
             Column(
@@ -360,7 +392,7 @@ private fun ChatRow(
                     Spacer(modifier = Modifier.height(50.dp))
                 }
 
-                ReflectedText(user.messages.first().time, 9.sp)
+                ReflectedText(user.messages.firstOrNull()?.time ?: "", 9.sp)
             }
         }
     }
@@ -396,5 +428,3 @@ private fun ReflectedText(
         }
     }
 }
-
-

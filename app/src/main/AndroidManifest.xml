@@ -15,7 +15,7 @@
         android:theme="@style/Theme.SafeLine">
 
         <activity
-            android:name=".ui.StartPage"
+            android:name=".ui.StartActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,11 +24,21 @@
         </activity>
 
         <activity
+            android:name=".ui.LoginActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.RegisterActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.Home"
             android:exported="true" />
+
         <activity
             android:name=".ui.Chat"
             android:exported="true" />
+
         <activity
             android:name=".ui.Call"
             android:exported="true" />
@@ -36,6 +46,7 @@
         <activity
             android:name=".ui.OngoingCallActivity"
             android:exported="true" />
+
         <activity
             android:name=".ui.Profile"
             android:exported="true" />
@@ -95,6 +106,7 @@
         <activity
             android:name=".ui.CommunityServers"
             android:exported="true" />
+
         <activity
             android:name=".ui.CallingPage"
             android:exported="true" />

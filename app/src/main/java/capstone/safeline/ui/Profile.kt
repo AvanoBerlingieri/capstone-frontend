@@ -56,7 +56,6 @@ import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
 
-
 private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
 
 class Profile : ComponentActivity() {
@@ -80,9 +79,9 @@ class Profile : ComponentActivity() {
                     scope.launch {
                         val success = repo.deleteAccount()
                         if (success) {
-                            val intent = Intent(this@Profile, StartPage::class.java).apply {
-                                flags =
-                                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            // FIXED: Changed StartPage to StartActivity
+                            val intent = Intent(this@Profile, StartActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                             }
                             startActivity(intent)
                             finish()
@@ -347,6 +346,3 @@ private fun ProfileStrokeText(
         )
     }
 }
-
-
-

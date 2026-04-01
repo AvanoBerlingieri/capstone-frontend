@@ -7,6 +7,7 @@ data class Message(
 )
 
 data class ChatUser(
+    val id: String,
     val name: String,
     val messages: List<Message>
 )

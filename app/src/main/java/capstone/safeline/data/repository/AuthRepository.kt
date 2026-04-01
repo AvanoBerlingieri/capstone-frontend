@@ -63,6 +63,7 @@ class AuthRepository(
                 kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
                     dataStoreManager.saveToken(body.token)
                     dataStoreManager.saveUserInfo(body.username, body.email)
+                    dataStoreManager.saveUserId(body.id)
                 }
                 return true
             }

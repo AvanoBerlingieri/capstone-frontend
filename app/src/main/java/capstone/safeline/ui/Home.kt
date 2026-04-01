@@ -22,11 +22,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -35,6 +39,10 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.data.local.DataStoreManager
+import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
@@ -47,7 +55,15 @@ class Home : ComponentActivity() {
         super.onCreate(savedInstanceState)
         ThemeManager.loadTheme(this)
         setContent {
+            // 1. Set up the repository access
+            val context = LocalContext.current
+            val dsManager = remember { DataStoreManager(context, CryptoManager()) }
+            val repo = remember {
+                AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager))
+            }
+
             HomeScreen(
+                repo = repo, // Pass the repo to the screen
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> {}
@@ -67,12 +83,13 @@ class Home : ComponentActivity() {
 
 @Composable
 fun HomeScreen(
+    repo: AuthRepository,
     onNavigate: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenFriendRequests: () -> Unit
 ) {
+    val username by repo.usernameFlow.collectAsState(initial = "User")
     Scaffold(
-        topBar = {},
         bottomBar = {
             BottomNavBar(
                 currentScreen = "home",
@@ -192,7 +209,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Text(
-                    text = "WELCOME BACK\nUSERNAME",
+                    text = "WELCOME BACK\n${username.uppercase()}",
                     fontFamily = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
                         HomeTextFont
                     else

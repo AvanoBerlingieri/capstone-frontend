@@ -22,4 +22,14 @@ interface MessageDao {
 
     @Query("SELECT * FROM messages WHERE status = 'PENDING'")
     suspend fun getUnsentMessages(): List<MessageEntity>
+
+    @Query("""
+    SELECT * FROM messages 
+    WHERE id IN (
+        SELECT MAX(id) FROM messages 
+        GROUP BY CASE WHEN senderId < receiverId THEN senderId || receiverId ELSE receiverId || senderId END
+    ) 
+    ORDER BY timestamp DESC
+""")
+    fun getAllRecentMessages(): Flow<List<MessageEntity>>
 }

@@ -1,5 +1,12 @@
 package capstone.safeline.ui
 
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import capstone.safeline.ui.viewmodels.ChatViewModel
+import capstone.safeline.ui.viewmodels.ChatViewModelFactory
+import capstone.safeline.data.local.entity.MessageEntity
+import java.time.Instant
+import java.time.ZoneId
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -48,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.Global
 import capstone.safeline.R
+import capstone.safeline.SafelineApplication
 import capstone.safeline.models.ChatUser
 import capstone.safeline.models.Message
 import capstone.safeline.ui.components.StrokeText
@@ -64,25 +72,47 @@ class DmPage : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val username = intent.getStringExtra("userName") ?: "Unknown"
-        val lastSeen = intent.getStringExtra("lastSeen") ?: "Last seen: March 10"
+        val lastSeen = intent.getStringExtra("lastSeen") ?: "Last seen: Just now"
 
-        val global = Global()
-        val usersList = global.loadUsersChats(this)
-        val user = usersList.firstOrNull { it.name == username }
+        // The friend's ID passed from Chat.kt
+        val friendId = intent.getStringExtra("friendId") ?: "unknown_id"
+
+        val app = applicationContext as SafelineApplication
+        val repository = app.messageRepository
 
         setContent {
-            DmPageScreen(
-                onNavigate = {},
-                username = username,
-                lastSeen = lastSeen,
-                user = user,
-                onBack = { finish() },
-                onCall = {
-                    val intent = Intent(this, CallingPage::class.java)
-                    intent.putExtra("userName", username)
-                    startActivity(intent)
-                }
-            )
+            // 1. Read the REAL User ID from the DataStore!
+            val myUserId by app.dataStoreManager.userIdFlow.collectAsState(initial = "")
+
+            // 2. Only draw the screen once we have the ID
+            if (myUserId.isNotEmpty()) {
+
+                // Pass BOTH real IDs into the ViewModel
+                val viewModel: ChatViewModel = viewModel(
+                    factory = ChatViewModelFactory(
+                        repository = repository,
+                        currentUserId = myUserId,
+                        receiverId = friendId
+                    )
+                )
+
+                DmPageScreen(
+                    onNavigate = { /* Add navigation logic if needed */ },
+                    username = username,
+                    lastSeen = lastSeen,
+                    user = null,
+                    onBack = { finish() },
+                    onCall = {
+                        val intent = Intent(this@DmPage, CallingPage::class.java)
+                        intent.putExtra("userName", username)
+                        startActivity(intent)
+                    },
+                    viewModel = viewModel
+                )
+            } else {
+                // Loading state
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+            }
         }
     }
 }
@@ -95,12 +125,11 @@ fun DmPageScreen(
     lastSeen: String,
     user: ChatUser?,
     onBack: () -> Unit,
-    onCall: () -> Unit
+    onCall: () -> Unit,
+    viewModel: ChatViewModel // Inject ViewModel here
 ) {
-    val jsonMessages: List<Message> = user?.messages ?: emptyList()
-    var chatMessages by remember { mutableStateOf(listOf<Message>()) }
-    var text by remember { mutableStateOf("") }
-    var nextJsonIndex by remember { mutableStateOf(0) }
+    // Collect the UI state reactively from the ViewModel
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {},
@@ -111,26 +140,18 @@ fun DmPageScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
                 Image(
                     painter = painterResource(id = R.drawable.dm_background),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
             } else {
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                ThemeManager.backgroundGradient
-                            )
-                        )
+                        .background(Brush.verticalGradient(ThemeManager.backgroundGradient))
                 )
-
             }
 
             Column(
@@ -152,32 +173,33 @@ fun DmPageScreen(
                         .weight(1f)
                         .padding(horizontal = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
+                    reverseLayout = true // Reverses so newest messages are at the bottom
                 ) {
-                    items(chatMessages.withIndex().toList()) { indexed ->
-                        val msg = indexed.value
-                        val isMine = indexed.index % 2 == 0
+                    // Use the REAL messages from the database
+                    items(uiState.messages.reversed()) { messageEntity ->
+                        // Determine if it's mine based on senderId (you'll need your actual user ID here eventually)
+                        // For now, let's assume if it has a PENDING/SENT status, it's yours
+                        val isMine = messageEntity.status != "RECEIVED"
+
+                        // Format the timestamp
+                        val timeString = Instant.ofEpochMilli(messageEntity.timestamp)
+                            .atZone(ZoneId.systemDefault())
+                            .format(DateTimeFormatter.ofPattern("hh:mm a"))
+
+                        MessageBubble(
+                            message = messageEntity.content,
+                            isMine = isMine,
+                            time = timeString // Optional: Update MessageBubble to display time
+                        )
                     }
                 }
 
                 DmInputBar(
-                    value = text,
-                    onValueChange = { text = it },
+                    value = uiState.inputText,
+                    onValueChange = { viewModel.updateInputText(it) }, // Send text to ViewModel
                     onAttach = {},
-                    onSend = {
-                        if (text.isBlank()) return@DmInputBar
-
-                        val currentTime = LocalDateTime.now()
-                            .format(DateTimeFormatter.ofPattern("hh:mm a"))
-
-                        chatMessages = chatMessages + Message(text, currentTime)
-                        text = ""
-
-                        if (nextJsonIndex < jsonMessages.size) {
-                            chatMessages = chatMessages + jsonMessages[nextJsonIndex]
-                            nextJsonIndex++
-                        }
-                    }
+                    onSend = { viewModel.sendMessage() } // Trigger ViewModel send
                 )
             }
         }
@@ -294,7 +316,8 @@ private fun DmHeader(
 @Composable
 private fun MessageBubble(
     message: String,
-    isMine: Boolean
+    isMine: Boolean,
+    time: String
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -303,6 +326,7 @@ private fun MessageBubble(
         Box(
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
+            // This is your background bubble image
             Image(
                 painter = painterResource(R.drawable.message_bubble_background),
                 contentDescription = null,
@@ -314,17 +338,31 @@ private fun MessageBubble(
                 contentScale = ContentScale.FillBounds
             )
 
-            Text(
-                text = message,
-                color = Color.White,
-                fontSize = 14.sp,
+            // We use a Column now to stack the message and the time
+            Column(
                 modifier = Modifier.padding(
                     start = 18.dp,
                     end = 18.dp,
                     top = 12.dp,
                     bottom = 12.dp
                 )
-            )
+            ) {
+                Text(
+                    text = message,
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // The timestamp display
+                Text(
+                    text = time,
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 10.sp,
+                    modifier = Modifier.align(Alignment.End)
+                )
+            }
         }
     }
 }

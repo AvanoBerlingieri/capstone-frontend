@@ -19,6 +19,8 @@ class DataStoreManager(
         private val IV_KEY = stringPreferencesKey("iv_key")
         private val USERNAME = stringPreferencesKey("username")
         private val EMAIL = stringPreferencesKey("email")
+
+        private val USER_ID = stringPreferencesKey("user_id")
     }
 
     val tokenFlow: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -34,10 +36,18 @@ class DataStoreManager(
 
     val emailFlow: Flow<String> = context.dataStore.data.map { it[EMAIL] ?: "No Email" }
 
+    val userIdFlow: Flow<String> = context.dataStore.data.map { it[USER_ID] ?: "" }
+
     suspend fun saveUserInfo(username: String, email: String) {
         context.dataStore.edit { prefs ->
             prefs[USERNAME] = username
             prefs[EMAIL] = email
+        }
+    }
+
+    suspend fun saveUserId(userId: String) {
+        context.dataStore.edit { prefs ->
+            prefs[USER_ID] = userId
         }
     }
 

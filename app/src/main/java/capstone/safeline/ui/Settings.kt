@@ -45,7 +45,6 @@ import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
 
-
 private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
 
 class Settings : ComponentActivity() {
@@ -94,7 +93,8 @@ class Settings : ComponentActivity() {
                         val result = repo.logout()
 
                         // Navigate regardless of success/failure to ensure user flow
-                        val intent = Intent(this@Settings, StartPage::class.java).apply {
+                        // FIXED: Changed StartPage to StartActivity
+                        val intent = Intent(this@Settings, StartActivity::class.java).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         }
                         startActivity(intent)
@@ -242,4 +242,3 @@ private fun SettingsButton(
         )
     }
 }
-

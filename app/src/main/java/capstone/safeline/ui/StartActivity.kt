@@ -26,72 +26,44 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.R
 import capstone.safeline.apis.network.ApiClient
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
+import capstone.safeline.ui.theme.ThemeManager
 
-class StartPage : ComponentActivity() {
+class StartActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.loadTheme(this)
-        setContent { SafeLineNav() }
-    }
-}
 
-@Composable
-fun SafeLineNav() {
-    val nav = rememberNavController()
+        setContent {
+            val context = LocalContext.current
+            val dsManager = remember { DataStoreManager(context, CryptoManager()) }
+            val repo = remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
 
-    val context = LocalContext.current
-    val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-    val repo =
-        remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
+            val isLoggedIn by repo.isLoggedIn.collectAsState(initial = null)
 
-    val isLoggedIn by repo.isLoggedIn.collectAsState(initial = null)
-
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn == true) {
-            val intent = Intent(context, Home::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            context.startActivity(intent)
-            if (context is ComponentActivity) context.finish()
-        }
-    }
-
-    if (isLoggedIn == false) {
-        NavHost(navController = nav, startDestination = "start") {
-            composable("start") {
-                StartScreen(
-                    onLogin = { nav.navigate("login") },
-                    onRegister = { nav.navigate("register") }
-                )
-            }
-
-            composable("login") {
-                LoginScreen(
-                    onBack = { nav.popBackStack() },
-                    onSuccess = {
-                        val intent = Intent(context, Home::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        }
-                        context.startActivity(intent)
-                        if (context is ComponentActivity) context.finish()
+            // Auto-login check
+            LaunchedEffect(isLoggedIn) {
+                if (isLoggedIn == true) {
+                    val intent = Intent(context, Home::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
-                )
+                    context.startActivity(intent)
+                    finish()
+                }
             }
 
-            composable("register") {
-                RegisterScreen(
-                    onBack = { nav.popBackStack() },
-                    onSuccess = {
-                        nav.navigate("login") { popUpTo("start") { inclusive = false } }
+            // Show StartScreen if user is NOT logged in
+            if (isLoggedIn == false) {
+                StartScreen(
+                    onLogin = {
+                        startActivity(Intent(context, LoginActivity::class.java))
+                    },
+                    onRegister = {
+                        startActivity(Intent(context, RegisterActivity::class.java))
                     }
                 )
             }
@@ -147,7 +119,7 @@ fun StartScreen(
 }
 
 @Composable
-private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
+fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
     this.clickable(
         indication = null,
         interactionSource = remember { MutableInteractionSource() }
