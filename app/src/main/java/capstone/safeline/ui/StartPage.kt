@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.R
 import capstone.safeline.apis.network.ApiClient
 import capstone.safeline.data.local.DataStoreManager
@@ -38,6 +39,7 @@ import capstone.safeline.data.security.CryptoManager
 class StartPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ThemeManager.loadTheme(this)
         setContent { SafeLineNav() }
     }
 }

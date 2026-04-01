@@ -6,11 +6,13 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -21,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -39,9 +42,10 @@ import capstone.safeline.apis.network.ApiClient
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
 
 class Settings : ComponentActivity() {
@@ -59,7 +63,7 @@ class Settings : ComponentActivity() {
             }
 
             SettingsScreen(
-                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onBack = { finish() },
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
@@ -71,7 +75,7 @@ class Settings : ComponentActivity() {
                     }
                 },
                 onOpenAppearance = { startActivity(Intent(this, SettingsAppearance::class.java)) },
-                onOpenFontSize = { startActivity(Intent(this, SettingsFontSize::class.java)) },
+                onOpenFontSize = { startActivity(Intent(this, SettingsFonts::class.java)) },
                 onOpenSound = { startActivity(Intent(this, SettingsSound::class.java)) },
                 onOpenPrivacy = { startActivity(Intent(this, SettingsPrivacy::class.java)) },
                 onOpenNotifications = {
@@ -129,21 +133,63 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.settings_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
 
-            StrokeTitle(
-                text = "SETTINGS",
-                fontFamily = Vampiro,
+                Image(
+                    painter = painterResource(id = R.drawable.settings_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
+
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(ThemeManager.topBarStroke)
+                    )
+                }
+
+                StrokeTitle(
+                    text = "SETTINGS",
+                    fontFamily = ThemeManager.fontFamily,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             BackButton(
                 onClick = onBack,
@@ -158,7 +204,7 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(30.dp)
             ) {
                 SettingsButton(text = "Appearance", onClick = onOpenAppearance)
-                SettingsButton(text = "Font size", onClick = onOpenFontSize)
+                SettingsButton(text = "Fonts", onClick = onOpenFontSize)
                 SettingsButton(text = "Sound", onClick = onOpenSound)
                 SettingsButton(text = "Privacy", onClick = onOpenPrivacy)
                 SettingsButton(text = "Notifications", onClick = onOpenNotifications)

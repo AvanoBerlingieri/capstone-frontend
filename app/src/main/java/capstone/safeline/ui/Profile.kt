@@ -53,9 +53,10 @@ import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
 
 class Profile : ComponentActivity() {
@@ -128,24 +129,69 @@ private fun ProfileScreen(
         bottomBar = { BottomNavBar(currentScreen = "profile", onNavigate = onNavigate) },
         containerColor = Color.Transparent
     ) { innerPadding ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)) {
-            Image(
-                painter = painterResource(R.drawable.profile_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
 
-            StrokeTitle(
-                text = "PROFILE SETTINGS",
-                fontFamily = Vampiro,
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                Image(
+                    painter = painterResource(R.drawable.profile_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
+
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(ThemeManager.topBarStroke)
+                    )
+                }
+
+                StrokeTitle(
+                    text = "PROFILE SETTINGS",
+                    fontFamily = ThemeManager.fontFamily,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             BackButton(
                 onClick = onBack,

@@ -1,12 +1,14 @@
 package capstone.safeline.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -15,9 +17,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import capstone.safeline.R
 import androidx.compose.ui.layout.ContentScale
-
+import capstone.safeline.R
+import capstone.safeline.ui.theme.ThemeManager
 
 private val NavFont = FontFamily(Font(R.font.reem_kufi_fun_regular))
 
@@ -26,17 +28,35 @@ fun BottomNavBar(
     currentScreen: String,
     onNavigate: (String) -> Unit
 ) {
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(70.dp)
     ) {
-        Image(
-            painter = painterResource(R.drawable.navbar_bg),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.navbar_bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            ThemeManager.navbarGradient
+                        )
+                    )
+            )
+
+        }
 
         Row(
             modifier = Modifier
@@ -44,6 +64,7 @@ fun BottomNavBar(
                 .padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             NavBarItem(
                 modifier = Modifier.weight(1f),
                 iconRes = R.drawable.navbar_ic_home,
@@ -101,6 +122,7 @@ private fun NavBarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+
     val selectedColor = Color(0xFF05E6FF)
     val defaultColor = Color.White
 
@@ -110,32 +132,38 @@ private fun NavBarItem(
             .clickable { onClick() }
             .padding(top = 6.dp, bottom = 6.dp)
     ) {
+
         Box(
-            modifier = Modifier
-                .height(40.dp),
+            modifier = Modifier.height(40.dp),
             contentAlignment = Alignment.Center
         ) {
+
             Image(
                 painter = painterResource(iconRes),
                 contentDescription = label,
                 modifier = Modifier.size(iconSize)
             )
+
         }
 
         Box(
-            modifier = Modifier
-                .height(16.dp),
+            modifier = Modifier.height(16.dp),
             contentAlignment = Alignment.Center
         ) {
+
             Text(
                 text = label,
                 style = TextStyle(
-                    fontFamily = NavFont,
+                    fontFamily = if (ThemeManager.currentFont == ThemeManager.FontType.DEFAULT)
+                        NavFont
+                    else
+                        ThemeManager.fontFamily,
                     fontSize = 12.sp,
                     lineHeight = 12.sp,
                     color = if (selected) selectedColor else defaultColor
                 )
             )
+
         }
     }
 }
