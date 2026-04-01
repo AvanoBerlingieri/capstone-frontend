@@ -18,13 +18,6 @@ class AuthInterceptor(private val dataStoreManager: DataStoreManager) : Intercep
 
         val response = chain.proceed(request)
 
-        // If server says 401 clear the jwt
-        if (response.code == 401) {
-            runBlocking {
-                dataStoreManager.clearToken()
-            }
-        }
-
         return response
     }
 }

@@ -2,7 +2,6 @@ package capstone.safeline.apis
 
 import capstone.safeline.apis.dto.FriendRequest
 import capstone.safeline.apis.dto.FriendResponse
-import capstone.safeline.apis.dto.GetAllFriendsResponse
 import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -20,7 +19,7 @@ interface ApiServiceFriends {
 
     @GET("getAllFriends/{user_id}")
     suspend fun getAllFriends(@Path("user_id") userId: String):
-            retrofit2.Response<GetAllFriendsResponse>
+            retrofit2.Response<ResponseBody>
 
     @GET("getAllPendingRequests/{user_id}")
     suspend fun getPendingRequests(@Path("user_id") userId: String):

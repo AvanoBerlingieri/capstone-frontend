@@ -1,6 +1,5 @@
 package capstone.safeline.data.repository
 
-import capstone.safeline.apis.dto.UpdateMessageStatusDto
 import capstone.safeline.apis.network.ApiServiceMessage
 import capstone.safeline.data.local.dao.MessageDao
 import capstone.safeline.data.local.entity.MessageEntity
@@ -33,7 +32,7 @@ class MessageRepository(
             // 1. Tell the server the message was read
             val response = apiService.updateMessageStatus(
                 messageUuid,
-                UpdateMessageStatusDto(status = "READ")
+                mapOf("status" to "READ")
             )
 
             // 2. If the server says "OK" (200 series status code), update our local database

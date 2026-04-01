@@ -1,7 +1,6 @@
 package capstone.safeline.apis
 
 import capstone.safeline.apis.dto.GetUserByIdResponse
-import capstone.safeline.apis.dto.GetUserIdByUsernameResponse
 import capstone.safeline.apis.dto.LoginRequest
 import capstone.safeline.apis.dto.LoginResponse
 import capstone.safeline.apis.dto.RegisterRequest
@@ -43,7 +42,8 @@ interface ApiServiceAuth {
     @PUT("api/auth/email")
     suspend fun changeEmail(@Body request: UpdateEmailDto): retrofit2.Response<UpdateResponseDto>
 
-    @GET("auth/users/{id}")
+    /** Same module as [login] — try this first. */
+    @GET("api/auth/users/{id}")
     suspend fun getUserById(@Path("id") id: UUID): retrofit2.Response<GetUserByIdResponse>
 
     @GET("users/{id}")
@@ -51,9 +51,10 @@ interface ApiServiceAuth {
         @Path("id") id: UUID
     ): retrofit2.Response<GetUserByIdResponse>
 
-    @GET("auth/users/get-id-by-username/{username}")
+    @GET("api/auth/users/get-id-by-username/{username}")
     suspend fun getIdByUsername(
         @Path("username") username: String
-    ): retrofit2.Response<GetUserIdByUsernameResponse>
+    ): retrofit2.Response<Map<String, String>>
+
 
 }
