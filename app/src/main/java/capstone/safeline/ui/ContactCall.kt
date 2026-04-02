@@ -1,6 +1,7 @@
 package capstone.safeline.ui
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.Intent
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -34,6 +36,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.data.local.DataStoreManager
+import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.ui.components.StrokeText
@@ -52,7 +56,19 @@ import org.webrtc.MediaConstraints
 import org.webrtc.SessionDescription
 import org.webrtc.SdpObserver
 
+import capstone.safeline.webrtc.SignalingClient
+import capstone.safeline.webrtc.WebRTCManager
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import org.webrtc.IceCandidate
+import org.webrtc.MediaStream
+import org.webrtc.PeerConnection
+import org.webrtc.DataChannel
+import org.webrtc.MediaConstraints
+import org.webrtc.SessionDescription
+import org.webrtc.SdpObserver
 
+private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
 class ContactCall : ComponentActivity() {
 
@@ -226,6 +242,7 @@ class ContactCall : ComponentActivity() {
 @Composable
 private fun ContactCallScreen(
     name: String,
+    callStatus: String,
     onEndCall: () -> Unit
 ) {
 private fun ContactCallScreen(name: String) {
@@ -272,6 +289,8 @@ private fun ContactCallScreen(
         }
 
         StrokeText(
+            text = callStatus,
+            fontFamily = Vampiro,
             text = "Calling $name...",
             fontFamily = ThemeManager.fontFamily,
             fontSize = 36.sp,

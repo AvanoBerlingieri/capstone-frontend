@@ -1,6 +1,7 @@
 package capstone.safeline.ui
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -34,22 +36,215 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.data.local.DataStoreManager
+import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
 
+import capstone.safeline.webrtc.SignalingClient
+import capstone.safeline.webrtc.WebRTCManager
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import org.webrtc.DataChannel
+import org.webrtc.IceCandidate
+import org.webrtc.MediaStream
+import org.webrtc.PeerConnection
+import org.webrtc.SdpObserver
+import org.webrtc.SessionDescription
 
+private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
 class CallingPage : ComponentActivity() {
+
+    private lateinit var webRTCManager: WebRTCManager
+    private lateinit var signalingClient: SignalingClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val username = intent.getStringExtra("userName") ?: "Friend 1"
+        val username = intent.getStringExtra("userName") ?: "Friend"
+        val targetUserId = intent.getStringExtra("targetUserId") ?: username
+        val incomingSdp = intent.getStringExtra("incomingSdp") // null if outgoing call
+
+        val cryptoManager = CryptoManager()
+        val dataStoreManager = DataStoreManager(this, cryptoManager)
+
+        webRTCManager = WebRTCManager(this).also { it.init() }
+        signalingClient = SignalingClient("ws://10.0.2.2:8093/ws-call/websocket")
+
+        // Request mic permission
+        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), 1)
+        }
 
         setContent {
+            val scope = rememberCoroutineScope()
+            var callStatus by remember { mutableStateOf("Calling") }
+            var isMuted by remember { mutableStateOf(false) }
+
+            LaunchedEffect(Unit) {
+                scope.launch {
+                    val currentUserId = dataStoreManager.usernameFlow.first()
+
+                    signalingClient.connect(currentUserId)
+
+                    // Listen for signals from the other side
+                    signalingClient.onSignalReceived = { signal ->
+                        when (signal.type) {
+                            "answer" -> {
+                                webRTCManager.setRemoteDescription(
+                                    SessionDescription(
+                                        SessionDescription.Type.ANSWER,
+                                        signal.sdp
+                                    ),
+                                    object : SdpObserver {
+                                        override fun onSetSuccess() {
+                                            runOnUiThread { callStatus = "Connected" }
+                                        }
+                                        override fun onSetFailure(p0: String?) {}
+                                        override fun onCreateSuccess(p0: SessionDescription?) {}
+                                        override fun onCreateFailure(p0: String?) {}
+                                    }
+                                )
+                            }
+                            "ice-candidate" -> {
+                                signal.candidate?.let {
+                                    webRTCManager.addIceCandidate(IceCandidate("", 0, it))
+                                }
+                            }
+                            "hangup", "end" -> {
+                                runOnUiThread {
+                                    webRTCManager.hangUp()
+                                    signalingClient.disconnect()
+                                    finish()
+                                }
+                            }
+                            "decline" -> {
+                                runOnUiThread {
+                                    callStatus = "Call Declined"
+                                    android.os.Handler(mainLooper).postDelayed({
+                                        finish()
+                                    }, 1500)
+                                }
+                            }
+                            "error" -> {
+                                runOnUiThread { callStatus = "Connection Error" }
+                            }
+                        }
+                    }
+
+                    // Build peer connection observer
+                    val peerObserver = object : PeerConnection.Observer {
+                        override fun onIceCandidate(candidate: IceCandidate?) {
+                            candidate?.let {
+                                signalingClient.sendIceCandidate(
+                                    targetUserId, it.sdp, currentUserId
+                                )
+                            }
+                        }
+                        override fun onIceConnectionChange(state: PeerConnection.IceConnectionState?) {
+                            runOnUiThread {
+                                callStatus = when (state) {
+                                    PeerConnection.IceConnectionState.CONNECTED -> "Connected"
+                                    PeerConnection.IceConnectionState.DISCONNECTED -> "Disconnected"
+                                    PeerConnection.IceConnectionState.FAILED -> "Connection Failed"
+                                    else -> callStatus
+                                }
+                            }
+                        }
+                        override fun onSignalingChange(p0: PeerConnection.SignalingState?) {}
+                        override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {}
+                        override fun onIceCandidatesRemoved(p0: Array<out IceCandidate>?) {}
+                        override fun onAddStream(p0: MediaStream?) {}
+                        override fun onRemoveStream(p0: MediaStream?) {}
+                        override fun onDataChannel(p0: DataChannel?) {}
+                        override fun onRenegotiationNeeded() {}
+                        override fun onIceConnectionReceivingChange(p0: Boolean) {}
+                    }
+
+                    webRTCManager.createPeerConnection(peerObserver)
+
+                    if (incomingSdp != null) {
+                        // Incoming call — set remote description and send answer
+                        webRTCManager.setRemoteDescription(
+                            SessionDescription(SessionDescription.Type.OFFER, incomingSdp),
+                            object : SdpObserver {
+                                override fun onSetSuccess() {
+                                    webRTCManager.createAnswer(object : SdpObserver {
+                                        override fun onCreateSuccess(sdp: SessionDescription?) {
+                                            sdp?.let {
+                                                webRTCManager.setLocalDescription(
+                                                    it,
+                                                    object : SdpObserver {
+                                                        override fun onSetSuccess() {
+                                                            signalingClient.sendAnswer(
+                                                                targetUserId,
+                                                                it.description,
+                                                                currentUserId
+                                                            )
+                                                        }
+                                                        override fun onSetFailure(p0: String?) {}
+                                                        override fun onCreateSuccess(p0: SessionDescription?) {}
+                                                        override fun onCreateFailure(p0: String?) {}
+                                                    }
+                                                )
+                                            }
+                                        }
+                                        override fun onCreateFailure(p0: String?) {}
+                                        override fun onSetSuccess() {}
+                                        override fun onSetFailure(p0: String?) {}
+                                    })
+                                }
+                                override fun onSetFailure(p0: String?) {}
+                                override fun onCreateSuccess(p0: SessionDescription?) {}
+                                override fun onCreateFailure(p0: String?) {}
+                            }
+                        )
+                    } else {
+                        // Outgoing call — create and send offer
+                        webRTCManager.createOffer(object : SdpObserver {
+                            override fun onCreateSuccess(sdp: SessionDescription?) {
+                                sdp?.let {
+                                    webRTCManager.setLocalDescription(it, object : SdpObserver {
+                                        override fun onSetSuccess() {
+                                            signalingClient.sendOffer(
+                                                targetUserId,
+                                                it.description,
+                                                currentUserId
+                                            )
+                                        }
+                                        override fun onSetFailure(p0: String?) {}
+                                        override fun onCreateSuccess(p0: SessionDescription?) {}
+                                        override fun onCreateFailure(p0: String?) {}
+                                    })
+                                }
+                            }
+                            override fun onCreateFailure(p0: String?) {
+                                runOnUiThread { callStatus = "Failed to start call" }
+                            }
+                            override fun onSetSuccess() {}
+                            override fun onSetFailure(p0: String?) {}
+                        })
+                    }
+                }
+            }
+
             CallingFriendScreen(
                 username = username,
                 onEndCall = { finish() },
+                callStatus = callStatus,
+                onEndCall = {
+                    scope.launch {
+                        val currentUserId = dataStoreManager.usernameFlow.first()
+                        signalingClient.sendHangup(targetUserId, currentUserId)
+                        webRTCManager.hangUp()
+                        signalingClient.disconnect()
+                    }
+                    finish()
+                },
                 onGoToChat = {
                     val intent = Intent(this, DmPage::class.java)
                     intent.putExtra("userName", username)
@@ -60,14 +255,26 @@ class CallingPage : ComponentActivity() {
                 onShareScreen = {},
                 onCamera = {},
                 onMic = {}
+                onMic = {
+                    isMuted = !isMuted
+                    if (isMuted) webRTCManager.muteMicrophone()
+                    else webRTCManager.unmuteMicrophone()
+                }
             )
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        webRTCManager.hangUp()
+        signalingClient.disconnect()
     }
 }
 
 @Composable
 fun CallingFriendScreen(
     username: String,
+    callStatus: String = "Calling",
     onEndCall: () -> Unit,
     onGoToChat: () -> Unit,
     onShareScreen: () -> Unit,
@@ -118,6 +325,7 @@ fun CallingFriendScreen(
 
                 Spacer(modifier = Modifier.height(0.dp))
 
+                // Dynamic call status
                 StrokeText(
                     text = "Calling",
                     fontFamily = ThemeManager.fontFamily,

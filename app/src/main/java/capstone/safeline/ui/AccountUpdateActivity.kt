@@ -14,22 +14,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.apis.dto.auth.UpdateEmailDto
 import capstone.safeline.apis.dto.auth.UpdatePasswordDto
 import capstone.safeline.apis.dto.auth.UpdateUsernameDto
+import capstone.safeline.apis.dto.*
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.apis.network.ApiClientAuth
+import capstone.safeline.apis.network.ApiClient
 import capstone.safeline.ui.components.*
 import capstone.safeline.ui.theme.KaushanScript
 import kotlinx.coroutines.launch
 import capstone.safeline.ui.theme.ThemeManager
 
 
+private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
 class AccountUpdateActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

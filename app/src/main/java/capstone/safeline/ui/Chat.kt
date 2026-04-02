@@ -37,6 +37,7 @@ import capstone.safeline.ui.theme.ThemeManager
 
 
 
+private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
 class Chat : ComponentActivity() {
 
@@ -136,37 +137,7 @@ fun ChatScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .height(70.dp)
-            ) {
-
-                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    ThemeManager.headerGradient
-                                )
-                            )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(ThemeManager.topBarStroke)
-                    )
-                }
-
-                StrokeTitle(
-                    text = "CHATS",
-                    fontFamily = ThemeManager.fontFamily,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+            )
 
             BackButton(
                 onClick = onBack,
