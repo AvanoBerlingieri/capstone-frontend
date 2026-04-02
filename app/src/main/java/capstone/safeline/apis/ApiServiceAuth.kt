@@ -1,14 +1,14 @@
 package capstone.safeline.apis
 
-import capstone.safeline.apis.dto.GetUserByIdResponse
-import capstone.safeline.apis.dto.LoginRequest
-import capstone.safeline.apis.dto.LoginResponse
-import capstone.safeline.apis.dto.RegisterRequest
-import capstone.safeline.apis.dto.RegisterResponse
-import capstone.safeline.apis.dto.UpdateEmailDto
-import capstone.safeline.apis.dto.UpdatePasswordDto
-import capstone.safeline.apis.dto.UpdateResponseDto
-import capstone.safeline.apis.dto.UpdateUsernameDto
+import capstone.safeline.apis.dto.auth.GetUserByIdResponse
+import capstone.safeline.apis.dto.auth.LoginRequest
+import capstone.safeline.apis.dto.auth.LoginResponse
+import capstone.safeline.apis.dto.auth.RegisterRequest
+import capstone.safeline.apis.dto.auth.RegisterResponse
+import capstone.safeline.apis.dto.auth.UpdateEmailDto
+import capstone.safeline.apis.dto.auth.UpdatePasswordDto
+import capstone.safeline.apis.dto.auth.UpdateResponseDto
+import capstone.safeline.apis.dto.auth.UpdateUsernameDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET

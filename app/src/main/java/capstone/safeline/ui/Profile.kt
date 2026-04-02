@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -46,7 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
@@ -65,7 +64,7 @@ class Profile : ComponentActivity() {
             val context = LocalContext.current
             val dsManager = remember { DataStoreManager(context, CryptoManager()) }
             val repo = remember {
-                AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager))
+                AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager))
             }
             val scope = rememberCoroutineScope()
 

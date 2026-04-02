@@ -2,7 +2,6 @@ package capstone.safeline.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -20,15 +19,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -37,15 +31,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.TokenProvider.token
-import capstone.safeline.apis.network.ApiClient
-import capstone.safeline.apis.network.WebSocketManager
-import capstone.safeline.data.local.DataStoreManager
-import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeTitle
-import kotlinx.coroutines.flow.Flow
 
 private val HomeTitleFont = FontFamily(Font(R.font.vampiro_one_regular))
 private val HomeTextFont = FontFamily(Font(R.font.tapestry_regular))
@@ -79,22 +67,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenFriendRequests: () -> Unit
 ) {
-    val context = LocalContext.current
-    val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-    val wsManager = remember { WebSocketManager.getInstance() }
-    val repo = remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
-
-    val token by repo.tokenFlow.collectAsState(initial = null)
-
-    LaunchedEffect(token) {
-        if (!token.isNullOrBlank()) {
-            Log.d("WS", "Token detected, initiating connection...")
-            wsManager.connect(token!!)
-        } else {
-            Log.d("WS", "No token found, ensuring disconnected.")
-            wsManager.disconnect()
-        }
-    }
+    InitializeSocket()
 
     Scaffold(
         topBar = {},

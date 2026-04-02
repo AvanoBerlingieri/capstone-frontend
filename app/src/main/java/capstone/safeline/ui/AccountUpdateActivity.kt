@@ -14,16 +14,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.dto.*
+import capstone.safeline.apis.dto.auth.UpdateEmailDto
+import capstone.safeline.apis.dto.auth.UpdatePasswordDto
+import capstone.safeline.apis.dto.auth.UpdateUsernameDto
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
-import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.ui.components.*
 import capstone.safeline.ui.theme.KaushanScript
 import kotlinx.coroutines.launch
@@ -43,7 +43,7 @@ class AccountUpdateActivity : ComponentActivity() {
 
             val dsManager = remember { DataStoreManager(context, CryptoManager()) }
             val repo = remember {
-                AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager))
+                AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager))
             }
 
             var field1 by remember { mutableStateOf("") }
@@ -91,9 +91,19 @@ class AccountUpdateActivity : ComponentActivity() {
 
                             scope.launch {
                                 val success = when(mode) {
-                                    "username" -> repo.changeUsername(UpdateUsernameDto(field1, field2))
+                                    "username" -> repo.changeUsername(
+                                        UpdateUsernameDto(
+                                            field1,
+                                            field2
+                                        )
+                                    )
                                     "email" -> repo.changeEmail(UpdateEmailDto(field1, field2))
-                                    "password" -> repo.updatePassword(UpdatePasswordDto(field1, field2))
+                                    "password" -> repo.updatePassword(
+                                        UpdatePasswordDto(
+                                            field1,
+                                            field2
+                                        )
+                                    )
                                     else -> false
                                 }
 

@@ -2,7 +2,7 @@ package capstone.safeline.data.repository
 
 import android.util.Log
 import capstone.safeline.apis.ApiServiceFriends
-import capstone.safeline.apis.dto.FriendRequest
+import capstone.safeline.apis.dto.friends.FriendRequest
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken

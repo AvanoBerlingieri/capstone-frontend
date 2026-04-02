@@ -2,12 +2,12 @@ package capstone.safeline.data.repository
 
 import android.util.Log
 import capstone.safeline.apis.ApiServiceAuth
-import capstone.safeline.apis.dto.GetUserByIdResponse
-import capstone.safeline.apis.dto.LoginRequest
-import capstone.safeline.apis.dto.RegisterRequest
-import capstone.safeline.apis.dto.UpdateEmailDto
-import capstone.safeline.apis.dto.UpdatePasswordDto
-import capstone.safeline.apis.dto.UpdateUsernameDto
+import capstone.safeline.apis.dto.auth.GetUserByIdResponse
+import capstone.safeline.apis.dto.auth.LoginRequest
+import capstone.safeline.apis.dto.auth.RegisterRequest
+import capstone.safeline.apis.dto.auth.UpdateEmailDto
+import capstone.safeline.apis.dto.auth.UpdatePasswordDto
+import capstone.safeline.apis.dto.auth.UpdateUsernameDto
 import capstone.safeline.data.local.DataStoreManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

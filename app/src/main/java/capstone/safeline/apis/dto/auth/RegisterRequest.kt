@@ -1,4 +1,4 @@
-package capstone.safeline.apis.dto
+package capstone.safeline.apis.dto.auth
 
 data class RegisterRequest(
     val username: String,
