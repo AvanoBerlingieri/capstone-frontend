@@ -4,13 +4,16 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import capstone.safeline.data.local.dao.GroupMessageDao
 import capstone.safeline.data.local.dao.MessageDao
+import capstone.safeline.data.local.entity.GroupMessageEntity
 import capstone.safeline.data.local.entity.MessageEntity
 
-@Database(entities = [MessageEntity::class], version = 1, exportSchema = false)
+@Database(entities = [MessageEntity::class, GroupMessageEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun messageDao(): MessageDao
+    abstract fun groupMessageDao(): GroupMessageDao
 
     companion object {
         @Volatile
@@ -22,7 +25,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "safeline_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration() // Important for your time crunch!
+                    .build()
                 INSTANCE = instance
                 instance
             }

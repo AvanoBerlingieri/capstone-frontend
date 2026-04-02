@@ -4,12 +4,21 @@ import android.annotation.SuppressLint
 import android.util.Log
 import capstone.safeline.apis.dto.messaging.IncomingGroupMessage
 import capstone.safeline.apis.dto.messaging.IncomingMessage
+import capstone.safeline.apis.dto.messaging.OutgoingGroupMessage
+import capstone.safeline.apis.dto.messaging.OutgoingMessage
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
-import java.util.UUID
+
+// 1. Define the Listener Interface
+interface WebSocketMessageListener {
+    fun onPrivateMessageReceived(message: OutgoingMessage)
+    fun onGroupMessageReceived(message: OutgoingGroupMessage)
+    fun onMessageDeliveredAck(messageId: String)
+}
 
 class WebSocketManager {
     companion object {
@@ -23,54 +32,60 @@ class WebSocketManager {
         }
     }
 
-    private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
+    // 2. Add a variable to hold the listener
+    var messageListener: WebSocketMessageListener? = null
+    private val gson = Gson()
+
+    private val gatewayWsUrl = "ws://10.0.2.2:9000/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
 
     @SuppressLint("CheckResult")
     fun connect(token: String) {
-
-        stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, gatewayWsUrl)
-        // Prevent multiple simultaneous connection attempts
-        if (stompClient?.isConnected == true || isConnecting) return
+        if (stompClient != null && (stompClient!!.isConnected || isConnecting)) return
 
         isConnecting = true
-        val headers = listOf(StompHeader("Authorization", "Bearer $token"))
 
-        stompClient?.lifecycle()?.subscribe { lifecycleEvent ->
+        // We create a custom OkHttpClient to "smuggle" the token
+        // into the very first HTTP request headers.
+        val httpClient = okhttp3.OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val requestBuilder = original.newBuilder()
+                    .header("Authorization", "Bearer $token")
+                val request = requestBuilder.build()
+                chain.proceed(request)
+            }
+            .build()
+
+        // Pass this custom client to Stomp.over
+        // Note: Use port 9000 first, if that fails, try 8091
+        val socketUrl = "ws://10.0.2.2:9000/ws"
+
+        stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, socketUrl, null, httpClient)
+
+        stompClient?.lifecycle()?.subscribe({ lifecycleEvent ->
             when (lifecycleEvent.type) {
-
                 LifecycleEvent.Type.OPENED -> {
                     isConnecting = false
-                    Log.d("WS", "Connected to Gateway!")
-
-                    // Listens for new messages in queue and message acknowledgments
+                    Log.d("WS", "SUCCESS: Connected to Gateway!")
                     subscribeToMessages()
-
-                    // Trigger sync for massages not delivered
-                    stompClient?.send("/app/message.sync")?.subscribe({
-                        Log.d("WS", "Sync request sent successfully")
-                    }, { error ->
-                        Log.e("WS", "Failed to send sync request", error)
-                    })
                 }
-
                 LifecycleEvent.Type.ERROR -> {
                     isConnecting = false
-                    Log.e("WS", "Connection Error", lifecycleEvent.exception)
-
+                    Log.e("WS", "STOMP ERROR: ${lifecycleEvent.exception?.message}")
                 }
-
                 LifecycleEvent.Type.CLOSED -> {
                     isConnecting = false
-                    Log.d("WS", "Connection Closed")
+                    Log.d("WS", "Socket Closed Gracefully")
                 }
-
                 else -> {}
             }
-        }
+        }, { error ->
+            Log.e("WS", "Unhandled Rx Error", error)
+        })
 
-        stompClient?.connect(headers)
+        stompClient?.connect()
     }
 
     @SuppressLint("CheckResult")
@@ -78,23 +93,58 @@ class WebSocketManager {
         // Listen for private messages
         stompClient?.topic("/user/queue/messages")?.subscribe { topicMessage ->
             Log.d("WS", "Received Private Message: ${topicMessage.payload}")
-            // TODO: Lhek parse the message and insert into the DB
+            try {
+                // Parse the JSON into our DTO
+                val message = gson.fromJson(topicMessage.payload, OutgoingMessage::class.java)
+
+                // Pass it to the Repository (via the listener) to handle the DB insert
+                messageListener?.onPrivateMessageReceived(message)
+
+                // Immediately send an acknowledgment back to the server
+                // Note: using message.id based on the DTO we structured earlier
+                acknowledgeMessage(messageId = message.messageId.toString())
+            } catch (e: Exception) {
+                Log.e("WS", "Error parsing incoming private message", e)
+            }
         }
 
         // Listen for delivery acknowledgments
         stompClient?.topic("/user/queue/delivery")?.subscribe { ack ->
             Log.d("WS", "Message delivered to peer: ${ack.payload}")
-            // TODO: Lhek update the message status to delivered and send ack
+            try {
+                // Parse the ack payload JSON object like {"messageId": "uuid"}
+                val mapType = object : TypeToken<Map<String, String>>() {}.type
+                val ackData: Map<String, String> = gson.fromJson(ack.payload, mapType)
+                val deliveredMessageId = ackData["messageId"]
+
+                if (deliveredMessageId != null) {
+                    // Tell Repository to update Room DB status to DELIVERED
+                    messageListener?.onMessageDeliveredAck(deliveredMessageId)
+                }
+            } catch (e: Exception) {
+                Log.e("WS", "Error parsing ack", e)
+            }
         }
     }
 
     // make it call api get all groups user is in
-    @SuppressLint("CheckResult")    // UUID works as String
+    @SuppressLint("CheckResult")
     private fun subscribeToGroups(groupIds: List<String>) {
         groupIds.forEach { id ->
             stompClient?.topic("/topic/room.$id")?.subscribe { msg ->
                 Log.d("WS", "Group $id Message: ${msg.payload}")
-                // TODO: Lhek save group messages to Room DB
+                try {
+                    // Change the parsing line to:
+                    val groupMessage = gson.fromJson(msg.payload, OutgoingGroupMessage::class.java)
+
+                    // Pass to Repository to save
+                    messageListener?.onGroupMessageReceived(groupMessage)
+
+                    // Send Ack back to server
+                    acknowledgeGroupMessage(messageId = groupMessage.messageId.toString())
+                } catch (e: Exception) {
+                    Log.e("WS", "Error parsing group message", e)
+                }
             }
         }
     }
@@ -145,7 +195,7 @@ class WebSocketManager {
 
     /**
      * Sends an acknowledgment for a received group message.
-     * /message.ack
+     * /group.ack
      */
     @SuppressLint("CheckResult")
     fun acknowledgeGroupMessage(messageId: String) {
@@ -153,14 +203,13 @@ class WebSocketManager {
         val jsonAck = Gson().toJson(ackData)
 
         stompClient?.send("/app/group.ack", jsonAck)?.subscribe({
-            Log.d("WS", "Ack sent for $messageId")
+            Log.d("WS", "Ack sent for group message $messageId")
         }, { error ->
-            Log.e("WS", "Ack failed", error)
+            Log.e("WS", "Ack failed for group", error)
         })
     }
 
     fun disconnect() {
         stompClient?.disconnect()
     }
-
 }

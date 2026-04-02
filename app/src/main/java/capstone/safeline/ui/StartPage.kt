@@ -2,6 +2,7 @@ package capstone.safeline.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -35,11 +36,26 @@ import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
+import io.reactivex.plugins.RxJavaPlugins
 
 class StartPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.loadTheme(this)
+        RxJavaPlugins.setErrorHandler { e ->
+            var error = e
+            if (error is io.reactivex.exceptions.UndeliverableException) {
+                error = error.cause ?: error
+            }
+            if (error is java.lang.IllegalStateException) {
+                // This is the "Not connected" error from the Stomp library.
+                // We just log it and ignore it so the app survives.
+                Log.w("RxJavaBlastShield", "Ignored socket disconnect error", error)
+                return@setErrorHandler
+            }
+            // Log other unknown Rx errors safely
+            Log.e("RxJavaBlastShield", "Undeliverable exception received", error)
+        }
         setContent { SafeLineNav() }
     }
 }

@@ -13,9 +13,14 @@ interface MessageDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessage(message: MessageEntity)
 
-    // Using Flow so the UI updates automatically when new messages arrive
-    @Query("SELECT * FROM messages WHERE receiverId = :userId OR senderId = :userId ORDER BY timestamp ASC")
-    fun getMessagesForUser(userId: String): Flow<List<MessageEntity>>
+    // Filter by BOTH users to get the specific 1-on-1 conversation
+    @Query("""
+        SELECT * FROM messages 
+        WHERE (senderId = :currentUserId AND receiverId = :contactId) 
+           OR (senderId = :contactId AND receiverId = :currentUserId) 
+        ORDER BY timestamp ASC
+    """)
+    fun getConversation(currentUserId: String, contactId: String): Flow<List<MessageEntity>>
 
     @Query("UPDATE messages SET status = :newStatus WHERE messageUuid = :uuid")
     suspend fun updateMessageStatus(uuid: String, newStatus: String)

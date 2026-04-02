@@ -1,47 +1,59 @@
 package capstone.safeline.data.repository
 
 import capstone.safeline.apis.ApiServiceMessage
+import capstone.safeline.apis.dto.messaging.OutgoingGroupMessage
+import capstone.safeline.apis.dto.messaging.OutgoingMessage
+import capstone.safeline.apis.network.WebSocketMessageListener
+import capstone.safeline.data.local.dao.GroupMessageDao
 import capstone.safeline.data.local.dao.MessageDao
 import capstone.safeline.data.local.entity.MessageEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
 class MessageRepository(
     private val messageDao: MessageDao,
-    private val apiService: ApiServiceMessage
-) {
+    private val groupMessageDao: GroupMessageDao,
+    private val apiService: ApiServiceMessage,
+    private val currentUserId: String
+) : WebSocketMessageListener {
 
-    // A Flow of messages for a specific conversation to keep the UI reactive
-    fun getConversation(userId: String): Flow<List<MessageEntity>> {
-        return messageDao.getMessagesForUser(userId)
+    private val repositoryScope = CoroutineScope(Dispatchers.IO)
+
+    // Expose the Flow to the ViewModel
+    fun getConversation(contactId: String): Flow<List<MessageEntity>> {
+        return messageDao.getConversation(currentUserId, contactId)
     }
 
-    // This is the function the "Second Phone" will call when a message arrives via WebSocket
-    suspend fun receiveAndSaveMessage(message: MessageEntity) {
-        val receivedMessage = message.copy(status = "RECEIVED")
-        messageDao.insertMessage(receivedMessage)
+    // Helper for manual inserts (Optimistic UI)
+    suspend fun saveMessageLocally(message: MessageEntity) {
+        messageDao.insertMessage(message)
     }
 
-    // Useful for the sender's side or for updating status locally
-    suspend fun updateStatus(messageUuid: String, newStatus: String) {
-        messageDao.updateMessageStatus(messageUuid, newStatus)
+    // Handle incoming private messages from Socket
+    override fun onPrivateMessageReceived(message: OutgoingMessage) {
+        repositoryScope.launch {
+            val entity = MessageEntity(
+                messageUuid = message.messageId.toString(),
+                senderId = message.sender.toString(),
+                receiverId = currentUserId,
+                content = message.content,
+                timestamp = System.currentTimeMillis(),
+                status = "DELIVERED"
+            )
+            messageDao.insertMessage(entity)
+        }
     }
 
-//    // This talks to the backend
-//    suspend fun markMessageAsRead(messageUuid: String) {
-//        try {
-//            // 1. Tell the server the message was read
-//            val response = apiService.updateMessageStatus(
-//                messageUuid,
-//                mapOf("status" to "READ")
-//            )
-//
-//            // 2. If the server says "OK" (200 series status code), update our local database
-//            if (response.isSuccessful) {
-//                messageDao.updateMessageStatus(messageUuid, "READ")
-//            }
-//        } catch (e: Exception) {
-//            // If the phone has no internet or the server is down, we catch the crash here
-//            println("Failed to update read status on server: ${e.message}")
-//        }
-//    }
+    // Handle delivery acknowledgments
+    override fun onMessageDeliveredAck(messageId: String) {
+        repositoryScope.launch {
+            messageDao.updateMessageStatus(messageId, "DELIVERED")
+        }
+    }
+
+    override fun onGroupMessageReceived(message: OutgoingGroupMessage) {
+        // Implement group logic here similar to private messages
+    }
 }
