@@ -1,0 +1,62 @@
+[
+  {
+    "name": "John Doe",
+    "messages": [
+      { "text": "Hey, how are you?", "time": "12:30 PM" },
+      { "text": "Did you finish the report?", "time": "12:45 PM" },
+      { "text": "Let's meet at 3 PM.", "time": "1:00 PM" },
+      { "text": "Are you free tomorrow?", "time": "1:15 PM" },
+      { "text": "Don't forget to call me.", "time": "1:30 PM" }
+    ]
+  },
+  {
+    "name": "Jane Smith",
+    "messages": [
+      { "text": "Meeting at 2 PM", "time": "11:45 AM" },
+      { "text": "Please review the slides.", "time": "12:00 PM" },
+      { "text": "Can we postpone lunch?", "time": "12:15 PM" },
+      { "text": "Call me when you're free.", "time": "12:30 PM" },
+      { "text": "Remember to submit the form.", "time": "12:45 PM" }
+    ]
+  },
+  {
+    "name": "Mike Lee",
+    "messages": [
+      { "text": "Call me back!", "time": "10:20 AM" },
+      { "text": "Did you get my last message?", "time": "10:35 AM" },
+      { "text": "Let's catch up later.", "time": "10:50 AM" },
+      { "text": "Are we still on for today?", "time": "11:05 AM" },
+      { "text": "Don't forget the documents.", "time": "11:20 AM" }
+    ]
+  },
+  {
+    "name": "Jeff",
+    "messages": [
+      { "text": "I might be too cool", "time": "12:00 PM" },
+      { "text": "Check out this new song.", "time": "12:15 PM" },
+      { "text": "Are you coming to the party?", "time": "12:30 PM" },
+      { "text": "We need to discuss the project.", "time": "12:45 PM" },
+      { "text": "Let me know your thoughts.", "time": "1:00 PM" }
+    ]
+  },
+  {
+    "name": "Savs",
+    "messages": [
+      { "text": "Gymnastics is at 3", "time": "2:00 PM" },
+      { "text": "Don't be late!", "time": "2:15 PM" },
+      { "text": "Bring your gear.", "time": "2:30 PM" },
+      { "text": "Practice went well yesterday.", "time": "2:45 PM" },
+      { "text": "See you at the park.", "time": "3:00 PM" }
+    ]
+  },
+  {
+    "name": "Avano",
+    "messages": [
+      { "text": "Dude we are cooked!!!", "time": "11:50 PM" },
+      { "text": "That was insane!", "time": "11:55 PM" },
+      { "text": "Can't believe it happened.", "time": "11:59 PM" },
+      { "text": "We need a plan B.", "time": "12:05 AM" },
+      { "text": "Let's meet tomorrow to discuss.", "time": "12:15 AM" }
+    ]
+  }
+]
