@@ -119,6 +119,11 @@ private fun FriendRequestsScreen(
     val scope = rememberCoroutineScope()
 
     val requests = remember { mutableStateListOf<UiFriendRequest>() }
+    val serverInvites = remember {
+        mutableStateListOf(
+            "Server A"
+        )
+    }
     var currentUserId by remember { mutableStateOf<String?>(null) }
     var loadError by remember { mutableStateOf<String?>(null) }
     var showSearchDropdown by remember { mutableStateOf(false) }
@@ -432,6 +437,12 @@ private fun FriendRequestsScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
+                Spacer(modifier = Modifier.height(20.dp))
+
+                ServerInvitesHeader(count = serverInvites.size)
+
+                Spacer(modifier = Modifier.height(18.dp))
+
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -495,6 +506,19 @@ private fun FriendRequestsScreen(
                                     else loadError = "Failed to decline request."
                                 }
                             }
+                        )
+                    }
+
+                    items(serverInvites, key = { it }) { server ->
+                        FriendRequestRow(
+                            request = UiFriendRequest(
+                                requesterId = server,
+                                name = server,
+                                email = ""
+                            ),
+                            onOpenProfile = {},
+                            onAccept = { serverInvites.remove(server) },
+                            onDeny = { serverInvites.remove(server) }
                         )
                     }
                 }
@@ -601,6 +625,54 @@ private fun FriendRequestsHeader(count: Int) {
 
         Text(
             text = "You Have $count New friend Requests",
+            fontFamily = Tapestry,
+            fontSize = 20.sp,
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun ServerInvitesHeader(count: Int) {
+    Box(
+        modifier = Modifier
+            .width(330.dp)
+            .height(69.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.request_new),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.buttonGradient
+                        ),
+                        shape = shape
+                    )
+                    .then(
+                        ThemeManager.buttonStroke?.let {
+                            Modifier.border(1.dp, it, shape)
+                        } ?: Modifier
+                    )
+            )
+        }
+
+        Text(
+            text = "You Have $count New Server Invites",
             fontFamily = Tapestry,
             fontSize = 20.sp,
             color = Color.White,
