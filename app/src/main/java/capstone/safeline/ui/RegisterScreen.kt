@@ -24,6 +24,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,6 +48,7 @@ fun RegisterScreen(
     onBack: () -> Unit,
     onSuccess: () -> Unit,
 ) {
+    val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -122,7 +125,7 @@ fun RegisterScreen(
             Spacer(Modifier.height(s(105)))
             StrokeText(
                 text = "Please Enter Your",
-                fontFamily = ThemeManager.fontFamily,
+                fontFamily = Kaushan,
                 fontSize = 48.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -172,10 +175,11 @@ fun RegisterScreen(
 // made this because register fields were repeated
 @Composable
 fun RegistrationField(label: String, value: String, onValueChange: (String) -> Unit) {
+    val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
     Spacer(Modifier.height(8.dp))
     StrokeText(
         text = label,
-        fontFamily = ThemeManager.fontFamily,
+        fontFamily = Kaushan,
         fontSize = 32.sp,
         fillColor = Color.White,
         strokeColor = ThemeManager.titleStroke,

@@ -15,7 +15,7 @@
         android:theme="@style/Theme.SafeLine">
 
         <activity
-            android:name=".ui.StartPage"
+            android:name=".ui.Home"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,7 +24,7 @@
         </activity>
 
         <activity
-            android:name=".ui.Home"
+            android:name=".ui.StartPage"
             android:exported="true" />
         <activity
             android:name=".ui.Chat"
