@@ -9,7 +9,6 @@ import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
-import java.util.UUID
 
 class WebSocketManager {
     companion object {
@@ -26,6 +25,9 @@ class WebSocketManager {
     private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
+
+    @Volatile
+    var onPrivateMessagePayload: ((String) -> Unit)? = null
 
     @SuppressLint("CheckResult")
     fun connect(token: String) {
