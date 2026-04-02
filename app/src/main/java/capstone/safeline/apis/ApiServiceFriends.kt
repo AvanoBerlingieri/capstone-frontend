@@ -1,7 +1,7 @@
 package capstone.safeline.apis
 
-import capstone.safeline.apis.dto.FriendRequest
-import capstone.safeline.apis.dto.FriendResponse
+import capstone.safeline.apis.dto.friends.FriendRequest
+import capstone.safeline.apis.dto.friends.FriendResponse
 import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.GET
