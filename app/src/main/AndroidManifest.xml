@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:allowBackup="true"
@@ -97,6 +104,9 @@
         <activity
             android:name=".ui.CallingPage"
             android:exported="true" />
+
+        <activity android:name=".ui.GroupCallSetup" android:exported="true" />
+        <activity android:name=".ui.GroupCallRoom" android:exported="true" />
 
     </application>
 

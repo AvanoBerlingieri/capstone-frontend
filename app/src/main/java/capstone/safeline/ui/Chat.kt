@@ -5,66 +5,51 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.extractUserIdFromJwt
-import capstone.safeline.apis.network.ApiClientAuth
-import capstone.safeline.apis.network.ApiClientFriends
-import capstone.safeline.data.local.DataStoreManager
-import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.data.repository.FriendRepository
-import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.models.ChatUser
 import capstone.safeline.models.Message
-import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
-import capstone.safeline.ui.theme.ThemeManager
-import kotlinx.coroutines.flow.first
-import java.util.UUID
+import capstone.safeline.ui.components.BackButton
 
+
+private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
 class Chat : ComponentActivity() {
+
+    private val chatUsers = listOf(
+        ChatUser("Friend 1", messages = listOf(Message("Hi", "12:49 PM"))),
+        ChatUser("Friend 2", messages = listOf(Message("Yo", "12:30 PM"))),
+        ChatUser("Friend 3", messages = listOf(Message("Hello", "11:58 AM"))),
+        ChatUser("Friend 4", messages = listOf(Message("Hey", "10:12 AM"))),
+        ChatUser("Friend 5", messages = listOf(Message("Sup", "9:40 AM"))),
+        ChatUser("Friend 6", messages = listOf(Message("Ping", "8:15 AM")))
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             ChatScreen(
+                chatUsers = chatUsers,
                 onUserClick = { user ->
                     val intent = Intent(this, DmPage::class.java)
                     intent.putExtra("userName", user.name)
@@ -80,7 +65,7 @@ class Chat : ComponentActivity() {
                         "contacts" -> startActivity(Intent(this, Contacts::class.java))
                     }
                 },
-                onBack = { finish() }
+                onBack = { startActivity(Intent(this, Home::class.java)) }
             )
         }
     }
@@ -90,39 +75,16 @@ private enum class ChatsTab { ALL, UNREAD, FAVORITES, GROUPS }
 
 @Composable
 fun ChatScreen(
+    chatUsers: List<ChatUser>,
     onUserClick: (ChatUser) -> Unit,
     onNavigate: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    val context = LocalContext.current
-    val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-    val friendRepo = remember { FriendRepository(ApiClientFriends.provideService(context, dsManager)) }
-    val authRepo = remember { AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager)) }
-
-    var chatUsers by remember { mutableStateOf<List<ChatUser>>(emptyList()) }
-
-    LaunchedEffect(Unit) {
-        val token = dsManager.tokenFlow.first()
-        val userId = token?.let { extractUserIdFromJwt(it) } ?: return@LaunchedEffect
-        friendRepo.getAllFriends(userId).onSuccess { friendIds ->
-            val resolved = mutableListOf<ChatUser>()
-            val placeholderMsg = listOf(Message("", ""))
-            friendIds.forEach { fid ->
-                authRepo.getUserById(UUID.fromString(fid))
-                    .onSuccess { user ->
-                        resolved.add(ChatUser(user.username, placeholderMsg))
-                    }
-                    .onFailure {
-                        resolved.add(ChatUser("Unknown user", placeholderMsg))
-                    }
-            }
-            chatUsers = resolved
-        }
-    }
-
     var selectedTab by remember { mutableStateOf(ChatsTab.ALL) }
 
-    val mapped = chatUsers.map { user -> user to false }
+    val mapped = chatUsers.mapIndexed { index, user ->
+        user to (index == 0)
+    }
 
     val visible = when (selectedTab) {
         ChatsTab.UNREAD -> mapped.filter { it.second }
@@ -144,63 +106,20 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+            Image(
+                painter = painterResource(R.drawable.chats_bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
 
-                Image(
-                    painter = painterResource(R.drawable.chats_bg),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-            } else {
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                ThemeManager.backgroundGradient
-                            )
-                        )
-                )
-
-            }
-
-            Box(
+            StrokeTitle(
+                text = "CHATS",
+                fontFamily = Vampiro,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .height(70.dp)
-            ) {
-
-                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    ThemeManager.headerGradient
-                                )
-                            )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(ThemeManager.topBarStroke)
-                    )
-                }
-
-                StrokeTitle(
-                    text = "CHATS",
-                    fontFamily = ThemeManager.fontFamily,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+                    .padding(top = 22.dp)
+            )
 
             BackButton(
                 onClick = onBack,
@@ -316,40 +235,12 @@ private fun ChatRow(
             .size(width = 393.dp, height = 93.dp)
             .clickable { onClick() }
     ) {
-        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
-            Image(
-                painter = painterResource(R.drawable.chats_dm_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
-            )
-
-        } else {
-
-            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(
-                            ThemeManager.buttonGradient
-                        ),
-                        shape = shape
-                    )
-                    .then(
-                        ThemeManager.buttonStroke?.let {
-                            Modifier.border(
-                                width = 1.dp,
-                                color = it,
-                                shape = shape
-                            )
-                        } ?: Modifier
-                    )
-            )
-
-        }
+        Image(
+            painter = painterResource(R.drawable.chats_dm_bg),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
+        )
 
         Row(
             modifier = Modifier
@@ -368,7 +259,7 @@ private fun ChatRow(
             Column(modifier = Modifier.weight(1f)) {
                 StrokeText(
                     text = user.name,
-                    fontFamily = ThemeManager.fontFamily,
+                    fontFamily = Vampiro,
                     fontSize = 24.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF002BFF),
@@ -408,7 +299,7 @@ private fun ReflectedText(
     Column {
         StrokeText(
             text = text,
-            fontFamily = ThemeManager.fontFamily,
+            fontFamily = Vampiro,
             fontSize = size,
             fillColor = Color.White,
             strokeColor = Color(0xFF002BFF),
@@ -421,7 +312,7 @@ private fun ReflectedText(
         ) {
             StrokeText(
                 text = text,
-                fontFamily = ThemeManager.fontFamily,
+                fontFamily = Vampiro,
                 fontSize = size,
                 fillColor = Color.White,
                 strokeColor = Color(0xFFB30FFF),
