@@ -148,7 +148,7 @@ fun GroupSettingsScreen(
                         .clip(RoundedCornerShape(50.dp))
                         .background(
                             Brush.horizontalGradient(
-                                listOf(Color(0x80002BFF), Color(0x80B30FFF))
+                                ThemeManager.groupCardGradient
                             )
                         )
                         .padding(20.dp)
@@ -251,10 +251,10 @@ fun GroupSettingsScreen(
                                 .height(320.dp)
                                 .background(
                                     Brush.horizontalGradient(
-                                        listOf(Color(0xFF0251C7), Color(0xFF893990))
+                                        ThemeManager.groupInnerGradient
                                     )
                                 )
-                                .border(1.dp, Color(0xFF05E6FF))
+                                .border(1.dp, ThemeManager.groupStroke)
                                 .padding(10.dp)
                         ) {
 

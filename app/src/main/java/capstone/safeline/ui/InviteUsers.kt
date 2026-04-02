@@ -166,10 +166,7 @@ fun InviteUsersScreen(
                         .clip(RoundedCornerShape(50.dp))
                         .background(
                             Brush.horizontalGradient(
-                                listOf(
-                                    Color(0x80002BFF),
-                                    Color(0x80B30FFF)
-                                )
+                                ThemeManager.communityCardGradient
                             )
                         )
                         .padding(20.dp)
@@ -181,14 +178,11 @@ fun InviteUsersScreen(
                             .fillMaxHeight(0.95f)
                             .background(
                                 Brush.horizontalGradient(
-                                    listOf(
-                                        Color(0xFF0251C7),
-                                        Color(0xFF893990)
-                                    )
+                                    ThemeManager.communityInnerGradient
                                 )
                             )
                             .clip(RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFF05E6FF), RoundedCornerShape(12.dp))
+                            .border(1.dp, ThemeManager.communityStroke, RoundedCornerShape(12.dp))
                             .padding(10.dp)
                     ) {
 

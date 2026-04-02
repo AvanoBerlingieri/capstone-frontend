@@ -164,7 +164,7 @@ private fun CommunityServersScreen(
     onBackToMessages: () -> Unit,
     onNavigate: (String) -> Unit,
     onOpenSettings: () -> Unit,
-    onAddServer: () -> Unit,
+    onAddServer: (() -> Unit)?,
     onAddChannel: () -> Unit,
     onOpenChannel: (String) -> Unit
 ) {
@@ -333,7 +333,7 @@ fun LeftServersPanel(
     selectedServer: String,
     onSelectServer: (String) -> Unit,
     onBackToMessages: () -> Unit,
-    onAddServer: () -> Unit,
+    onAddServer: (() -> Unit)?,
     backIcon: Int
 ) {
     Box(
@@ -467,15 +467,17 @@ fun LeftServersPanel(
             }
         }
 
-        Image(
-            painter = painterResource(R.drawable.community_servers_add_btn),
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 20.dp)
-                .size(50.dp)
-                .clickable { onAddServer() }
-        )
+        if (onAddServer != null) {
+            Image(
+                painter = painterResource(R.drawable.community_servers_add_btn),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 20.dp)
+                    .size(50.dp)
+                    .clickable { onAddServer() }
+            )
+        }
     }
 }
 

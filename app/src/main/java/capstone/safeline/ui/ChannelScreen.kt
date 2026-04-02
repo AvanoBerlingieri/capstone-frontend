@@ -100,7 +100,7 @@ private fun ChannelScreenUI(
                 selectedServer = selectedServer,
                 onSelectServer = onSelectServer,
                 onBackToMessages = {},
-                onAddServer = {},
+                onAddServer = null,
                 backIcon = R.drawable.back_btn
             )
 

@@ -137,7 +137,7 @@ fun InviteUsersScreen(
                         .clip(RoundedCornerShape(50.dp))
                         .background(
                             Brush.horizontalGradient(
-                                listOf(Color(0x80002BFF), Color(0x80B30FFF))
+                                ThemeManager.groupCardGradient
                             )
                         )
                         .padding(20.dp)

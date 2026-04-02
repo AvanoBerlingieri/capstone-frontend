@@ -107,10 +107,7 @@ fun AddChannelScreen(
                         .clip(RoundedCornerShape(40.dp))
                         .background(
                             Brush.horizontalGradient(
-                                listOf(
-                                    Color(0x80002BFF),
-                                    Color(0x80B30FFF)
-                                )
+                                ThemeManager.communityCardGradient
                             )
                         )
                         .padding(20.dp)
