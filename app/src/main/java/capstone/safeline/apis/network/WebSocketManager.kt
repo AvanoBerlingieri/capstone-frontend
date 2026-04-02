@@ -40,6 +40,9 @@ class WebSocketManager {
     private var stompClient: StompClient? = null
     private var isConnecting = false
 
+    @Volatile
+    var onPrivateMessagePayload: ((String) -> Unit)? = null
+
     @SuppressLint("CheckResult")
     fun connect(token: String) {
         if (stompClient != null && (stompClient!!.isConnected || isConnecting)) return
