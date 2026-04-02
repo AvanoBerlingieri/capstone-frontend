@@ -57,6 +57,16 @@ class ManageServer : ComponentActivity() {
                     setResult(Activity.RESULT_OK, intent)
 
                     finish()
+                },
+                onNavigate = { destination ->
+                    when (destination) {
+                        "home" -> startActivity(Intent(this, Home::class.java))
+                        "calls" -> startActivity(Intent(this, Call::class.java))
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
+                        "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                    }
                 }
             )
         }
@@ -81,7 +91,8 @@ class ManageServer : ComponentActivity() {
 fun ManageServerScreen(
     serverName: String,
     onBack: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onNavigate: (String) -> Unit
 ) {
     var name by remember { mutableStateOf(serverName) }
     var currentServerName by remember { mutableStateOf(serverName) }
@@ -97,7 +108,10 @@ fun ManageServerScreen(
 
     Scaffold(
         bottomBar = {
-            BottomNavBar("communities", {})
+            BottomNavBar(
+                currentScreen = "communities",
+                onNavigate = onNavigate
+            )
         },
         containerColor = Color.Transparent
     ) { padding ->

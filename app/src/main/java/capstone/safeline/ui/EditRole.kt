@@ -1,6 +1,7 @@
 package capstone.safeline.ui
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -49,7 +50,17 @@ class EditRole : ComponentActivity() {
                 serverName = serverName,
                 roleName = roleName,
                 userName = userName,
-                onBack = { finish() }
+                onBack = { finish() },
+                onNavigate = { destination ->
+                    when (destination) {
+                        "home" -> startActivity(Intent(this, Home::class.java))
+                        "calls" -> startActivity(Intent(this, Call::class.java))
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
+                        "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                    }
+                }
             )
         }
     }
@@ -60,7 +71,8 @@ fun EditRoleScreen(
     serverName: String,
     roleName: String?,
     userName: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigate: (String) -> Unit
 ) {
 
     val context = LocalContext.current
@@ -92,7 +104,10 @@ fun EditRoleScreen(
 
     Scaffold(
         bottomBar = {
-            BottomNavBar("communities", {})
+            BottomNavBar(
+                currentScreen = "communities",
+                onNavigate = onNavigate
+            )
         },
         containerColor = Color.Transparent
     ) { padding ->

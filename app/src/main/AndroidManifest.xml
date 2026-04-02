@@ -127,6 +127,17 @@
             android:name=".ui.EditRole"
             android:exported="true" />
 
+        <activity
+            android:name=".ui.GroupChatPage"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.GroupSettingsPage"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.InviteUsersPage"
+            android:exported="true" />
     </application>
 
 </manifest>

@@ -5,6 +5,22 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 
 object CommunityData {
+
+    val groupChats = mutableStateListOf(
+        GroupChat(
+            id = "1",
+            name = androidx.compose.runtime.mutableStateOf("T177"),
+            users = mutableStateListOf("Alex", "John", "Maria")
+        )
+    )
+
+    data class GroupChat(
+        val id: String,
+        val name: androidx.compose.runtime.MutableState<String>,
+        val users: SnapshotStateList<String>
+    )
+
+
     val servers = mutableStateListOf<String>()
     val channelsMap = mutableStateMapOf<String, MutableList<String>>()
 

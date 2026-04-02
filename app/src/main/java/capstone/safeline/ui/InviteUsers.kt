@@ -1,5 +1,6 @@
 package capstone.safeline.ui
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,7 +49,17 @@ class InviteUsers : ComponentActivity() {
             InviteUsersScreen(
                 serverUsers = users,
                 allUsers = listOf("Alex", "John", "Maria", "David", "Chris"),
-                onBack = { finish() }
+                onBack = { finish() },
+                onNavigate = { destination ->
+                    when (destination) {
+                        "home" -> startActivity(Intent(this, Home::class.java))
+                        "calls" -> startActivity(Intent(this, Call::class.java))
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
+                        "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                    }
+                }
             )
         }
     }
@@ -58,14 +69,15 @@ class InviteUsers : ComponentActivity() {
 fun InviteUsersScreen(
     serverUsers: SnapshotStateList<String>,
     allUsers: List<String>,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigate: (String) -> Unit
 ) {
 
     Scaffold(
         bottomBar = {
             BottomNavBar(
                 currentScreen = "communities",
-                onNavigate = {}
+                onNavigate = onNavigate
             )
         },
         containerColor = Color.Transparent

@@ -53,6 +53,16 @@ class ManageUser : ComponentActivity() {
                     intent.putExtra("deleted_user", userName)
                     setResult(Activity.RESULT_OK, intent)
                     finish()
+                },
+                onNavigate = { destination ->
+                    when (destination) {
+                        "home" -> startActivity(Intent(this, Home::class.java))
+                        "calls" -> startActivity(Intent(this, Call::class.java))
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
+                        "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                    }
                 }
             )
         }
@@ -71,7 +81,8 @@ fun ManageUserScreen(
     userName: String,
     serverName: String,
     onBack: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onNavigate: (String) -> Unit
 ) {
 
     val serverRoles = CommunityData.rolesMap.getOrPut(serverName) { mutableMapOf() }
@@ -82,7 +93,7 @@ fun ManageUserScreen(
         bottomBar = {
             BottomNavBar(
                 currentScreen = "communities",
-                onNavigate = {}
+                onNavigate = onNavigate
             )
         },
         containerColor = Color.Transparent

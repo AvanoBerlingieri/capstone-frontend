@@ -1,5 +1,6 @@
 package capstone.safeline.ui
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,41 +24,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.BackButton
+import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
-import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 
-class AddServer : ComponentActivity() {
+class GroupSettingsPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val groupId = intent.getStringExtra("groupId") ?: ""
+
         setContent {
-            AddServerScreen(
+            GroupSettingsScreen(
+                groupId = groupId,
                 onBack = { finish() },
-                onConfirm = { serverName ->
-
-                    val resultIntent = Intent()
-                    resultIntent.putExtra("server_name", serverName)
-
-                    setResult(RESULT_OK, resultIntent)
-                    finish()
-                },
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
                         "calls" -> startActivity(Intent(this, Call::class.java))
-                        "chats" -> startActivity(Intent(this, Chat::class.java))
+                        "chats" -> {}
                         "profile" -> startActivity(Intent(this, Profile::class.java))
                         "communities" -> startActivity(Intent(this, Community::class.java))
                         "contacts" -> startActivity(Intent(this, Contacts::class.java))
@@ -68,19 +62,24 @@ class AddServer : ComponentActivity() {
 }
 
 @Composable
-fun AddServerScreen(
+fun GroupSettingsScreen(
+    groupId: String,
     onBack: () -> Unit,
-    onConfirm: (String) -> Unit,
     onNavigate: (String) -> Unit
 ) {
-    var serverName by remember { mutableStateOf("") }
 
-    val contacts = listOf("Alex", "John", "Maria", "Kate", "Chris", "David")
+    val context = LocalContext.current
+
+    val group = CommunityData.groupChats.find { it.id == groupId }
+
+    var name by remember(group) { mutableStateOf(group?.name?.value ?: "") }
+
+    val users = group?.users ?: mutableStateListOf()
 
     Scaffold(
         bottomBar = {
             BottomNavBar(
-                currentScreen = "communities",
+                currentScreen = "chats",
                 onNavigate = onNavigate
             )
         },
@@ -94,16 +93,13 @@ fun AddServerScreen(
         ) {
 
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
                 Image(
-                    painter = painterResource(R.drawable.add_server_bg),
+                    painter = painterResource(R.drawable.dm_background),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
-            } else {
-
+            }else {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -113,71 +109,28 @@ fun AddServerScreen(
                             )
                         )
                 )
-
             }
 
             BackButton(
                 onClick = onBack,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .statusBarsPadding()
+                modifier = Modifier.align(Alignment.TopStart)
             )
 
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .height(70.dp)
+                    .height(70.dp),
+                contentAlignment = Alignment.Center
             ) {
-
-                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    ThemeManager.headerGradient
-                                )
-                            )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(ThemeManager.topBarStroke)
-                    )
-                }
-
-                Box(
-                    modifier = Modifier.align(Alignment.Center)
-                ) {
-
-                    Text(
-                        text = "ADD SERVER",
-                        fontFamily = ThemeManager.fontFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 32.sp,
-                        color = Color.White,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Text(
-                        text = "ADD SERVER",
-                        fontFamily = ThemeManager.fontFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 32.sp,
-                        color = Color.Transparent,
-                        textAlign = TextAlign.Center,
-                        style = TextStyle(
-                            brush = Brush.linearGradient(
-                                listOf(Color(0xFF0DA2FF), Color(0xFFEA00FF))
-                            ),
-                            drawStyle = Stroke(3f)
-                        )
-                    )
-                }
+                StrokeText(
+                    text = "MANAGE GROUP",
+                    fontFamily = ThemeManager.fontFamily,
+                    fontSize = 28.sp,
+                    fillColor = Color.White,
+                    strokeColor = Color(0xFFB30FFF),
+                    strokeWidth = 2f
+                )
             }
 
             Column(
@@ -191,14 +144,11 @@ fun AddServerScreen(
                 Box(
                     modifier = Modifier
                         .width(360.dp)
-                        .height(858.dp)
+                        .fillMaxHeight()
                         .clip(RoundedCornerShape(50.dp))
                         .background(
                             Brush.horizontalGradient(
-                                listOf(
-                                    Color(0x80002BFF),
-                                    Color(0x80B30FFF)
-                                )
+                                listOf(Color(0x80002BFF), Color(0x80B30FFF))
                             )
                         )
                         .padding(20.dp)
@@ -210,52 +160,84 @@ fun AddServerScreen(
                     ) {
 
                         StrokeText(
-                            text = "NAME",
+                            text = "GROUP NAME",
                             fontFamily = ThemeManager.fontFamily,
-                            fontSize = 24.sp,
+                            fontSize = 20.sp,
                             fillColor = Color.White,
                             strokeColor = Color(0xFF193DEF),
                             strokeWidth = 1f
                         )
 
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
 
-                            Image(
-                                painter = painterResource(R.drawable.add_server_name_input),
-                                contentDescription = null,
-                                modifier = Modifier.matchParentSize(),
-                                contentScale = ContentScale.FillBounds
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                            ) {
 
-                            TextField(
-                                value = serverName,
-                                onValueChange = { serverName = it },
-                                modifier = Modifier.fillMaxSize(),
-                                textStyle = TextStyle(
-                                    color = Color.White,
-                                    fontFamily = ThemeManager.fontFamily
-                                ),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
+                                Image(
+                                    painter = painterResource(R.drawable.group_name_input),
+                                    contentDescription = null,
+                                    modifier = Modifier.matchParentSize(),
+                                    contentScale = ContentScale.FillBounds
                                 )
-                            )
+
+                                TextField(
+                                    value = name,
+                                    onValueChange = { name = it },
+                                    modifier = Modifier.fillMaxSize(),
+                                    textStyle = TextStyle(
+                                        color = Color.White,
+                                        fontFamily = ThemeManager.fontFamily
+                                    ),
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent
+                                    )
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Box(
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(36.dp)
+                                    .clickable {
+                                        group?.name?.value = name.toString()
+
+                                        (context as Activity).finish()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+
+                                Image(
+                                    painter = painterResource(R.drawable.add_users_btn),
+                                    contentDescription = null,
+                                    modifier = Modifier.matchParentSize()
+                                )
+
+                                Text(
+                                    "Change",
+                                    color = Color.White,
+                                    fontFamily = ThemeManager.fontFamily,
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
 
                         StrokeText(
-                            text = "INVITE USERS",
+                            text = "MEMBERS",
                             fontFamily = ThemeManager.fontFamily,
-                            fontSize = 24.sp,
+                            fontSize = 20.sp,
                             fillColor = Color.White,
                             strokeColor = Color(0xFF193DEF),
                             strokeWidth = 1f
@@ -269,19 +251,21 @@ fun AddServerScreen(
                                 .height(320.dp)
                                 .background(
                                     Brush.horizontalGradient(
-                                        listOf(
-                                            Color(0xFF0251C7),
-                                            Color(0xFF893990)
-                                        )
+                                        listOf(Color(0xFF0251C7), Color(0xFF893990))
                                     )
                                 )
-                                .clip(RoundedCornerShape(12.dp))
-                                .border(1.dp, Color(0xFF05E6FF), RoundedCornerShape(12.dp))
+                                .border(1.dp, Color(0xFF05E6FF))
                                 .padding(10.dp)
                         ) {
 
-                            LazyColumn {
-                                items(contacts) { name ->
+                            Column(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+
+                                LazyColumn(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    items(users) { user ->
 
                                     Row(
                                         modifier = Modifier
@@ -298,14 +282,14 @@ fun AddServerScreen(
                                         ) {
 
                                             Image(
-                                                painter = painterResource(R.drawable.add_server_contact_item),
+                                                painter = painterResource(R.drawable.group_user_item),
                                                 contentDescription = null,
                                                 modifier = Modifier.matchParentSize(),
                                                 contentScale = ContentScale.FillBounds
                                             )
 
                                             Text(
-                                                text = name,
+                                                text = user,
                                                 color = Color.White,
                                                 fontFamily = ThemeManager.fontFamily,
                                                 modifier = Modifier.padding(start = 16.dp),
@@ -319,54 +303,85 @@ fun AddServerScreen(
                                             modifier = Modifier
                                                 .width(80.dp)
                                                 .height(36.dp)
-                                                .clickable { },
+                                                .clickable {
+                                                    users.remove(user)
+                                                },
                                             contentAlignment = Alignment.Center
                                         ) {
 
                                             Image(
-                                                painter = painterResource(R.drawable.add_server_invite_btn),
+                                                painter = painterResource(R.drawable.delete_btn),
                                                 contentDescription = null,
-                                                modifier = Modifier.matchParentSize(),
-                                                contentScale = ContentScale.FillBounds
+                                                modifier = Modifier.matchParentSize()
                                             )
 
                                             Text(
-                                                "Invite",
+                                                "Delete",
                                                 color = Color.White,
-                                                fontFamily = ThemeManager.fontFamily,
-                                                fontSize = 14.sp
+                                                fontFamily = ThemeManager.fontFamily
                                             )
                                         }
                                     }
+                                    }
+
                                 }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .size(width = 146.dp, height = 47.dp)
+                                    .clickable {
+                                        context.startActivity(Intent(context, InviteUsersPage::class.java))
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+
+                                Image(
+                                    painter = painterResource(R.drawable.add_users_btn),
+                                    contentDescription = null,
+                                    modifier = Modifier.matchParentSize()
+                                )
+
+                                Text(
+                                    "Add Users",
+                                    color = Color.White,
+                                    fontFamily = ThemeManager.fontFamily
+                                )
                             }
                         }
 
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Box(
-                            modifier = Modifier
-                                .size(width = 146.dp, height = 47.dp)
-                                .clickable { onConfirm(serverName) },
-                            contentAlignment = Alignment.Center
-                        ) {
-
-                            Image(
-                                painter = painterResource(R.drawable.add_server_confirm_btn),
-                                contentDescription = null,
-                                modifier = Modifier.matchParentSize(),
-                                contentScale = ContentScale.FillBounds
-                            )
-
-                            Text(
-                                "Confirm",
-                                color = Color.White,
-                                fontFamily = ThemeManager.fontFamily,
-                                fontSize = 16.sp
-                            )
-                        }
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 20.dp)
+                    .size(width = 220.dp, height = 35.dp)
+                    .clickable {
+                        val index = CommunityData.groupChats.indexOfFirst { it.id == groupId }
+                        if (index != -1) {
+                            CommunityData.groupChats.removeAt(index)
+                        }
+
+                        (context as Activity).finish()
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+
+                Image(
+                    painter = painterResource(R.drawable.delete_server_btn),
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize()
+                )
+
+                Text(
+                    "LEAVE GROUP",
+                    color = Color.White,
+                    fontFamily = ThemeManager.fontFamily
+                )
             }
         }
     }

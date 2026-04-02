@@ -223,6 +223,78 @@ object ThemeManager {
             Theme.LIGHT_BLUE -> Color(0xFF0DA2FF)
         }
 
+    val communityCardGradient: List<Color>
+        get() = when (currentTheme) {
+
+            Theme.CLASSIC -> listOf(
+                Color(0x80002BFF),
+                Color(0x80B30FFF)
+            )
+
+            Theme.GRAY -> listOf(
+                Color(0x801E1E1E),
+                Color(0x80848484)
+            )
+
+            Theme.BLUE_GRAY -> listOf(
+                Color(0x800251C7),
+                Color(0x80848484)
+            )
+
+            Theme.BLUE -> listOf(
+                Color(0x800066FF),
+                Color(0x80848484)
+            )
+
+            Theme.LIGHT_BLUE -> listOf(
+                Color(0x800251C7),
+                Color(0x8005E6FF)
+            )
+        }
+
+    val communityInnerGradient: List<Color>
+        get() = when (currentTheme) {
+
+            Theme.CLASSIC -> listOf(
+                Color(0xFF0251C7),
+                Color(0xFF893990)
+            )
+
+            Theme.GRAY -> listOf(
+                Color(0xFF1E1E1E),
+                Color(0xFF848484)
+            )
+
+            Theme.BLUE_GRAY -> listOf(
+                Color(0xFF0251C7),
+                Color(0xFF848484)
+            )
+
+            Theme.BLUE -> listOf(
+                Color(0xFF0066FF),
+                Color(0xFF848484)
+            )
+
+            Theme.LIGHT_BLUE -> listOf(
+                Color(0xFF0251C7),
+                Color(0xFF05E6FF)
+            )
+        }
+
+    val communityStroke: Color
+        get() = when (currentTheme) {
+
+            Theme.CLASSIC -> Color(0xFF05E6FF)
+
+            Theme.GRAY -> Color(0xFF848484)
+
+            Theme.BLUE_GRAY -> Color(0xFF05E6FF)
+
+            Theme.BLUE -> Color.White
+
+            Theme.LIGHT_BLUE -> Color(0xFF05E6FF)
+        }
+
     val fontFamily
         get() = when (currentFont) {
 

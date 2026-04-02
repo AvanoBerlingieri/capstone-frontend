@@ -49,15 +49,25 @@ class Chat : ComponentActivity() {
         ChatUser("Friend 6", messages = listOf(Message("Ping", "8:15 AM")))
     )
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             ChatScreen(
                 chatUsers = chatUsers,
-                onUserClick = { user ->
-                    val intent = Intent(this, DmPage::class.java)
+                onUserClick = { user, isGroup ->
+                    val intent = Intent(
+                        this,
+                        if (isGroup) GroupChatPage::class.java else DmPage::class.java
+                    )
+                    if (isGroup) {
+                        val groupId = user.name.substringBefore("|")
+                        intent.putExtra("groupId", groupId)
+                        startActivity(intent)
+                } else {
                     intent.putExtra("userName", user.name)
                     startActivity(intent)
+                }
                 },
                 onNavigate = { destination ->
                     when (destination) {
@@ -80,7 +90,7 @@ private enum class ChatsTab { ALL, UNREAD, FAVORITES, GROUPS }
 @Composable
 fun ChatScreen(
     chatUsers: List<ChatUser>,
-    onUserClick: (ChatUser) -> Unit,
+    onUserClick: (ChatUser, Boolean) -> Unit,
     onNavigate: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -92,7 +102,16 @@ fun ChatScreen(
 
     val visible = when (selectedTab) {
         ChatsTab.UNREAD -> mapped.filter { it.second }
-        else -> mapped
+        ChatsTab.GROUPS -> CommunityData.groupChats.map {
+            val name by remember { derivedStateOf { it.name } }
+            ChatUser("${it.id}|${it.name.value}", messages = listOf(Message("Group created", "1:00 PM"))) to false
+        }
+        else -> (
+                mapped + CommunityData.groupChats.map {
+                    val name by remember { derivedStateOf { it.name } }
+                    ChatUser("${it.id}|${it.name.value}", messages = listOf(Message("Group created", "1:00 PM"))) to false
+                }
+                )
     }
 
     Scaffold(
@@ -189,10 +208,12 @@ fun ChatScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(visible) { (user, hasNew) ->
+                        val isGroupItem = user.name.contains("|")
                         ChatRow(
                             user = user,
                             hasNew = hasNew,
-                            onClick = { onUserClick(user) }
+                            isGroup = isGroupItem,
+                            onClick = { onUserClick(user, isGroupItem) }
                         )
                     }
 
@@ -275,6 +296,7 @@ private fun FilterBtn(
 private fun ChatRow(
     user: ChatUser,
     hasNew: Boolean,
+    isGroup: Boolean,
     onClick: () -> Unit
 ) {
     Box(
@@ -305,7 +327,7 @@ private fun ChatRow(
                         shape = shape
                     )
                     .then(
-                        ThemeManager.buttonStroke?.let {
+                        (if (isGroup) Color(0xFFB30FFF) else ThemeManager.buttonStroke)?.let {
                             Modifier.border(
                                 width = 1.dp,
                                 color = it,
@@ -333,7 +355,7 @@ private fun ChatRow(
 
             Column(modifier = Modifier.weight(1f)) {
                 StrokeText(
-                    text = user.name,
+                    text = user.name.substringAfter("|"),
                     fontFamily = ThemeManager.fontFamily,
                     fontSize = 24.sp,
                     fillColor = Color.White,
@@ -341,7 +363,7 @@ private fun ChatRow(
                     strokeWidth = 1f
                 )
 
-                ReflectedText("Last seen: March 10", 9.sp)
+                ReflectedText(if (isGroup) "Group Chat" else "Last seen: March 10", 9.sp)
             }
 
             Column(
