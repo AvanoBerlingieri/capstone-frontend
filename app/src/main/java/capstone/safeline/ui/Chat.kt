@@ -1,5 +1,6 @@
 package capstone.safeline.ui
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -34,8 +36,7 @@ import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.theme.ThemeManager
-
-
+import kotlin.jvm.java
 
 
 class Chat : ComponentActivity() {
@@ -48,6 +49,25 @@ class Chat : ComponentActivity() {
         ChatUser("Friend 5", messages = listOf(Message("Sup", "9:40 AM"))),
         ChatUser("Friend 6", messages = listOf(Message("Ping", "8:15 AM")))
     )
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 1001 && resultCode == RESULT_OK) {
+            val name = data?.getStringExtra("group_name") ?: return
+
+            val newGroup = CommunityData.GroupChat(
+                id = System.currentTimeMillis().toString(),
+                name = mutableStateOf(name),
+                users = mutableStateListOf()
+            )
+            CommunityData.groupChats.add(newGroup)
+
+            val intent = Intent(this, GroupChatPage::class.java)
+            intent.putExtra("groupId", newGroup.id)
+            startActivity(intent)
+        }
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,14 +120,16 @@ fun ChatScreen(
         user to (index == 0)
     }
 
+    val groups = CommunityData.groupChats
+
     val visible = when (selectedTab) {
         ChatsTab.UNREAD -> mapped.filter { it.second }
-        ChatsTab.GROUPS -> CommunityData.groupChats.map {
+        ChatsTab.GROUPS -> groups.map {
             val name by remember { derivedStateOf { it.name } }
             ChatUser("${it.id}|${it.name.value}", messages = listOf(Message("Group created", "1:00 PM"))) to false
         }
         else -> (
-                mapped + CommunityData.groupChats.map {
+                mapped + groups.map {
                     val name by remember { derivedStateOf { it.name } }
                     ChatUser("${it.id}|${it.name.value}", messages = listOf(Message("Group created", "1:00 PM"))) to false
                 }
@@ -191,6 +213,42 @@ fun ChatScreen(
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.TopStart)
             )
+
+            val context = LocalContext.current
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 0.dp, end = 12.dp)
+                    .clickable {
+                        val intent = Intent(context, CreateGroup::class.java)
+                        (context as Activity).startActivityForResult(intent, 1001)
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Image(
+                        painter = painterResource(R.drawable.community_servers_add_btn),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .offset(y = 6.dp)
+                    )
+
+                    StrokeText(
+                        text = "CREATE GROUP",
+                        fontFamily = ThemeManager.fontFamily,
+                        fontSize = 10.sp,
+                        fillColor = Color.White,
+                        strokeColor = Color(0xFF002BFF),
+                        strokeWidth = 1f
+                    )
+                }
+            }
 
             Column(
                 modifier = Modifier
