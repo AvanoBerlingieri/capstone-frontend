@@ -4,7 +4,11 @@ import android.annotation.SuppressLint
 import android.util.Log
 import capstone.safeline.apis.dto.messaging.IncomingGroupMessage
 import capstone.safeline.apis.dto.messaging.IncomingMessage
+import capstone.safeline.data.repository.AuthRepository
 import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
@@ -22,6 +26,12 @@ class WebSocketManager {
         }
     }
 
+    private var authRepository: AuthRepository? = null
+
+    fun init(repo: AuthRepository) {
+        this.authRepository = repo
+    }
+
     private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
@@ -31,36 +41,44 @@ class WebSocketManager {
 
     @SuppressLint("CheckResult")
     fun connect(token: String) {
-
-        stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, gatewayWsUrl)
-        // Prevent multiple simultaneous connection attempts
-        if (stompClient?.isConnected == true || isConnecting) return
+        // check if connection is already alive
+        if (stompClient?.isConnected == true || isConnecting) {
+            Log.d("WS", "Already connected or connecting, skipping...")
+            return
+        }
 
         isConnecting = true
+
+        // create new client if null
+        if (stompClient == null) {
+            stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, gatewayWsUrl)
+        }
+
         val headers = listOf(StompHeader("Authorization", "Bearer $token"))
 
         stompClient?.lifecycle()?.subscribe { lifecycleEvent ->
             when (lifecycleEvent.type) {
-
                 LifecycleEvent.Type.OPENED -> {
                     isConnecting = false
                     Log.d("WS", "Connected to Gateway!")
 
-                    // Listens for new messages in queue and message acknowledgments
-                    subscribeToMessages()
+                    CoroutineScope(Dispatchers.IO).launch {
+                        if (authRepository == null) {
+                            Log.e("WS", "AuthRepository is NULL")
+                        }
+                        val success = authRepository?.updateStatus("ONLINE")
+                        Log.d("WS", "Status update to ONLINE successful: $success")
+                    }
 
-                    // Trigger sync for massages not delivered
+                    subscribeToMessages()
                     stompClient?.send("/app/message.sync")?.subscribe({
-                        Log.d("WS", "Sync request sent successfully")
-                    }, { error ->
-                        Log.e("WS", "Failed to send sync request", error)
-                    })
+                        Log.d("WS", "Sync request sent")
+                    }, { Log.e("WS", "Sync failed", it) })
                 }
 
                 LifecycleEvent.Type.ERROR -> {
                     isConnecting = false
                     Log.e("WS", "Connection Error", lifecycleEvent.exception)
-
                 }
 
                 LifecycleEvent.Type.CLOSED -> {
@@ -96,7 +114,6 @@ class WebSocketManager {
         groupIds.forEach { id ->
             stompClient?.topic("/topic/room.$id")?.subscribe { msg ->
                 Log.d("WS", "Group $id Message: ${msg.payload}")
-                // TODO: Lhek save group messages to Room DB
             }
         }
     }
@@ -113,6 +130,7 @@ class WebSocketManager {
         }, { error ->
             Log.e("WS", "Failed to send private message", error)
         })
+        // TODO: Save to rooms db and send private ack
     }
 
     /**
@@ -127,6 +145,8 @@ class WebSocketManager {
         }, { error ->
             Log.e("WS", "Failed to send group message", error)
         })
+        // TODO: Save to rooms db and send group ack
+
     }
 
     /**
@@ -162,7 +182,10 @@ class WebSocketManager {
     }
 
     fun disconnect() {
-        stompClient?.disconnect()
+        // When disconnecting set user status to offline
+        CoroutineScope(Dispatchers.IO).launch {
+            authRepository?.updateStatus("Offline")
+            stompClient?.disconnect()
+        }
     }
-
 }
