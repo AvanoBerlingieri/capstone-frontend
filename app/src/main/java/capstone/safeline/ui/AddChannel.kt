@@ -65,12 +65,28 @@ fun AddChannelScreen(
                 .padding(padding)
         ) {
 
-            Image(
-                painter = painterResource(R.drawable.add_server_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                Image(
+                    painter = painterResource(R.drawable.add_server_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
 
             BackButton(
                 onClick = onBack,

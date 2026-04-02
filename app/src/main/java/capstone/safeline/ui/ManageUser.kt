@@ -1,5 +1,6 @@
 package capstone.safeline.ui
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,8 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -31,40 +31,52 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.BackButton
+import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
-import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 
-class AddServer : ComponentActivity() {
+class ManageUser : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val userName = intent.getStringExtra("user_name") ?: ""
+        val serverName = intent.getStringExtra("server_name") ?: ""
+
         setContent {
-            AddServerScreen(
+            ManageUserScreen(
+                userName = userName,
+                serverName = serverName,
                 onBack = { finish() },
-                onConfirm = { serverName ->
-
-                    val resultIntent = Intent()
-                    resultIntent.putExtra("server_name", serverName)
-
-                    setResult(RESULT_OK, resultIntent)
+                onDelete = {
+                    val intent = Intent()
+                    intent.putExtra("deleted_user", userName)
+                    setResult(Activity.RESULT_OK, intent)
                     finish()
                 }
             )
         }
     }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 5) {
+
+        }
+    }
 }
 
 @Composable
-fun AddServerScreen(
+fun ManageUserScreen(
+    userName: String,
+    serverName: String,
     onBack: () -> Unit,
-    onConfirm: (String) -> Unit
+    onDelete: () -> Unit
 ) {
-    var serverName by remember { mutableStateOf("") }
 
-    val contacts = listOf("Alex", "John", "Maria", "Kate", "Chris", "David")
+    val serverRoles = CommunityData.rolesMap.getOrPut(serverName) { mutableMapOf() }
+    val roles = serverRoles.getOrPut(userName) { mutableStateListOf<CommunityData.Role>() }
+    val context = LocalContext.current
 
     Scaffold(
         bottomBar = {
@@ -83,16 +95,13 @@ fun AddServerScreen(
         ) {
 
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
                 Image(
                     painter = painterResource(R.drawable.add_server_bg),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
             } else {
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -102,7 +111,6 @@ fun AddServerScreen(
                             )
                         )
                 )
-
             }
 
             BackButton(
@@ -117,32 +125,10 @@ fun AddServerScreen(
                     .height(70.dp)
             ) {
 
-                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    ThemeManager.headerGradient
-                                )
-                            )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(ThemeManager.topBarStroke)
-                    )
-                }
-
-                Box(
-                    modifier = Modifier.align(Alignment.Center)
-                ) {
+                Box(modifier = Modifier.align(Alignment.Center)) {
 
                     Text(
-                        text = "ADD SERVER",
+                        text = "MANAGE $userName",
                         fontFamily = ThemeManager.fontFamily,
                         fontWeight = FontWeight.Bold,
                         fontSize = 32.sp,
@@ -151,7 +137,7 @@ fun AddServerScreen(
                     )
 
                     Text(
-                        text = "ADD SERVER",
+                        text = "MANAGE $userName",
                         fontFamily = ThemeManager.fontFamily,
                         fontWeight = FontWeight.Bold,
                         fontSize = 32.sp,
@@ -178,7 +164,7 @@ fun AddServerScreen(
                 Box(
                     modifier = Modifier
                         .width(360.dp)
-                        .height(858.dp)
+                        .fillMaxHeight()
                         .clip(RoundedCornerShape(50.dp))
                         .background(
                             Brush.horizontalGradient(
@@ -197,50 +183,7 @@ fun AddServerScreen(
                     ) {
 
                         StrokeText(
-                            text = "NAME",
-                            fontFamily = ThemeManager.fontFamily,
-                            fontSize = 24.sp,
-                            fillColor = Color.White,
-                            strokeColor = Color(0xFF193DEF),
-                            strokeWidth = 1f
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                        ) {
-
-                            Image(
-                                painter = painterResource(R.drawable.add_server_name_input),
-                                contentDescription = null,
-                                modifier = Modifier.matchParentSize(),
-                                contentScale = ContentScale.FillBounds
-                            )
-
-                            TextField(
-                                value = serverName,
-                                onValueChange = { serverName = it },
-                                modifier = Modifier.fillMaxSize(),
-                                textStyle = TextStyle(
-                                    color = Color.White,
-                                    fontFamily = ThemeManager.fontFamily
-                                ),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                )
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        StrokeText(
-                            text = "INVITE USERS",
+                            text = "ROLES",
                             fontFamily = ThemeManager.fontFamily,
                             fontSize = 24.sp,
                             fillColor = Color.White,
@@ -268,7 +211,7 @@ fun AddServerScreen(
                         ) {
 
                             LazyColumn {
-                                items(contacts) { name ->
+                                items(roles) { role ->
 
                                     Row(
                                         modifier = Modifier
@@ -292,7 +235,7 @@ fun AddServerScreen(
                                             )
 
                                             Text(
-                                                text = name,
+                                                text = role.name,
                                                 color = Color.White,
                                                 fontFamily = ThemeManager.fontFamily,
                                                 modifier = Modifier.padding(start = 16.dp),
@@ -306,7 +249,13 @@ fun AddServerScreen(
                                             modifier = Modifier
                                                 .width(80.dp)
                                                 .height(36.dp)
-                                                .clickable { },
+                                                .clickable {
+                                                    val intent = Intent(context, EditRole::class.java)
+                                                    intent.putExtra("role_name", role.name)
+                                                    intent.putExtra("server_name", serverName)
+                                                    intent.putExtra("user_name", userName)
+                                                    (context as Activity).startActivityForResult(intent, 5)
+                                                },
                                             contentAlignment = Alignment.Center
                                         ) {
 
@@ -318,7 +267,7 @@ fun AddServerScreen(
                                             )
 
                                             Text(
-                                                "Invite",
+                                                "Edit",
                                                 color = Color.White,
                                                 fontFamily = ThemeManager.fontFamily,
                                                 fontSize = 14.sp
@@ -327,34 +276,90 @@ fun AddServerScreen(
                                     }
                                 }
                             }
+
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 8.dp)
+                                    .size(width = 146.dp, height = 47.dp)
+                                    .clickable {
+                                        val intent = Intent(context, EditRole::class.java)
+                                        intent.putExtra("server_name", serverName)
+                                        intent.putExtra("user_name", userName)
+                                        (context as Activity).startActivityForResult(intent, 5)
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(R.drawable.add_server_confirm_btn),
+                                    contentDescription = null,
+                                    modifier = Modifier.matchParentSize(),
+                                    contentScale = ContentScale.FillBounds
+                                )
+
+                                Text(
+                                    "Add Role",
+                                    color = Color.White,
+                                    fontFamily = ThemeManager.fontFamily,
+                                    fontSize = 16.sp
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        Box(
-                            modifier = Modifier
-                                .size(width = 146.dp, height = 47.dp)
-                                .clickable { onConfirm(serverName) },
-                            contentAlignment = Alignment.Center
-                        ) {
 
-                            Image(
-                                painter = painterResource(R.drawable.add_server_confirm_btn),
-                                contentDescription = null,
-                                modifier = Modifier.matchParentSize(),
-                                contentScale = ContentScale.FillBounds
-                            )
-
-                            Text(
-                                "Confirm",
-                                color = Color.White,
-                                fontFamily = ThemeManager.fontFamily,
-                                fontSize = 16.sp
-                            )
-                        }
                     }
                 }
             }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .size(width = 220.dp, height = 35.dp)
+                        .clickable { },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.delete_server_btn),
+                        contentDescription = null,
+                        modifier = Modifier.matchParentSize()
+                    )
+                    Text(
+                        "Ban User",
+                        color = Color.White,
+                        fontFamily = ThemeManager.fontFamily,
+                        fontSize = 14.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(width = 220.dp, height = 35.dp)
+                        .clickable { onDelete() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.delete_server_btn),
+                        contentDescription = null,
+                        modifier = Modifier.matchParentSize()
+                    )
+                    Text(
+                        "Delete User",
+                        color = Color.White,
+                        fontFamily = ThemeManager.fontFamily,
+                        fontSize = 14.sp
+                    )
+                }
+            }
         }
+
     }
 }

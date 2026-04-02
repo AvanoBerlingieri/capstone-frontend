@@ -49,6 +49,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.foundation.foundation.layout)
+    implementation(libs.androidx.compose.foundation)
 
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")

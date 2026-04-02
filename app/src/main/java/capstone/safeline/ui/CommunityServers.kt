@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +30,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,8 +38,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,9 +48,7 @@ import capstone.safeline.ui.theme.ThemeManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.platform.LocalContext
 import capstone.safeline.ui.CommunityData.channelsMap
 
 
@@ -102,7 +101,10 @@ class CommunityServers : ComponentActivity() {
                     }
                 },
                 onOpenSettings = {
-                    startActivity(Intent(this, ServerSettings::class.java))
+                    val intent = Intent(this, ManageServer::class.java)
+                    intent.putExtra("server_name", selectedServerState.value)
+
+                    startActivityForResult(intent, 3)
                 },
                 onAddServer = {
                     val intent = Intent(this, AddServer::class.java)
@@ -112,6 +114,20 @@ class CommunityServers : ComponentActivity() {
         }
     }
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == 3 && resultCode == RESULT_OK) {
+            val updatedName = data?.getStringExtra("updated_name")
+            if (!updatedName.isNullOrEmpty()) {
+                selectedServerState.value = updatedName
+            }
+
+            val deleted = data?.getBooleanExtra("deleted", false)
+
+            if (deleted == true) {
+                selectedServerState.value = ""
+            }
+
+        }
+
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == 2 && resultCode == RESULT_OK) {
@@ -141,7 +157,7 @@ class CommunityServers : ComponentActivity() {
 
 @Composable
 private fun CommunityServersScreen(
-    servers: MutableList<String>,
+    servers: SnapshotStateList<String>,
     channels: List<String>,
     selectedServer: String,
     onSelectServer: (String) -> Unit,
@@ -243,13 +259,16 @@ private fun CommunityServersScreen(
                             )
                         }
 
-                        Image(
-                            painter = painterResource(R.drawable.community_servers_settings_btn),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clickable { onOpenSettings() }
-                        )
+
+                        if (selectedServer.isNotEmpty()) {
+                            Image(
+                                painter = painterResource(R.drawable.community_servers_settings_btn),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clickable { onOpenSettings() }
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -354,6 +373,7 @@ fun LeftServersPanel(
                 .width(75.dp)
                 .height(57.dp)
         ) {
+
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
 
                 Image(
@@ -386,16 +406,17 @@ fun LeftServersPanel(
             )
         }
 
-        Column(
+        LazyColumn(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
-                .padding(top = 76.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(top = 76.dp)
         ) {
 
-            servers.forEachIndexed { index, serverName ->
-                if (index != 0) Spacer(modifier = Modifier.height(18.dp))
+            items(servers, key = { it }) { serverName ->
+
+                Spacer(modifier = Modifier.height(18.dp))
 
                 Box(
                     modifier = Modifier
@@ -557,7 +578,10 @@ private fun OverlapChannels(
                     modifier = Modifier
                         .offset(x = x, y = y)
                         .size(width = 214.dp, height = 44.dp)
-                        .clickable { onChannelClick(title) },
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        ) { onChannelClick(title) },
                 contentAlignment = Alignment.CenterStart
             ) {
                 if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
