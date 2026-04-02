@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.apis.extractUserIdFromJwt
-import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.apis.network.ApiClientFriends
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
@@ -100,7 +100,7 @@ private fun ContactsScreen(
     val context = LocalContext.current
     val dsManager = remember { DataStoreManager(context, CryptoManager()) }
     val friendRepo = remember { FriendRepository(ApiClientFriends.provideService(context, dsManager)) }
-    val authRepo = remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
+    val authRepo = remember { AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager)) }
 
     var contacts by remember { mutableStateOf<List<UiContactItem>>(emptyList()) }
     var loadError by remember { mutableStateOf<String?>(null) }
