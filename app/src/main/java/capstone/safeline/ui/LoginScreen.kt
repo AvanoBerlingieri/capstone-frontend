@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,6 +48,7 @@ fun LoginScreen(
     onBack: () -> Unit,
     onSuccess: () -> Unit,
 ) {
+    val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
     var usernameOrEmail by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -142,7 +145,7 @@ fun LoginScreen(
             Spacer(Modifier.height(125.dp))
             StrokeText(
                 text = "Please Enter Your",
-                fontFamily = ThemeManager.fontFamily,
+                fontFamily = Kaushan,
                 fontSize = 48.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -152,7 +155,7 @@ fun LoginScreen(
             Spacer(Modifier.height(24.dp))
             StrokeText(
                 text = "Username/Email:",
-                fontFamily = ThemeManager.fontFamily,
+                fontFamily = Kaushan,
                 fontSize = 40.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -164,7 +167,7 @@ fun LoginScreen(
             Spacer(Modifier.height(22.dp))
             StrokeText(
                 text = "Password:",
-                fontFamily = ThemeManager.fontFamily,
+                fontFamily = Kaushan,
                 fontSize = 40.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
