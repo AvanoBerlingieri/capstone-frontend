@@ -2,7 +2,6 @@ package capstone.safeline.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Base64
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -54,7 +53,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.apis.extractUserIdFromJwt
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.apis.network.ApiClientFriends
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
@@ -65,8 +65,6 @@ import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -115,7 +113,7 @@ private fun FriendRequestsScreen(
     val context = LocalContext.current
     val dsManager = remember { DataStoreManager(context, CryptoManager()) }
     val friendRepo = remember { FriendRepository(ApiClientFriends.provideService(context, dsManager)) }
-    val authRepo = remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
+    val authRepo = remember { AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager)) }
     val scope = rememberCoroutineScope()
 
     val requests = remember { mutableStateListOf<UiFriendRequest>() }
@@ -171,14 +169,16 @@ private fun FriendRequestsScreen(
                 }
             }
             .onFailure { e ->
-                loadError = e.message ?: "Failed to load pending requests."
-                Log.e("FriendRequests", "Falling back to demo cards", e)
-                requests.addAll(
-                    listOf(
-                        UiFriendRequest("demo-1", "Lynx_GVA", "lynx_gva@email.com"),
-                        UiFriendRequest("demo-2", "LhekDup228", "lhekdup228@email.com")
-                    )
-                )
+                val raw = e.message.orEmpty()
+                loadError = when {
+                    raw.contains(": 403") || raw.contains(": 403 ") ->
+                        "Access denied (403). The friends service rejected this request—" +
+                            "often the user id in your token must match the account on that server."
+                    raw.contains(": 401") ->
+                        "Session expired. Please sign in again."
+                    else -> raw.ifBlank { "Failed to load pending requests." }
+                }
+                Log.e("FriendRequests", "Pending requests load failed: $loadError", e)
             }
     }
 
@@ -310,8 +310,7 @@ private fun FriendRequestsScreen(
                                 }
 
                                 authRepo.getIdByUsername(username)
-                                    .onSuccess { userIdResponse ->
-                                        val foundId = userIdResponse.id
+                                    .onSuccess { foundId ->
                                         Log.d(
                                             "FriendRequests",
                                             "getIdByUsername success: username=$username id=$foundId"
@@ -553,30 +552,6 @@ private fun SearchToggleButton(
             fontFamily = ThemeManager.fontFamily,
             fontSize = 16.sp
         )
-    }
-}
-
-private fun extractUserIdFromJwt(token: String): String? {
-    return try {
-        val parts = token.split('.')
-        if (parts.size < 2) return null
-
-        val payload = parts[1]
-        val padding = "=".repeat((4 - (payload.length % 4)) % 4)
-        val decodedBytes = Base64.decode(payload + padding, Base64.URL_SAFE)
-        val jsonString = decodedBytes.toString(Charsets.UTF_8)
-
-        val type = object : TypeToken<Map<String, Any>>() {}.type
-        val payloadMap: Map<String, Any> = Gson().fromJson(jsonString, type) ?: return null
-
-        val candidates = listOf("id", "userId", "sub", "uid")
-        candidates.firstNotNullOfOrNull { key ->
-            val value = payloadMap[key] ?: return@firstNotNullOfOrNull null
-            val asString = if (value is String) value else value.toString()
-            asString.takeIf { it.isNotBlank() }
-        }
-    } catch (e: Exception) {
-        null
     }
 }
 

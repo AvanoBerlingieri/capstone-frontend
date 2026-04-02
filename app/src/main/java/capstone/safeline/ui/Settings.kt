@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -38,7 +37,7 @@ import capstone.safeline.R
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
-import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
@@ -58,7 +57,7 @@ class Settings : ComponentActivity() {
             val repo = remember {
                 AuthRepository(
                     dsManager,
-                    ApiClient.provideApiService(context, dsManager)
+                    ApiClientAuth.provideApiService(context, dsManager)
                 )
             }
 

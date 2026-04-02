@@ -1,7 +1,6 @@
 package capstone.safeline.data.repository
 
-import capstone.safeline.apis.dto.UpdateMessageStatusDto
-import capstone.safeline.apis.network.ApiServiceMessage
+import capstone.safeline.apis.ApiServiceMessage
 import capstone.safeline.data.local.dao.MessageDao
 import capstone.safeline.data.local.entity.MessageEntity
 import kotlinx.coroutines.flow.Flow
@@ -27,22 +26,22 @@ class MessageRepository(
         messageDao.updateMessageStatus(messageUuid, newStatus)
     }
 
-    // This talks to the backend
-    suspend fun markMessageAsRead(messageUuid: String) {
-        try {
-            // 1. Tell the server the message was read
-            val response = apiService.updateMessageStatus(
-                messageUuid,
-                UpdateMessageStatusDto(status = "READ")
-            )
-
-            // 2. If the server says "OK" (200 series status code), update our local database
-            if (response.isSuccessful) {
-                messageDao.updateMessageStatus(messageUuid, "READ")
-            }
-        } catch (e: Exception) {
-            // If the phone has no internet or the server is down, we catch the crash here
-            println("Failed to update read status on server: ${e.message}")
-        }
-    }
+//    // This talks to the backend
+//    suspend fun markMessageAsRead(messageUuid: String) {
+//        try {
+//            // 1. Tell the server the message was read
+//            val response = apiService.updateMessageStatus(
+//                messageUuid,
+//                mapOf("status" to "READ")
+//            )
+//
+//            // 2. If the server says "OK" (200 series status code), update our local database
+//            if (response.isSuccessful) {
+//                messageDao.updateMessageStatus(messageUuid, "READ")
+//            }
+//        } catch (e: Exception) {
+//            // If the phone has no internet or the server is down, we catch the crash here
+//            println("Failed to update read status on server: ${e.message}")
+//        }
+//    }
 }

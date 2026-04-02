@@ -2,13 +2,12 @@ package capstone.safeline.data.repository
 
 import android.util.Log
 import capstone.safeline.apis.ApiServiceAuth
-import capstone.safeline.apis.dto.GetUserByIdResponse
-import capstone.safeline.apis.dto.GetUserIdByUsernameResponse
-import capstone.safeline.apis.dto.LoginRequest
-import capstone.safeline.apis.dto.RegisterRequest
-import capstone.safeline.apis.dto.UpdateEmailDto
-import capstone.safeline.apis.dto.UpdatePasswordDto
-import capstone.safeline.apis.dto.UpdateUsernameDto
+import capstone.safeline.apis.dto.auth.GetUserByIdResponse
+import capstone.safeline.apis.dto.auth.LoginRequest
+import capstone.safeline.apis.dto.auth.RegisterRequest
+import capstone.safeline.apis.dto.auth.UpdateEmailDto
+import capstone.safeline.apis.dto.auth.UpdatePasswordDto
+import capstone.safeline.apis.dto.auth.UpdateUsernameDto
 import capstone.safeline.data.local.DataStoreManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -113,46 +112,45 @@ class AuthRepository(
         return try {
             val primary = apiServiceAuth.getUserById(id)
             val primaryBody = primary.body()
-
             if (primary.isSuccessful && primaryBody != null) {
-                Result.success(primaryBody)
-            } else {
-                Log.e("AuthRepository", "getUserById primary failed: id=$id code=${primary.code()}")
-
-                // Fallback for backends exposing user lookups under /api/users/{id}
-                val secondary = apiServiceAuth.getUserByIdUnderUsers(id)
-                val secondaryBody = secondary.body()
-                if (secondary.isSuccessful && secondaryBody != null) {
-                    Result.success(secondaryBody)
-                } else {
-                    Log.e("AuthRepository", "getUserById secondary failed: id=$id code=${secondary.code()}")
-                    Result.failure(
-                        Exception(
-                            "Failed to fetch user by id: primary=${primary.code()}, secondary=${secondary.code()}"
-                        )
-                    )
-                }
+                return Result.success(primaryBody)
             }
+            Log.e("AuthRepository", "getUserById primary failed: id=$id code=${primary.code()}")
+
+            val tertiary = apiServiceAuth.getUserByIdUnderUsers(id)
+            val tertiaryBody = tertiary.body()
+            if (tertiary.isSuccessful && tertiaryBody != null) {
+                return Result.success(tertiaryBody)
+            }
+            Log.e("AuthRepository", "getUserById /users failed: id=$id code=${tertiary.code()}")
+
+            Result.failure(
+                Exception(
+                    "Failed to fetch user by id: api=${primary.code()}, users=${tertiary.code()}"
+                )
+            )
         } catch (e: Exception) {
             Log.e("AuthRepository", "getUserById exception: id=$id message=${e.message}", e)
             Result.failure(e)
         }
     }
 
-    suspend fun getIdByUsername(username: String): Result<GetUserIdByUsernameResponse> {
+    suspend fun getIdByUsername(username: String): Result<String> {
         return try {
-            val response = apiServiceAuth.getIdByUsername(username)
+            val trimmed = username.trim()
+            if (trimmed.isEmpty()) {
+                return Result.failure(Exception("Username is empty"))
+            }
+
+            val response = apiServiceAuth.getIdByUsername(trimmed)
             val body = response.body()
             if (response.isSuccessful && body != null) {
-                return Result.success(body)
+                val id = body["id"] ?: body["userId"]
+                if (!id.isNullOrBlank()) {
+                    return Result.success(id)
+                }
             }
-            Log.e(
-                "AuthRepository",
-                "getIdByUsername failed: username=$username code=${response.code()}"
-            )
-            Result.failure(
-                Exception("Failed to fetch user id by username: ${response.code()}")
-            )
+            Result.failure(Exception("Failed to fetch username"))
         } catch (e: Exception) {
             Log.e("AuthRepository", "getIdByUsername exception: username=$username message=${e.message}", e)
             Result.failure(e)

@@ -31,7 +31,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.R
-import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
@@ -51,7 +51,7 @@ fun SafeLineNav() {
     val context = LocalContext.current
     val dsManager = remember { DataStoreManager(context, CryptoManager()) }
     val repo =
-        remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
+        remember { AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager)) }
 
     val isLoggedIn by repo.isLoggedIn.collectAsState(initial = null)
 
