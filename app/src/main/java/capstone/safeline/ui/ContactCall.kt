@@ -6,20 +6,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,19 +23,12 @@ import capstone.safeline.R
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.webrtc.SignalingClient
 import capstone.safeline.webrtc.WebRTCManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.webrtc.IceCandidate
-import org.webrtc.MediaStream
-import org.webrtc.PeerConnection
-import org.webrtc.DataChannel
-import org.webrtc.MediaConstraints
-import org.webrtc.SessionDescription
-import org.webrtc.SdpObserver
-
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+import org.webrtc.*
 
 class ContactCall : ComponentActivity() {
 
@@ -58,7 +47,7 @@ class ContactCall : ComponentActivity() {
         webRTCManager = WebRTCManager(this).also { it.init() }
         signalingClient = SignalingClient("ws://10.0.2.2:8093/ws-call/websocket")
 
-        // Request mic permission
+        // Mic permission
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED
         ) {
@@ -71,15 +60,12 @@ class ContactCall : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 scope.launch {
-                    // Get current username from DataStore
                     val currentUserId = dataStoreManager.usernameFlow.first()
-
-                    // Connect to signaling server
                     signalingClient.connect(currentUserId)
 
-                    // Listen for responses from the other side
                     signalingClient.onSignalReceived = { signal ->
                         when (signal.type) {
+
                             "answer" -> {
                                 webRTCManager.setRemoteDescription(
                                     SessionDescription(
@@ -96,11 +82,15 @@ class ContactCall : ComponentActivity() {
                                     }
                                 )
                             }
+
                             "ice-candidate" -> {
                                 signal.candidate?.let {
-                                    webRTCManager.addIceCandidate(IceCandidate("", 0, it))
+                                    webRTCManager.addIceCandidate(
+                                        IceCandidate("", 0, it)
+                                    )
                                 }
                             }
+
                             "decline" -> {
                                 runOnUiThread {
                                     callStatus = "Call Declined"
@@ -110,6 +100,7 @@ class ContactCall : ComponentActivity() {
                                     }, 1500)
                                 }
                             }
+
                             "hangup", "end" -> {
                                 runOnUiThread {
                                     webRTCManager.hangUp()
@@ -118,21 +109,25 @@ class ContactCall : ComponentActivity() {
                                     finish()
                                 }
                             }
+
                             "error" -> {
                                 runOnUiThread { callStatus = "Connection Error" }
                             }
                         }
                     }
 
-                    // Create peer connection and send offer
                     webRTCManager.createPeerConnection(object : PeerConnection.Observer {
+
                         override fun onIceCandidate(candidate: IceCandidate?) {
                             candidate?.let {
                                 signalingClient.sendIceCandidate(
-                                    targetUserId, it.sdp, currentUserId
+                                    targetUserId,
+                                    it.sdp,
+                                    currentUserId
                                 )
                             }
                         }
+
                         override fun onIceConnectionChange(state: PeerConnection.IceConnectionState?) {
                             runOnUiThread {
                                 callStatus = when (state) {
@@ -143,6 +138,13 @@ class ContactCall : ComponentActivity() {
                                 }
                             }
                         }
+
+                        // IMPORTANT for audio
+                        override fun onTrack(transceiver: RtpTransceiver?) {
+                            val track = transceiver?.receiver?.track() as? AudioTrack
+                            track?.setEnabled(true)
+                        }
+
                         override fun onSignalingChange(p0: PeerConnection.SignalingState?) {}
                         override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {}
                         override fun onIceCandidatesRemoved(p0: Array<out IceCandidate>?) {}
@@ -153,14 +155,16 @@ class ContactCall : ComponentActivity() {
                         override fun onIceConnectionReceivingChange(p0: Boolean) {}
                     })
 
-                    // Create and send offer to target user
+                    // Create Offer
                     webRTCManager.createOffer(object : SdpObserver {
                         override fun onCreateSuccess(sdp: SessionDescription?) {
                             sdp?.let {
                                 webRTCManager.setLocalDescription(it, object : SdpObserver {
                                     override fun onSetSuccess() {
                                         signalingClient.sendOffer(
-                                            targetUserId, it.description, currentUserId
+                                            targetUserId,
+                                            it.description,
+                                            currentUserId
                                         )
                                     }
                                     override fun onSetFailure(p0: String?) {}
@@ -169,9 +173,11 @@ class ContactCall : ComponentActivity() {
                                 })
                             }
                         }
+
                         override fun onCreateFailure(p0: String?) {
                             runOnUiThread { callStatus = "Failed to start call" }
                         }
+
                         override fun onSetSuccess() {}
                         override fun onSetFailure(p0: String?) {}
                     })
@@ -208,19 +214,30 @@ private fun ContactCallScreen(
     callStatus: String,
     onEndCall: () -> Unit
 ) {
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Image(
-            painter = painterResource(R.drawable.contactcall_bg),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+            Image(
+                painter = painterResource(R.drawable.contactcall_bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.backgroundGradient
+                        )
+                    )
+            )
+        }
 
         StrokeText(
             text = callStatus,
-            fontFamily = Vampiro,
+            fontFamily = ThemeManager.fontFamily,
             fontSize = 36.sp,
             fillColor = Color.White,
             strokeColor = Color(0xFF0066FF),

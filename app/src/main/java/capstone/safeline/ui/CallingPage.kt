@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,10 +19,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -35,6 +38,7 @@ import capstone.safeline.R
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.webrtc.SignalingClient
 import capstone.safeline.webrtc.WebRTCManager
 import kotlinx.coroutines.flow.first
@@ -45,6 +49,7 @@ import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
+
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
@@ -58,7 +63,7 @@ class CallingPage : ComponentActivity() {
 
         val username = intent.getStringExtra("userName") ?: "Friend"
         val targetUserId = intent.getStringExtra("targetUserId") ?: username
-        val incomingSdp = intent.getStringExtra("incomingSdp") // null if outgoing call
+        val incomingSdp = intent.getStringExtra("incomingSdp")
 
         val cryptoManager = CryptoManager()
         val dataStoreManager = DataStoreManager(this, cryptoManager)
@@ -84,7 +89,6 @@ class CallingPage : ComponentActivity() {
 
                     signalingClient.connect(currentUserId)
 
-                    // Listen for signals from the other side
                     signalingClient.onSignalReceived = { signal ->
                         when (signal.type) {
                             "answer" -> {
@@ -129,7 +133,6 @@ class CallingPage : ComponentActivity() {
                         }
                     }
 
-                    // Build peer connection observer
                     val peerObserver = object : PeerConnection.Observer {
                         override fun onIceCandidate(candidate: IceCandidate?) {
                             candidate?.let {
@@ -161,7 +164,6 @@ class CallingPage : ComponentActivity() {
                     webRTCManager.createPeerConnection(peerObserver)
 
                     if (incomingSdp != null) {
-                        // Incoming call — set remote description and send answer
                         webRTCManager.setRemoteDescription(
                             SessionDescription(SessionDescription.Type.OFFER, incomingSdp),
                             object : SdpObserver {
@@ -197,7 +199,6 @@ class CallingPage : ComponentActivity() {
                             }
                         )
                     } else {
-                        // Outgoing call — create and send offer
                         webRTCManager.createOffer(object : SdpObserver {
                             override fun onCreateSuccess(sdp: SessionDescription?) {
                                 sdp?.let {
@@ -278,12 +279,23 @@ fun CallingFriendScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.top_background),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            // ThemeManager background from master
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+                Image(
+                    painter = painterResource(R.drawable.top_background),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(ThemeManager.backgroundGradient)
+                        )
+                )
+            }
 
             Column(
                 modifier = Modifier
@@ -300,13 +312,13 @@ fun CallingFriendScreen(
 
                 Spacer(modifier = Modifier.height(0.dp))
 
-                // Dynamic call status
+                // Dynamic call status from your branch
                 StrokeText(
                     text = callStatus,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 20.sp,
                     fillColor = Color.White,
-                    strokeColor = Color(0xFF0066FF),
+                    strokeColor = ThemeManager.titleStroke,
                     strokeWidth = 1f,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -315,17 +327,18 @@ fun CallingFriendScreen(
                         .height(39.51.dp)
                 )
 
+                // Username with widthIn from master
                 StrokeText(
                     text = username,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 20.sp,
                     fillColor = Color.White,
-                    strokeColor = Color(0xFF0066FF),
+                    strokeColor = ThemeManager.titleStroke,
                     strokeWidth = 1f,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .offset(x = 10.dp, y = (-44).dp)
-                        .width(106.56.dp)
+                        .widthIn(min = 100.dp, max = 220.dp)
                         .height(39.51.dp)
                 )
             }

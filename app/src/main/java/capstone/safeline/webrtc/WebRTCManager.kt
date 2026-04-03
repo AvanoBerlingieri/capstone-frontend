@@ -3,6 +3,7 @@ package capstone.safeline.webrtc
 import android.content.Context
 import android.media.AudioManager
 import android.os.Build
+import android.util.Log
 import org.webrtc.*
 
 class WebRTCManager(private val context: Context) {
@@ -12,34 +13,42 @@ class WebRTCManager(private val context: Context) {
     private var localAudioTrack: AudioTrack? = null
 
     private val iceServers = listOf(
-        PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
+        PeerConnection.IceServer
+            .builder("stun:stun.l.google.com:19302")
+            .createIceServer()
     )
 
-    // Check if running on emulator
+    // Detect emulator
     private fun isEmulator(): Boolean {
         return (Build.FINGERPRINT.startsWith("generic")
-                || Build.FINGERPRINT.startsWith("unknown")
-                || Build.MODEL.contains("google_sdk")
                 || Build.MODEL.contains("Emulator")
-                || Build.MODEL.contains("Android SDK built for x86")
-                || Build.MANUFACTURER.contains("Genymotion")
-                || Build.BRAND.startsWith("generic"))
+                || Build.MODEL.contains("Android SDK built for x86"))
     }
 
+    // Initialize WebRTC
     fun init() {
         PeerConnectionFactory.initialize(
             PeerConnectionFactory.InitializationOptions
                 .builder(context)
+                .setEnableInternalTracer(true)
                 .createInitializationOptions()
         )
-        peerConnectionFactory = PeerConnectionFactory.builder().createPeerConnectionFactory()
+
+        val options = PeerConnectionFactory.Options()
+
+        peerConnectionFactory = PeerConnectionFactory
+            .builder()
+            .setOptions(options)
+            .createPeerConnectionFactory()
+
+        startAudio()
     }
 
+    // Create Peer Connection
     fun createPeerConnection(observer: PeerConnection.Observer): PeerConnection? {
         val rtcConfig = PeerConnection.RTCConfiguration(iceServers)
         peerConnection = peerConnectionFactory.createPeerConnection(rtcConfig, observer)
 
-        // Only add audio on real devices — emulator crashes with WebRTC audio
         if (!isEmulator()) {
             addLocalAudio()
         }
@@ -47,29 +56,34 @@ class WebRTCManager(private val context: Context) {
         return peerConnection
     }
 
+    // Add microphone audio
     private fun addLocalAudio() {
         try {
             val audioSource = peerConnectionFactory.createAudioSource(MediaConstraints())
             localAudioTrack = peerConnectionFactory.createAudioTrack("local_audio", audioSource)
             localAudioTrack?.setEnabled(true)
-            val localStream = peerConnectionFactory.createLocalMediaStream("local_stream")
-            localStream.addTrack(localAudioTrack)
-            peerConnection?.addStream(localStream)
+
+            peerConnection?.addTrack(localAudioTrack)
+            Log.d("WebRTC", "Local audio track added")
         } catch (e: Exception) {
-            android.util.Log.e("WebRTC", "Audio init failed: ${e.message}")
+            Log.e("WebRTC", "Audio init failed: ${e.message}")
         }
     }
 
+    // Create Offer
     fun createOffer(sdpObserver: SdpObserver) {
         val constraints = MediaConstraints().apply {
             mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
+            mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "false"))
         }
         peerConnection?.createOffer(sdpObserver, constraints)
     }
 
+    // Create Answer
     fun createAnswer(sdpObserver: SdpObserver) {
         val constraints = MediaConstraints().apply {
             mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
+            mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "false"))
         }
         peerConnection?.createAnswer(sdpObserver, constraints)
     }
@@ -86,20 +100,33 @@ class WebRTCManager(private val context: Context) {
         peerConnection?.addIceCandidate(candidate)
     }
 
-    fun muteMicrophone() { localAudioTrack?.setEnabled(false) }
-    fun unmuteMicrophone() { localAudioTrack?.setEnabled(true) }
+    fun muteMicrophone() {
+        localAudioTrack?.setEnabled(false)
+    }
+
+    fun unmuteMicrophone() {
+        localAudioTrack?.setEnabled(true)
+    }
+
+    // Route audio to speaker
+    private fun startAudio() {
+        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+        audioManager.isSpeakerphoneOn = true
+    }
 
     fun setSpeakerOn(speakerOn: Boolean) {
-        if (!isEmulator()) {
-            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            audioManager.isSpeakerphoneOn = speakerOn
-            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-        }
+        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager.isSpeakerphoneOn = speakerOn
     }
 
     fun hangUp() {
-        localAudioTrack?.setEnabled(false)
-        peerConnection?.close()
-        peerConnection = null
+        try {
+            localAudioTrack?.setEnabled(false)
+            peerConnection?.close()
+            peerConnection = null
+        } catch (e: Exception) {
+            Log.e("WebRTC", "Hangup error: ${e.message}")
+        }
     }
 }
