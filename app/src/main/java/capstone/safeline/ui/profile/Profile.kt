@@ -96,13 +96,18 @@ class Profile : ComponentActivity() {
                     }
                 },
                 onNavigate = { destination ->
-                    when (destination) {
-                        "home" -> startActivity(Intent(this, Home::class.java))
-                        "chats" -> startActivity(Intent(this, Chat::class.java))
-                        "calls" -> startActivity(Intent(this, Call::class.java))
-                        "communities" -> startActivity(Intent(this, Community::class.java))
-                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                    val intent = when (destination) {
+                        "home" -> Intent(this, Home::class.java)
+                        "calls" -> Intent(this, Call::class.java)
+                        "chats" -> Intent(this, Chat::class.java)
+                        "profile" -> null
+                        "communities" -> Intent(this, Community::class.java)
+                        "contacts" -> Intent(this, Contacts::class.java)
+                        else -> null
                     }
+
+                    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    intent?.let { startActivity(it) }
                 }
             )
         }

@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.foundation.foundation.layout)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.benchmark.traceprocessor)
 
     // --- Local Data Storage (Room & DataStore) ---
     val room_version = "2.6.1"

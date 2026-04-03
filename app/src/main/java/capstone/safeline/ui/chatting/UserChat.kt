@@ -61,12 +61,18 @@ class UserChat : ComponentActivity(){
         setContent {
             UserChatScreen(
                 onNavigate = { destination ->
-                    when (destination) {
-                        "home" -> startActivity(Intent(this, Home::class.java))
-                        "calls" -> startActivity(Intent(this, Call::class.java))
-                        "messages" -> startActivity(Intent(this, Chat::class.java))
-                        "profile" -> {}
+                    val intent = when (destination) {
+                        "home" -> Intent(this, Home::class.java)
+                        "calls" -> Intent(this, Call::class.java)
+                        "chats" -> Intent(this, Chat::class.java)
+                        "profile" -> Intent(this, Profile::class.java)
+                        "communities" -> Intent(this, Community::class.java)
+                        "contacts" -> Intent(this, Contacts::class.java)
+                        else -> null
                     }
+
+                    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    intent?.let { startActivity(it) }
                 },
                 userName, user
 

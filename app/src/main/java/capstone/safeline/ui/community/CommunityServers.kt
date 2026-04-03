@@ -95,16 +95,23 @@ class CommunityServers : ComponentActivity() {
                 },
                 selectedServer = selectedServerState.value,
                 onSelectServer = { selectedServerState.value = it },
-                onBackToMessages = { startActivity(Intent(this, Chat::class.java)) },
+                onBackToMessages = {
+                    startActivity(Intent(this, Chat::class.java))
+                    finish()
+                },
                 onNavigate = { destination ->
-                    when (destination) {
-                        "home" -> startActivity(Intent(this, Home::class.java))
-                        "calls" -> startActivity(Intent(this, Call::class.java))
-                        "chats" -> startActivity(Intent(this, Chat::class.java))
-                        "profile" -> startActivity(Intent(this, Profile::class.java))
-                        "communities" -> {}
-                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                    val intent = when (destination) {
+                        "home" -> Intent(this, Home::class.java)
+                        "calls" -> Intent(this, Call::class.java)
+                        "chats" -> Intent(this, Chat::class.java)
+                        "profile" -> Intent(this, Profile::class.java)
+                        "communities" -> null
+                        "contacts" -> Intent(this, Contacts::class.java)
+                        else -> null
                     }
+
+                    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    intent?.let { startActivity(it) }
                 },
                 onOpenSettings = {
                     val intent = Intent(this, ManageServer::class.java)

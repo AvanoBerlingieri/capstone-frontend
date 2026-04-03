@@ -39,7 +39,6 @@ class ContactCall : ComponentActivity() {
             ContactCallScreen(
                 name = name,
                 onEndCall = {
-                    startActivity(Intent(this, Contacts::class.java))
                     finish()
                 }
             )

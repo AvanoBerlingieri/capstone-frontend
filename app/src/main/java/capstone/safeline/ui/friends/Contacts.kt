@@ -67,30 +67,42 @@ private data class UiContactItem(
 )
 
 class Contacts : ComponentActivity() {
+    var deletedContactId by mutableStateOf<String?>(null)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             ContactsScreen(
                 onBack = { finish() },
                 onContactClick = { contact ->
                     val intent = Intent(this, ContactProfile::class.java)
+                    intent.putExtra("contactId", contact.friendId)
                     intent.putExtra("contactName", contact.name)
                     intent.putExtra("contactEmail", contact.email)
-                    startActivity(intent)
+                    startActivityForResult(intent, 2001)
                 },
 
                 onNavigate = { destination ->
-                    when (destination) {
-                        "home" -> startActivity(Intent(this, Home::class.java))
-                        "calls" -> startActivity(Intent(this, Call::class.java))
-                        "chats" -> startActivity(Intent(this, Chat::class.java))
-                        "profile" -> startActivity(Intent(this, Profile::class.java))
-                        "communities" -> startActivity(Intent(this, Community::class.java))
-                        "contacts" -> {}
+                    val intent = when (destination) {
+                        "home" -> Intent(this, Home::class.java)
+                        "calls" -> Intent(this, Call::class.java)
+                        "chats" -> Intent(this, Chat::class.java)
+                        "profile" -> Intent(this, Profile::class.java)
+                        "communities" -> Intent(this, Community::class.java)
+                        "contacts" -> null
+                        else -> null
                     }
+
+                    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    intent?.let { startActivity(it) }
                 }
             )
+        }
+    }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 2001 && resultCode == RESULT_OK) {
+            deletedContactId = data?.getStringExtra("deleted_contact_id")
         }
     }
 }
@@ -108,6 +120,7 @@ private fun ContactsScreen(
     val dsManager = remember { DataStoreManager.getInstance(context) }
     val friendRepo = remember { FriendRepository.getInstance(context) }
     val authRepo = remember { AuthRepository.getInstance(context) }
+    val deletedContactId = (context as Contacts).deletedContactId
 
     var contacts by remember { mutableStateOf<List<UiContactItem>>(emptyList()) }
     var loadError by remember { mutableStateOf<String?>(null) }
@@ -304,7 +317,10 @@ private fun ContactsScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
-                            items(contacts, key = { it.friendId }) { contact ->
+                            items(
+                                contacts.filter { it.friendId != deletedContactId },
+                                key = { it.friendId }
+                            ) { contact ->
                                 ContactRow(
                                     contact = contact,
                                     onClick = { onContactClick(contact) }
@@ -351,7 +367,7 @@ private fun ContactRow(
 
         } else {
 
-            val shape = RoundedCornerShape(18.dp)
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)
 
             Box(
                 modifier = Modifier

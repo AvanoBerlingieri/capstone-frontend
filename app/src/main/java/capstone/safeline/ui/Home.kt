@@ -62,14 +62,18 @@ class Home : ComponentActivity() {
         setContent {
             HomeScreen(
                 onNavigate = { destination ->
-                    when (destination) {
-                        "home" -> {}
-                        "calls" -> startActivity(Intent(this, Call::class.java))
-                        "chats" -> startActivity(Intent(this, Chat::class.java))
-                        "profile" -> startActivity(Intent(this, Profile::class.java))
-                        "communities" -> startActivity(Intent(this, Community::class.java))
-                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                    val intent = when (destination) {
+                        "home" -> null
+                        "calls" -> Intent(this, Call::class.java)
+                        "chats" -> Intent(this, Chat::class.java)
+                        "profile" -> Intent(this, Profile::class.java)
+                        "communities" -> Intent(this, Community::class.java)
+                        "contacts" -> Intent(this, Contacts::class.java)
+                        else -> null
                     }
+
+                    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    intent?.let { startActivity(it) }
                 },
                 onOpenSettings = { startActivity(Intent(this, Settings::class.java)) },
                 onOpenFriendRequests = { startActivity(Intent(this, FriendRequests::class.java)) }

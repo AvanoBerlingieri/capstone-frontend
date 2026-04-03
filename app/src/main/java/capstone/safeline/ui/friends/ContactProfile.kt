@@ -4,8 +4,11 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -43,23 +46,45 @@ class ContactProfile : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val contactId = intent.getStringExtra("contactId") ?: ""
         val username = intent.getStringExtra("contactName") ?: "USERNAME"
         val email = intent.getStringExtra("contactEmail") ?: "email@email.com"
 
         setContent {
             ContactProfileScreen(
+                contactId = contactId,
                 username = username,
                 email = email,
-                onBack = { startActivity(Intent(this, Contacts::class.java)) },
+                onBack = { finish() },
+                onMessage = {
+                    val intent = Intent(this, DmPage::class.java)
+                    intent.putExtra("userName", username)
+                    startActivity(intent)
+                },
+                onCall = {
+                    val intent = Intent(this, ContactCall::class.java)
+                    intent.putExtra("callerName", username)
+                    startActivity(intent)
+                },
+                onDelete = {
+                    val intent = Intent()
+                    intent.putExtra("deleted_contact_id", contactId)
+                    setResult(RESULT_OK, intent)
+                    finish()
+                },
                 onNavigate = { destination ->
-                    when (destination) {
-                        "home" -> startActivity(Intent(this, Home::class.java))
-                        "calls" -> startActivity(Intent(this, Call::class.java))
-                        "chats" -> startActivity(Intent(this, Chat::class.java))
-                        "profile" -> startActivity(Intent(this, Profile::class.java))
-                        "communities" -> startActivity(Intent(this, Community::class.java))
-                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
+                    val intent = when (destination) {
+                        "home" -> Intent(this, Home::class.java)
+                        "calls" -> Intent(this, Call::class.java)
+                        "chats" -> Intent(this, Chat::class.java)
+                        "profile" -> Intent(this, Profile::class.java)
+                        "communities" -> Intent(this, Community::class.java)
+                        "contacts" -> null
+                        else -> null
                     }
+
+                    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    intent?.let { startActivity(it) }
                 }
             )
         }
@@ -68,9 +93,13 @@ class ContactProfile : ComponentActivity() {
 
 @Composable
 private fun ContactProfileScreen(
+    contactId: String,
     username: String,
     email: String,
     onBack: () -> Unit,
+    onMessage: () -> Unit,
+    onCall: () -> Unit,
+    onDelete: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
 
@@ -190,6 +219,85 @@ private fun ContactProfileScreen(
                     strokeWidth = 1f,
                     textAlign = TextAlign.Center
                 )
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Box(
+                        modifier = Modifier
+                            .size(width = 120.dp, height = 44.dp)
+                            .clickable { onMessage() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.contact_profile_btn),
+                            contentDescription = null,
+                            modifier = Modifier.matchParentSize(),
+                            contentScale = ContentScale.FillBounds
+                        )
+
+                        StrokeText(
+                            text = "MESSAGE",
+                            fontFamily = ThemeManager.fontFamily,
+                            fontSize = 14.sp,
+                            fillColor = Color.White,
+                            strokeColor = Color(0xFF002BFF),
+                            strokeWidth = 1f
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(width = 120.dp, height = 44.dp)
+                            .clickable { onCall() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.contact_profile_btn),
+                            contentDescription = null,
+                            modifier = Modifier.matchParentSize(),
+                            contentScale = ContentScale.FillBounds
+                        )
+
+                        StrokeText(
+                            text = "CALL",
+                            fontFamily = ThemeManager.fontFamily,
+                            fontSize = 14.sp,
+                            fillColor = Color.White,
+                            strokeColor = Color(0xFF002BFF),
+                            strokeWidth = 1f
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(width = 220.dp, height = 44.dp)
+                        .clickable { onDelete() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.delete_server_btn),
+                        contentDescription = null,
+                        modifier = Modifier.matchParentSize(),
+                        contentScale = ContentScale.FillBounds
+                    )
+
+                    StrokeText(
+                        text = "DELETE CONTACT",
+                        fontFamily = ThemeManager.fontFamily,
+                        fontSize = 14.sp,
+                        fillColor = Color.White,
+                        strokeColor = Color(0xFF002BFF),
+                        strokeWidth = 1f
+                    )
+                }
             }
         }
     }
