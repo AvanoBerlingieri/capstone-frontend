@@ -114,7 +114,6 @@ fun DmPageScreen(
         remember { mutableStateOf(emptyList()) }
     }
 
-    // Use Descending Sort + Reverse Layout to force the "Third Message" correctly
     val sortedMessages = remember(chatMessages) {
         chatMessages.sortedWith(
             compareByDescending<capstone.safeline.data.local.entity.MessageEntity> { it.timestamp }
@@ -174,7 +173,6 @@ fun DmPageScreen(
     }
 }
 
-// ... Rest of UI components (DmHeader, MessageBubble, DmInputBar) remain same ...
 @Composable
 private fun DmHeader(username: String, lastSeen: String, onBack: () -> Unit, onCall: () -> Unit) {
     Box(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(top = 10.dp)) {
