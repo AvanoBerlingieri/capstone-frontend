@@ -1,18 +1,25 @@
 package capstone.safeline.apis.network
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import capstone.safeline.apis.dto.messaging.IncomingGroupMessage
 import capstone.safeline.apis.dto.messaging.IncomingMessage
+import capstone.safeline.apis.dto.messaging.OutgoingMessage
+import capstone.safeline.data.local.dao.MessageDao
+import capstone.safeline.data.local.entity.MessageEntity
 import capstone.safeline.data.repository.AuthRepository
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
+import java.time.LocalDateTime
 
 class WebSocketManager {
     companion object {
@@ -27,20 +34,26 @@ class WebSocketManager {
     }
 
     private var authRepository: AuthRepository? = null
+    private var messageDao: MessageDao? = null
 
-    fun init(repo: AuthRepository) {
+    fun init(repo: AuthRepository, dao: MessageDao) {
         this.authRepository = repo
+        this.messageDao = dao
     }
 
     private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
-
-    @Volatile
-    var onPrivateMessagePayload: ((String) -> Unit)? = null
-
     @SuppressLint("CheckResult")
     fun connect(token: String) {
+        val repo = authRepository
+        val dao = messageDao
+
+        if (repo == null || dao == null) {
+            Log.e("WS", "Cannot connect: Manager not fully initialized (Repo: ${repo != null}, Dao: ${dao != null})")
+            return
+        }
+
         // check if connection is already alive
         if (stompClient?.isConnected == true || isConnecting) {
             Log.d("WS", "Already connected or connecting, skipping...")
@@ -66,8 +79,8 @@ class WebSocketManager {
                         if (authRepository == null) {
                             Log.e("WS", "AuthRepository is NULL")
                         }
-                        val success = authRepository?.updateStatus("ONLINE")
-                        Log.d("WS", "Status update to ONLINE successful: $success")
+                        val success = repo.updateStatus("ONLINE")
+                        Log.d("WS", "Status update successful: $success")
                     }
 
                     subscribeToMessages()
@@ -95,17 +108,41 @@ class WebSocketManager {
 
     @SuppressLint("CheckResult")
     private fun subscribeToMessages() {
+        val gson = Gson()
         // Listen for private messages
         stompClient?.topic("/user/queue/messages")?.subscribe { topicMessage ->
-            Log.d("WS", "Received Private Message: ${topicMessage.payload}")
-            // TODO: Lhek parse the message and insert into the DB
-        }
+            val payload = topicMessage.payload
+            Log.d("WS", "Received Private Message: $payload")
 
-        // Listen for delivery acknowledgments
-        stompClient?.topic("/user/queue/delivery")?.subscribe { ack ->
-            Log.d("WS", "Message delivered to peer: ${ack.payload}")
-            // TODO: Lhek update the message status to delivered and send ack
+            try {
+                // Parse the incoming message
+                val msg = gson.fromJson(payload, OutgoingMessage::class.java)
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    // create message entity for room db
+                    val entity = MessageEntity(
+                        messageId = msg.messageId,
+                        senderId = msg.senderId,
+                        receiverId = msg.receiverId,
+                        content = msg.content,
+                        timestamp = msg.timestamp,
+                        status = "DELIVERED",
+                        isMine = false
+                    )
+                    // insert message
+                    messageDao?.insertMessage(entity)
+
+                    // ack the message
+                    acknowledgeMessage(msg.messageId)
+                }
+            } catch (e: Exception) {
+                Log.e("WS", "Error processing message", e)
+            }
         }
+//        // Listen for delivery acknowledgments
+//        stompClient?.topic("/user/queue/delivery")?.subscribe { ack ->
+//            Log.d("WS", "Message delivered to peer: ${ack.payload}")
+//        }
     }
 
     // make it call api get all groups user is in
@@ -120,17 +157,36 @@ class WebSocketManager {
 
     /**
      * Sends a 1-to-1 message.
-     * /message.send
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("CheckResult")
     fun sendPrivateMessage(message: IncomingMessage) {
-        val jsonMessage = Gson().toJson(message)
+        val gson = Gson()
+        val jsonMessage = gson.toJson(message)
+
+        // Send to Server
         stompClient?.send("/app/message.send", jsonMessage)?.subscribe({
             Log.d("WS", "Private message sent to server")
+
+            // Save to room db
+            CoroutineScope(Dispatchers.IO).launch {
+                val myId = authRepository?.userIdFlow?.first() ?: ""
+
+                val entity = MessageEntity(
+                    messageId = message.messageId,
+                    senderId = myId,
+                    receiverId = message.receiver,
+                    content = message.content,
+                    timestamp = LocalDateTime.now().toString(),
+                    status = "SENT",
+                    isMine = true
+                )
+                messageDao?.insertMessage(entity)
+            }
         }, { error ->
             Log.e("WS", "Failed to send private message", error)
+            // Optionally update Room with status = "FAILED"
         })
-        // TODO: Save to rooms db and send private ack
     }
 
     /**
@@ -184,7 +240,7 @@ class WebSocketManager {
     fun disconnect() {
         // When disconnecting set user status to offline
         CoroutineScope(Dispatchers.IO).launch {
-            authRepository?.updateStatus("Offline")
+            authRepository?.updateStatus("OFFLINE")
             stompClient?.disconnect()
         }
     }
