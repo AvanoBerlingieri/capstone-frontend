@@ -1,5 +1,6 @@
 package capstone.safeline.data.repository
 
+import android.content.Context
 import android.util.Log
 import capstone.safeline.apis.ApiServiceAuth
 import capstone.safeline.apis.dto.auth.GetUserByIdResponse
@@ -10,6 +11,7 @@ import capstone.safeline.apis.dto.auth.UpdatePasswordDto
 import capstone.safeline.apis.dto.auth.UpdateUserStatusDto
 import capstone.safeline.apis.dto.auth.UpdateUsernameDto
 import capstone.safeline.apis.extractUserIdFromJwt
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.data.local.DataStoreManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -20,6 +22,19 @@ class AuthRepository(
     private val dataStoreManager: DataStoreManager,
     private val apiServiceAuth: ApiServiceAuth
 ) {
+    companion object {
+        @Volatile
+        private var INSTANCE: AuthRepository? = null
+
+        fun getInstance(context: Context): AuthRepository {
+            return INSTANCE ?: synchronized(this) {
+                val ds = DataStoreManager.getInstance(context)
+                val api = ApiClientAuth.provideApiService(context, ds)
+
+                INSTANCE ?: AuthRepository(ds, api).also { INSTANCE = it }
+            }
+        }
+    }
     val tokenFlow: Flow<String?> = dataStoreManager.tokenFlow
     val isLoggedIn: Flow<Boolean> = tokenFlow.map { !it.isNullOrBlank() }
     val usernameFlow = dataStoreManager.usernameFlow

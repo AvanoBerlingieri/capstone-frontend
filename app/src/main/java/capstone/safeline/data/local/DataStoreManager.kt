@@ -1,5 +1,6 @@
 package capstone.safeline.data.local
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -15,6 +16,19 @@ class DataStoreManager(
     private val cryptoManager: CryptoManager
 ) {
     companion object {
+        @SuppressLint("StaticFieldLeak")
+        @Volatile
+        private var INSTANCE: DataStoreManager? = null
+
+        fun getInstance(context: Context): DataStoreManager {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: DataStoreManager(
+                    context.applicationContext,
+                    CryptoManager.getInstance()
+                ).also { INSTANCE = it }
+            }
+        }
+
         private val ENCRYPTED_TOKEN = stringPreferencesKey("encrypted_token")
         private val IV_KEY = stringPreferencesKey("iv_key")
         private val USER_ID = stringPreferencesKey("user_id")

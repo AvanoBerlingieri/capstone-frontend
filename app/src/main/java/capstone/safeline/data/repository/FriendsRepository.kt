@@ -1,8 +1,12 @@
 package capstone.safeline.data.repository
 
+import android.content.Context
 import android.util.Log
 import capstone.safeline.apis.ApiServiceFriends
 import capstone.safeline.apis.dto.friends.FriendRequest
+import capstone.safeline.apis.network.ApiClientAuth
+import capstone.safeline.apis.network.ApiClientFriends
+import capstone.safeline.data.local.DataStoreManager
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
@@ -10,6 +14,19 @@ import com.google.gson.reflect.TypeToken
 class FriendRepository(
     private val apiServiceFriends: ApiServiceFriends
 ) {
+    companion object {
+        @Volatile
+        private var INSTANCE: FriendRepository? = null
+
+        fun getInstance(context: Context): FriendRepository {
+            return INSTANCE ?: synchronized(this) {
+                val ds = DataStoreManager.getInstance(context)
+                val api = ApiClientFriends.provideService(context, ds)
+
+                INSTANCE ?: FriendRepository(api).also { INSTANCE = it }
+            }
+        }
+    }
 
     /**
      * Fetches all pending friend request UUIDs for the current user.
