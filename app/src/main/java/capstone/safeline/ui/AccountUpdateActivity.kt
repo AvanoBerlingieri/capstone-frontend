@@ -5,9 +5,23 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,15 +34,16 @@ import capstone.safeline.R
 import capstone.safeline.apis.dto.auth.UpdateEmailDto
 import capstone.safeline.apis.dto.auth.UpdatePasswordDto
 import capstone.safeline.apis.dto.auth.UpdateUsernameDto
-import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.data.security.CryptoManager
-import capstone.safeline.apis.network.ApiClientAuth
-import capstone.safeline.ui.components.*
+import capstone.safeline.ui.components.BackButton
+import capstone.safeline.ui.components.ImageInputField
+import capstone.safeline.ui.components.InitializeSocket
+import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.components.noRippleClickable
 import capstone.safeline.ui.theme.KaushanScript
-import kotlinx.coroutines.launch
 import capstone.safeline.ui.theme.ThemeManager
-
+import kotlinx.coroutines.launch
 
 
 class AccountUpdateActivity : ComponentActivity() {
@@ -38,13 +53,13 @@ class AccountUpdateActivity : ComponentActivity() {
         val mode = intent.getStringExtra("UPDATE_MODE") ?: "username"
 
         setContent {
+
+            InitializeSocket()
+
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
 
-            val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-            val repo = remember {
-                AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager))
-            }
+            val repo = remember { AuthRepository.getInstance(context) }
 
             var field1 by remember { mutableStateOf("") }
             var field2 by remember { mutableStateOf("") }
