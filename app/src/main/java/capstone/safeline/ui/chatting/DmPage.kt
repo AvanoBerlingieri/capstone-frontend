@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -89,7 +90,6 @@ fun DmPageScreen(
     onBack: () -> Unit,
     onCall: () -> Unit
 ) {
-
     InitializeSocket()
 
     val context = LocalContext.current
@@ -100,6 +100,7 @@ fun DmPageScreen(
 
     var partnerUserId by remember { mutableStateOf<String?>(null) }
     var text by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
 
     LaunchedEffect(username) {
         authRepo.getIdByUsername(username).onSuccess { id ->
@@ -107,11 +108,23 @@ fun DmPageScreen(
         }
     }
 
-    // get message history from rooms db
     val chatMessages by if (partnerUserId != null) {
         messageDao.getMessagesForUser(partnerUserId!!).collectAsState(initial = emptyList())
     } else {
         remember { mutableStateOf(emptyList()) }
+    }
+
+    val sortedMessages = remember(chatMessages) {
+        chatMessages.sortedWith(
+            compareBy<capstone.safeline.data.local.entity.MessageEntity> { it.timestamp }
+                .thenBy { it.messageId }
+        )
+    }
+
+    LaunchedEffect(sortedMessages.size) {
+        if (sortedMessages.isNotEmpty()) {
+            listState.animateScrollToItem(sortedMessages.size - 1)
+        }
     }
 
     Scaffold(containerColor = Color.Transparent) { innerPadding ->
@@ -135,19 +148,22 @@ fun DmPageScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .imePadding()) {
+
                 DmHeader(username, lastSeen, onBack, onCall)
 
-                // Message List
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
                         .padding(horizontal = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
-                    reverseLayout = false
                 ) {
-                    items(chatMessages.sortedBy { it.timestamp }) { entity ->
+                    items(
+                        items = sortedMessages,
+                        key = { it.messageId }
+                    ) { entity ->
                         MessageBubble(
                             message = entity.content,
                             isMine = entity.isMine
@@ -165,7 +181,6 @@ fun DmPageScreen(
                         val newMessageId = UUID.randomUUID().toString()
                         val body = text.trim()
 
-                        // send the msg
                         ws.sendPrivateMessage(
                             IncomingMessage(
                                 messageId = newMessageId,
@@ -173,8 +188,7 @@ fun DmPageScreen(
                                 content = body
                             )
                         )
-
-                        text = "" // Clear input
+                        text = ""
                     }
                 )
             }
@@ -276,10 +290,14 @@ private fun DmHeader(username: String, lastSeen: String, onBack: () -> Unit, onC
 @Composable
 private fun MessageBubble(message: String, isMine: Boolean) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
         horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
     ) {
-        Box(modifier = Modifier.widthIn(max = 280.dp)) {
+        Box(
+            modifier = Modifier.widthIn(max = 280.dp)
+        ) {
             Image(
                 painter = painterResource(R.drawable.message_bubble_background),
                 contentDescription = null,
