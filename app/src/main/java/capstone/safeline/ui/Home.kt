@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,9 +40,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.ui.calling.Call
+import capstone.safeline.ui.chatting.Chat
+import capstone.safeline.ui.community.Community
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.friends.Contacts
+import capstone.safeline.ui.friends.FriendRequests
+import capstone.safeline.ui.profile.Profile
+import capstone.safeline.ui.settings.Settings
 import capstone.safeline.ui.theme.ThemeManager
 
 private val HomeTitleFont = FontFamily(Font(R.font.vampiro_one_regular))
@@ -78,6 +87,8 @@ fun HomeScreen(
     InitializeSocket()
     val context = LocalContext.current
     val authRepo = remember { AuthRepository.getInstance(context) }
+    val username by authRepo.usernameFlow.collectAsState(initial = "Loading...")
+
 
     Scaffold(
         topBar = {},
@@ -191,7 +202,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Text(
-                    text = "WELCOME BACK ${authRepo.usernameFlow}",
+                    text = "WELCOME BACK $username",
                     fontFamily = HomeTextFont,
                     fontSize = 28.sp,
                     color = Color.White,

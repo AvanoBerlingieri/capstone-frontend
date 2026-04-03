@@ -26,120 +26,120 @@
             android:name=".ui.Home"
             android:exported="true" />
         <activity
-            android:name=".ui.Chat"
+            android:name=".ui.chatting.Chat"
             android:exported="true" />
         <activity
-            android:name=".ui.Call"
-            android:exported="true" />
-
-        <activity
-            android:name=".ui.OngoingCallActivity"
-            android:exported="true" />
-        <activity
-            android:name=".ui.Profile"
+            android:name=".ui.calling.Call"
             android:exported="true" />
 
         <activity
-            android:name=".ui.DmPage"
+            android:name=".ui.calling.OngoingCallActivity"
+            android:exported="true" />
+        <activity
+            android:name=".ui.profile.Profile"
             android:exported="true" />
 
         <activity
-            android:name=".ui.Community"
+            android:name=".ui.chatting.DmPage"
             android:exported="true" />
 
         <activity
-            android:name=".ui.Contacts"
+            android:name=".ui.community.Community"
             android:exported="true" />
 
         <activity
-            android:name=".ui.Settings"
+            android:name=".ui.friends.Contacts"
             android:exported="true" />
 
         <activity
-            android:name=".ui.FriendRequests"
+            android:name=".ui.settings.Settings"
             android:exported="true" />
 
         <activity
-            android:name=".ui.ContactCall"
+            android:name=".ui.friends.FriendRequests"
             android:exported="true" />
 
         <activity
-            android:name=".ui.ContactProfile"
+            android:name=".ui.calling.ContactCall"
             android:exported="true" />
 
         <activity
-            android:name=".ui.AccountUpdateActivity"
+            android:name=".ui.friends.ContactProfile"
             android:exported="true" />
 
         <activity
-            android:name=".ui.SettingsAppearance"
+            android:name=".ui.profile.AccountUpdateActivity"
             android:exported="true" />
 
         <activity
-            android:name=".ui.SettingsFonts"
+            android:name=".ui.settings.SettingsAppearance"
             android:exported="true" />
 
         <activity
-            android:name=".ui.SettingsSound"
+            android:name=".ui.settings.SettingsFonts"
             android:exported="true" />
 
         <activity
-            android:name=".ui.SettingsPrivacy"
+            android:name=".ui.settings.SettingsSound"
             android:exported="true" />
 
         <activity
-            android:name=".ui.SettingsNotifications"
+            android:name=".ui.settings.SettingsPrivacy"
             android:exported="true" />
 
         <activity
-            android:name=".ui.CommunityServers"
-            android:exported="true" />
-        <activity
-            android:name=".ui.CallingPage"
+            android:name=".ui.settings.SettingsNotifications"
             android:exported="true" />
 
         <activity
-            android:name=".ui.AddServer"
+            android:name=".ui.community.CommunityServers"
+            android:exported="true" />
+        <activity
+            android:name=".ui.calling.CallingPage"
             android:exported="true" />
 
         <activity
-            android:name=".ui.ManageServer"
+            android:name=".ui.community.AddServer"
             android:exported="true" />
 
         <activity
-            android:name=".ui.AddChannel"
+            android:name=".ui.community.ManageServer"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.community.AddChannel"
             android:exported="true"/>
 
         <activity
-            android:name=".ui.ChannelScreen"
+            android:name=".ui.community.ChannelScreen"
             android:exported="true"/>
 
         <activity
-            android:name=".ui.ManageUser"
+            android:name=".ui.community.ManageUser"
             android:exported="true" />
 
         <activity
-            android:name=".ui.InviteUsers"
+            android:name=".ui.community.InviteUsers"
             android:exported="true" />
 
         <activity
-            android:name=".ui.EditRole"
+            android:name=".ui.community.EditRole"
             android:exported="true" />
 
         <activity
-            android:name=".ui.GroupChatPage"
+            android:name=".ui.chatting.GroupChatPage"
             android:exported="true" />
 
         <activity
-            android:name=".ui.GroupSettingsPage"
+            android:name=".ui.chatting.GroupSettingsPage"
             android:exported="true" />
 
         <activity
-            android:name=".ui.InviteUsersPage"
+            android:name=".ui.chatting.InviteUsersPage"
             android:exported="true" />
 
         <activity
-            android:name=".ui.CreateGroup"
+            android:name=".ui.chatting.CreateGroup"
             android:exported="true" />
     </application>
 
