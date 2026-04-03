@@ -40,6 +40,7 @@ import capstone.safeline.Global
 import capstone.safeline.models.ChatUser
 import capstone.safeline.models.Message
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.TopBar
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -81,6 +82,8 @@ fun UserChatScreen(onNavigate: (String) -> Unit, username: String, user: ChatUse
             Color(0xFF0D2244)
         )
     )
+
+    InitializeSocket()
 
     val jsonMessages: List<Message> = user?.messages ?: emptyList()
     var chatMessages by remember { mutableStateOf(listOf<Message>()) }

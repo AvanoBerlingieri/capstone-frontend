@@ -34,7 +34,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
-
+import capstone.safeline.ui.components.InitializeSocket
 
 
 class SettingsFonts : ComponentActivity() {
@@ -65,6 +65,8 @@ private fun SettingsPlaceholder(
     onBack: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    InitializeSocket()
+
     Scaffold(
         topBar = {},
         bottomBar = {

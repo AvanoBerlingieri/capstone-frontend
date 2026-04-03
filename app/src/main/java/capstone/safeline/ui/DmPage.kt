@@ -30,6 +30,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,42 +42,32 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import capstone.safeline.Global
 import capstone.safeline.R
-import capstone.safeline.models.ChatUser
-import capstone.safeline.models.Message
+import capstone.safeline.apis.dto.messaging.IncomingMessage
+import capstone.safeline.apis.network.WebSocketManager
+import capstone.safeline.data.local.AppDatabase
+import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
-
+import java.util.UUID
 
 class DmPage : ComponentActivity() {
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         val username = intent.getStringExtra("userName") ?: "Unknown"
-        val lastSeen = intent.getStringExtra("lastSeen") ?: "Last seen: March 10"
-
-        val global = Global()
-        val usersList = global.loadUsersChats(this)
-        val user = usersList.firstOrNull { it.name == username }
+        val lastSeen = intent.getStringExtra("lastSeen") ?: "Last seen recently"
 
         setContent {
             DmPageScreen(
-                onNavigate = {},
                 username = username,
                 lastSeen = lastSeen,
-                user = user,
                 onBack = { finish() },
                 onCall = {
                     val intent = Intent(this, CallingPage::class.java)
@@ -90,73 +82,74 @@ class DmPage : ComponentActivity() {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DmPageScreen(
-    onNavigate: (String) -> Unit,
     username: String,
     lastSeen: String,
-    user: ChatUser?,
     onBack: () -> Unit,
     onCall: () -> Unit
 ) {
-    val jsonMessages: List<Message> = user?.messages ?: emptyList()
-    var chatMessages by remember { mutableStateOf(listOf<Message>()) }
+
+    InitializeSocket()
+
+    val context = LocalContext.current
+    val authRepo = remember { AuthRepository.getInstance(context) }
+    val database = remember { AppDatabase.getDatabase(context) }
+    val messageDao = database.messageDao()
+    val ws = WebSocketManager.getInstance()
+
+    var partnerUserId by remember { mutableStateOf<String?>(null) }
     var text by remember { mutableStateOf("") }
-    var nextJsonIndex by remember { mutableStateOf(0) }
 
-    Scaffold(
-        topBar = {},
-        bottomBar = {},
-        containerColor = Color.Transparent
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
+    LaunchedEffect(username) {
+        authRepo.getIdByUsername(username).onSuccess { id ->
+            partnerUserId = id
+        }
+    }
+
+    // get message history from rooms db
+    val chatMessages by if (partnerUserId != null) {
+        messageDao.getMessagesForUser(partnerUserId!!).collectAsState(initial = emptyList())
+    } else {
+        remember { mutableStateOf(emptyList()) }
+    }
+
+    Scaffold(containerColor = Color.Transparent) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
                 Image(
                     painter = painterResource(id = R.drawable.dm_background),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
             } else {
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                ThemeManager.backgroundGradient
-                            )
-                        )
+                        .background(Brush.verticalGradient(ThemeManager.backgroundGradient))
                 )
-
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .imePadding()
-            ) {
-                DmHeader(
-                    username = username,
-                    lastSeen = lastSeen,
-                    onBack = onBack,
-                    onCall = onCall
-                )
+            Column(modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .imePadding()) {
+                DmHeader(username, lastSeen, onBack, onCall)
 
+                // Message List
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
                         .padding(horizontal = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
+                    reverseLayout = true
                 ) {
-                    items(chatMessages.withIndex().toList()) { indexed ->
-                        val msg = indexed.value
-                        val isMine = indexed.index % 2 == 0
+                    items(chatMessages) { entity ->
+                        MessageBubble(
+                            message = entity.content,
+                            isMine = entity.isMine
+                        )
                     }
                 }
 
@@ -165,18 +158,21 @@ fun DmPageScreen(
                     onValueChange = { text = it },
                     onAttach = {},
                     onSend = {
-                        if (text.isBlank()) return@DmInputBar
+                        if (text.isBlank() || partnerUserId == null) return@DmInputBar
 
-                        val currentTime = LocalDateTime.now()
-                            .format(DateTimeFormatter.ofPattern("hh:mm a"))
+                        val newMessageId = UUID.randomUUID().toString()
+                        val body = text.trim()
 
-                        chatMessages = chatMessages + Message(text, currentTime)
-                        text = ""
+                        // send the msg
+                        ws.sendPrivateMessage(
+                            IncomingMessage(
+                                messageId = newMessageId,
+                                receiver = partnerUserId!!,
+                                content = body
+                            )
+                        )
 
-                        if (nextJsonIndex < jsonMessages.size) {
-                            chatMessages = chatMessages + jsonMessages[nextJsonIndex]
-                            nextJsonIndex++
-                        }
+                        text = "" // Clear input
                     }
                 )
             }
@@ -185,12 +181,7 @@ fun DmPageScreen(
 }
 
 @Composable
-private fun DmHeader(
-    username: String,
-    lastSeen: String,
-    onBack: () -> Unit,
-    onCall: () -> Unit
-) {
+private fun DmHeader(username: String, lastSeen: String, onBack: () -> Unit, onCall: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -198,7 +189,6 @@ private fun DmHeader(
             .padding(top = 10.dp)
     ) {
         if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
             Image(
                 painter = painterResource(R.drawable.friend_nameplate_background),
                 contentDescription = null,
@@ -208,21 +198,14 @@ private fun DmHeader(
                     .height(69.dp),
                 contentScale = ContentScale.FillBounds
             )
-
         } else {
-
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .width(412.dp)
                     .height(69.dp)
-                    .background(
-                        Brush.horizontalGradient(
-                            ThemeManager.headerGradient
-                        )
-                    )
+                    .background(Brush.horizontalGradient(ThemeManager.headerGradient))
             )
-
         }
 
         Image(
@@ -231,7 +214,7 @@ private fun DmHeader(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(start = 14.dp, top = 18.dp)
-                .size(width = 83.09.dp, height = 31.49.dp)
+                .size(width = 83.dp, height = 31.dp)
                 .clickable { onBack() },
             contentScale = ContentScale.FillBounds
         )
@@ -246,10 +229,9 @@ private fun DmHeader(
             Image(
                 painter = painterResource(R.drawable.avatar),
                 contentDescription = null,
-                modifier = Modifier.size(width = 39.54.dp, height = 31.81.dp),
+                modifier = Modifier.size(width = 39.dp, height = 31.dp),
                 contentScale = ContentScale.Crop
             )
-
             Image(
                 painter = painterResource(R.drawable.call_for_dm),
                 contentDescription = null,
@@ -275,9 +257,7 @@ private fun DmHeader(
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )
-
             Spacer(modifier = Modifier.height(4.dp))
-
             StrokeText(
                 text = lastSeen,
                 fontFamily = ThemeManager.fontFamily,
@@ -292,38 +272,25 @@ private fun DmHeader(
 }
 
 @Composable
-private fun MessageBubble(
-    message: String,
-    isMine: Boolean
-) {
+private fun MessageBubble(message: String, isMine: Boolean) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
     ) {
-        Box(
-            modifier = Modifier.widthIn(max = 280.dp)
-        ) {
+        Box(modifier = Modifier.widthIn(max = 280.dp)) {
             Image(
                 painter = painterResource(R.drawable.message_bubble_background),
                 contentDescription = null,
                 modifier = Modifier
                     .matchParentSize()
-                    .graphicsLayer {
-                        scaleX = if (isMine) -1f else 1f
-                    },
+                    .graphicsLayer { scaleX = if (isMine) -1f else 1f },
                 contentScale = ContentScale.FillBounds
             )
-
             Text(
                 text = message,
                 color = Color.White,
                 fontSize = 14.sp,
-                modifier = Modifier.padding(
-                    start = 18.dp,
-                    end = 18.dp,
-                    top = 12.dp,
-                    bottom = 12.dp
-                )
+                modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 12.dp)
             )
         }
     }
@@ -347,7 +314,6 @@ private fun DmInputBar(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.FillBounds
         )
-
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -365,7 +331,6 @@ private fun DmInputBar(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.FillBounds
                 )
-
                 TextField(
                     value = value,
                     onValueChange = onValueChange,
@@ -391,9 +356,7 @@ private fun DmInputBar(
                     )
                 )
             }
-
             Spacer(modifier = Modifier.width(10.dp))
-
             Image(
                 painter = painterResource(R.drawable.attach),
                 contentDescription = null,
@@ -402,9 +365,7 @@ private fun DmInputBar(
                     .clickable { onAttach() },
                 contentScale = ContentScale.Fit
             )
-
             Spacer(modifier = Modifier.width(10.dp))
-
             Image(
                 painter = painterResource(R.drawable.enter_button),
                 contentDescription = null,
@@ -416,8 +377,3 @@ private fun DmInputBar(
         }
     }
 }
-
-
-
-
-

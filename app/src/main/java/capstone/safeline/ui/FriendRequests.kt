@@ -54,14 +54,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.apis.extractUserIdFromJwt
-import capstone.safeline.apis.network.ApiClientAuth
-import capstone.safeline.apis.network.ApiClientFriends
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.repository.FriendRepository
-import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
@@ -110,10 +108,12 @@ private fun FriendRequestsScreen(
     onOpenProfile: (UiFriendRequest) -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    InitializeSocket()
+
     val context = LocalContext.current
-    val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-    val friendRepo = remember { FriendRepository(ApiClientFriends.provideService(context, dsManager)) }
-    val authRepo = remember { AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager)) }
+    val dsManager = remember { DataStoreManager.getInstance(context) }
+    val friendRepo = remember { FriendRepository.getInstance(context) }
+    val authRepo = remember { AuthRepository.getInstance(context) }
     val scope = rememberCoroutineScope()
 
     val requests = remember { mutableStateListOf<UiFriendRequest>() }
