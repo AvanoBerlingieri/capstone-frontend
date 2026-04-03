@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeTitle
 
 private val HomeTitleFont = FontFamily(Font(R.font.vampiro_one_regular))
@@ -65,6 +66,8 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenFriendRequests: () -> Unit
 ) {
+    InitializeSocket()
+
     Scaffold(
         topBar = {},
         bottomBar = {

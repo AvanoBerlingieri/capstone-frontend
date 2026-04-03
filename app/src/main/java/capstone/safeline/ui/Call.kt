@@ -5,6 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -30,10 +33,10 @@ import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.components.BackButton
+import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 private val Tapestry = FontFamily(Font(R.font.tapestry_regular))
 
 private enum class CallType { ANSWERED, MISSED }
@@ -50,7 +53,6 @@ class Call : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Create DataStoreManager with CryptoManager as required
         val cryptoManager = CryptoManager()
         val dataStoreManager = DataStoreManager(this, cryptoManager)
 
@@ -62,7 +64,6 @@ class Call : ComponentActivity() {
             LaunchedEffect(Unit) {
                 scope.launch {
                     try {
-                        // Use username as the user identifier
                         val username = dataStoreManager.usernameFlow.first()
 
                         val response = CallingApiClient.service.getCallHistory(username)
@@ -97,7 +98,7 @@ class Call : ComponentActivity() {
             CallScreen(
                 callItems = callItems,
                 isLoading = isLoading,
-                onBack = { startActivity(Intent(this, Home::class.java)) },
+                onBack = { finish() },
                 onCallClick = { callerName ->
                     val intent = Intent(this, ContactCall::class.java)
                     intent.putExtra("callerName", callerName)
@@ -141,20 +142,54 @@ private fun CallScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.calls_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            // ThemeManager background from master
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+                Image(
+                    painter = painterResource(R.drawable.calls_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(ThemeManager.backgroundGradient)
+                        )
+                )
+            }
 
-            StrokeTitle(
-                text = "CALLS HISTORY",
-                fontFamily = Vampiro,
+            // ThemeManager header from master
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(ThemeManager.headerGradient)
+                            )
+                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(ThemeManager.topBarStroke)
+                    )
+                }
+
+                StrokeTitle(
+                    text = "CALLS HISTORY",
+                    fontFamily = ThemeManager.fontFamily,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             BackButton(
                 onClick = onBack,
@@ -167,6 +202,7 @@ private fun CallScreen(
                     .padding(top = 120.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Real API loading states from your branch
                 when {
                     isLoading -> {
                         Box(
@@ -239,15 +275,37 @@ private fun CallRow(
             .size(width = 379.97.dp, height = 48.97.dp)
             .clickable { onClick() }
     ) {
-        val bg = if (item.type == CallType.ANSWERED)
-            R.drawable.calls_anwsered_bg else R.drawable.calls_missed_bg
+        // ThemeManager styling from master
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+            val bg = if (item.type == CallType.ANSWERED)
+                R.drawable.calls_anwsered_bg else R.drawable.calls_missed_bg
 
-        Image(
-            painter = painterResource(bg),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+            Image(
+                painter = painterResource(bg),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+        } else {
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(ThemeManager.buttonGradient),
+                        shape = shape
+                    )
+                    .then(
+                        ThemeManager.buttonStroke?.let {
+                            Modifier.border(
+                                width = 1.dp,
+                                color = it,
+                                shape = shape
+                            )
+                        } ?: Modifier
+                    )
+            )
+        }
 
         when (item.type) {
             CallType.MISSED -> MissedRow(item)
@@ -290,7 +348,7 @@ private fun MissedRow(item: UiCallItem) {
 
         StrokeText(
             text = item.name,
-            fontFamily = Vampiro,
+            fontFamily = ThemeManager.fontFamily,
             fontSize = 32.sp,
             fillColor = Color.White,
             strokeColor = Color(0xFFFF0099),
@@ -331,7 +389,7 @@ private fun AnsweredRow(item: UiCallItem) {
         ) {
             StrokeText(
                 text = item.name,
-                fontFamily = Vampiro,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 24.sp,
                 fillColor = Color.White,
                 strokeColor = Color(0xFF002BFF),

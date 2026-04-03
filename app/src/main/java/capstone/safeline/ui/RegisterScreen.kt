@@ -28,7 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
@@ -37,8 +37,7 @@ import capstone.safeline.ui.components.GradientStrokeText
 import capstone.safeline.ui.components.ImageInputField
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
-import capstone.safeline.ui.theme.KaushanScript
-import capstone.safeline.ui.theme.VampiroOne
+import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -55,31 +54,52 @@ fun RegisterScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-    val repo = remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
+    val repo = remember { AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager)) }
 
     val screenH = LocalConfiguration.current.screenHeightDp
     val scale = (screenH / 820f).coerceIn(0.72f, 1f)
     fun s(dp: Int) = ((dp * scale).roundToInt()).dp
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(R.drawable.background),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.background),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+        } else {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.backgroundGradient
+                        )
+                    )
+            )
+
+        }
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(88.dp)
                 .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF6A2CFF).copy(alpha = 0.85f),
-                            Color.Transparent
+                    if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC)
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(0xFF6A2CFF).copy(alpha = 0.85f),
+                                Color.Transparent
+                            )
                         )
-                    )
+                    else
+                        Brush.horizontalGradient(
+                            ThemeManager.headerGradient
+                        )
                 )
         ) {
             BackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
@@ -89,7 +109,7 @@ fun RegisterScreen(
                     .padding(top = 24.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                GradientStrokeText(text = "REGISTER", fontSize = 28.sp, fontFamily = VampiroOne)
+                GradientStrokeText(text = "REGISTER", fontSize = 28.sp, fontFamily = ThemeManager.fontFamily)
             }
         }
 
@@ -102,13 +122,15 @@ fun RegisterScreen(
             Spacer(Modifier.height(s(105)))
             StrokeText(
                 text = "Please Enter Your",
-                fontFamily = KaushanScript,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 48.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF002BFF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )
+
+            Spacer(Modifier.height(s(16)))
 
             RegistrationField("Username:", username) { username = it }
             RegistrationField("Email:", email) { email = it }
@@ -153,10 +175,10 @@ fun RegistrationField(label: String, value: String, onValueChange: (String) -> U
     Spacer(Modifier.height(8.dp))
     StrokeText(
         text = label,
-        fontFamily = KaushanScript,
+        fontFamily = ThemeManager.fontFamily,
         fontSize = 32.sp,
         fillColor = Color.White,
-        strokeColor = Color(0xFF0066FF),
+        strokeColor = ThemeManager.titleStroke,
         strokeWidth = 1f
     )
     ImageInputField(value = value, onValueChange = onValueChange)

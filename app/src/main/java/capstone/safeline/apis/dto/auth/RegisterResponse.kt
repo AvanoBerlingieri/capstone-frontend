@@ -1,4 +1,4 @@
-package capstone.safeline.apis.dto
+package capstone.safeline.apis.dto.auth
 
 data class RegisterResponse(
     val id: String, // UUID received as string

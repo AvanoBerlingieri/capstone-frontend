@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -49,10 +51,11 @@ import capstone.safeline.R
 import capstone.safeline.models.ChatUser
 import capstone.safeline.models.Message
 import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.theme.ThemeManager
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class DmPage : ComponentActivity() {
 
@@ -107,12 +110,28 @@ fun DmPageScreen(
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.dm_background),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+                Image(
+                    painter = painterResource(id = R.drawable.dm_background),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
 
             Column(
                 modifier = Modifier
@@ -135,12 +154,9 @@ fun DmPageScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
                 ) {
-                    items(chatMessages) { msg ->
-                        val isMine = (chatMessages.indexOf(msg) % 2 == 0)
-                        MessageBubble(
-                            message = msg.text,
-                            isMine = isMine
-                        )
+                    items(chatMessages.withIndex().toList()) { indexed ->
+                        val msg = indexed.value
+                        val isMine = indexed.index % 2 == 0
                     }
                 }
 
@@ -181,15 +197,33 @@ private fun DmHeader(
             .statusBarsPadding()
             .padding(top = 10.dp)
     ) {
-        Image(
-            painter = painterResource(R.drawable.friend_nameplate_background),
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .width(412.dp)
-                .height(69.dp),
-            contentScale = ContentScale.FillBounds
-        )
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.friend_nameplate_background),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .width(412.dp)
+                    .height(69.dp),
+                contentScale = ContentScale.FillBounds
+            )
+
+        } else {
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .width(412.dp)
+                    .height(69.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            ThemeManager.headerGradient
+                        )
+                    )
+            )
+
+        }
 
         Image(
             painter = painterResource(R.drawable.back_for_dm),
@@ -234,10 +268,10 @@ private fun DmHeader(
         ) {
             StrokeText(
                 text = username,
-                fontFamily = Vampiro,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 24.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF002BFF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )
@@ -246,10 +280,10 @@ private fun DmHeader(
 
             StrokeText(
                 text = lastSeen,
-                fontFamily = Vampiro,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 12.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF002BFF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )

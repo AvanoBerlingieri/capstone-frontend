@@ -4,37 +4,22 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.ui.components.BackButton
-import capstone.safeline.ui.components.BottomNavBar
-import capstone.safeline.ui.components.StrokeText
-import capstone.safeline.ui.components.StrokeTitle
-
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+import capstone.safeline.ui.components.*
+import capstone.safeline.ui.theme.ThemeManager
 
 class ContactProfile : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,17 +33,20 @@ class ContactProfile : ComponentActivity() {
                 username = username,
                 email = email,
                 onBack = { startActivity(Intent(this, Contacts::class.java)) },
+
                 onCall = {
                     val intent = Intent(this, ContactCall::class.java)
                     intent.putExtra("callerName", username)
                     intent.putExtra("targetUserId", username)
                     startActivity(intent)
                 },
+
                 onChat = {
                     val intent = Intent(this, DmPage::class.java)
                     intent.putExtra("userName", username)
                     startActivity(intent)
                 },
+
                 onNavigate = { destination ->
                     when (destination) {
                         "home" -> startActivity(Intent(this, Home::class.java))
@@ -93,26 +81,67 @@ private fun ContactProfileScreen(
         },
         containerColor = Color.Transparent
     ) { innerPadding ->
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.profile_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
 
-            StrokeTitle(
-                text = "PROFILE",
-                fontFamily = Vampiro,
+            // Background
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+                Image(
+                    painter = painterResource(R.drawable.profile_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+            }
+
+            // Header
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(ThemeManager.topBarStroke)
+                    )
+                }
+
+                StrokeTitle(
+                    text = "PROFILE",
+                    fontFamily = ThemeManager.fontFamily,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             BackButton(
                 onClick = onBack,
@@ -125,6 +154,7 @@ private fun ContactProfileScreen(
                     .padding(top = 120.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
                 Image(
                     painter = painterResource(R.drawable.home_avatar_example),
                     contentDescription = null,
@@ -136,7 +166,7 @@ private fun ContactProfileScreen(
 
                 StrokeText(
                     text = username,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 32.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF002BFF),
@@ -148,7 +178,7 @@ private fun ContactProfileScreen(
 
                 StrokeText(
                     text = email,
-                    fontFamily = Vampiro,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 22.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF002BFF),
@@ -158,11 +188,12 @@ private fun ContactProfileScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // Call and Chat buttons
+                // Buttons
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Chat button
+
+                    // Chat
                     Image(
                         painter = painterResource(R.drawable.call_for_dm),
                         contentDescription = "Chat",
@@ -174,7 +205,7 @@ private fun ContactProfileScreen(
 
                     Spacer(modifier = Modifier.width(32.dp))
 
-                    // Call button
+                    // Call
                     Image(
                         painter = painterResource(R.drawable.calls_make_call_btn),
                         contentDescription = "Call",

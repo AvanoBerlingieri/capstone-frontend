@@ -1,14 +1,17 @@
 package capstone.safeline.data.repository
 
+import android.util.Log
 import capstone.safeline.apis.ApiServiceAuth
-import capstone.safeline.apis.dto.LoginRequest
-import capstone.safeline.apis.dto.RegisterRequest
-import capstone.safeline.apis.dto.UpdateEmailDto
-import capstone.safeline.apis.dto.UpdatePasswordDto
-import capstone.safeline.apis.dto.UpdateUsernameDto
+import capstone.safeline.apis.dto.auth.GetUserByIdResponse
+import capstone.safeline.apis.dto.auth.LoginRequest
+import capstone.safeline.apis.dto.auth.RegisterRequest
+import capstone.safeline.apis.dto.auth.UpdateEmailDto
+import capstone.safeline.apis.dto.auth.UpdatePasswordDto
+import capstone.safeline.apis.dto.auth.UpdateUsernameDto
 import capstone.safeline.data.local.DataStoreManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 class AuthRepository(
     private val dataStoreManager: DataStoreManager,
@@ -103,5 +106,54 @@ class AuthRepository(
         response.isSuccessful
     } catch (e: Exception) {
         false
+    }
+
+    suspend fun getUserById(id: UUID): Result<GetUserByIdResponse> {
+        return try {
+            val primary = apiServiceAuth.getUserById(id)
+            val primaryBody = primary.body()
+            if (primary.isSuccessful && primaryBody != null) {
+                return Result.success(primaryBody)
+            }
+            Log.e("AuthRepository", "getUserById primary failed: id=$id code=${primary.code()}")
+
+            val tertiary = apiServiceAuth.getUserByIdUnderUsers(id)
+            val tertiaryBody = tertiary.body()
+            if (tertiary.isSuccessful && tertiaryBody != null) {
+                return Result.success(tertiaryBody)
+            }
+            Log.e("AuthRepository", "getUserById /users failed: id=$id code=${tertiary.code()}")
+
+            Result.failure(
+                Exception(
+                    "Failed to fetch user by id: api=${primary.code()}, users=${tertiary.code()}"
+                )
+            )
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "getUserById exception: id=$id message=${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getIdByUsername(username: String): Result<String> {
+        return try {
+            val trimmed = username.trim()
+            if (trimmed.isEmpty()) {
+                return Result.failure(Exception("Username is empty"))
+            }
+
+            val response = apiServiceAuth.getIdByUsername(trimmed)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                val id = body["id"] ?: body["userId"]
+                if (!id.isNullOrBlank()) {
+                    return Result.success(id)
+                }
+            }
+            Result.failure(Exception("Failed to fetch username"))
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "getIdByUsername exception: username=$username message=${e.message}", e)
+            Result.failure(e)
+        }
     }
 }

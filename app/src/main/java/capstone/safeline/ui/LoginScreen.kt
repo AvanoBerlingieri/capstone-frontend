@@ -29,7 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.network.ApiClient
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.security.CryptoManager
@@ -38,8 +38,7 @@ import capstone.safeline.ui.components.GradientStrokeText
 import capstone.safeline.ui.components.ImageInputField
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.noRippleClickable
-import capstone.safeline.ui.theme.KaushanScript
-import capstone.safeline.ui.theme.VampiroOne
+import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
 
 @Composable
@@ -56,7 +55,7 @@ fun LoginScreen(
 
     val dsManager = remember { DataStoreManager(context, CryptoManager()) }
     val repo =
-        remember { AuthRepository(dsManager, ApiClient.provideApiService(context, dsManager)) }
+        remember { AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager)) }
 
     val isLoggedIn by repo.isLoggedIn.collectAsState(initial = false)
     LaunchedEffect(isLoggedIn) {
@@ -65,12 +64,28 @@ fun LoginScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(R.drawable.background),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+
+            Image(
+                painter = painterResource(R.drawable.background),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+        } else {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.backgroundGradient
+                        )
+                    )
+            )
+
+        }
 
         if (isLoading) {
             Box(
@@ -80,7 +95,7 @@ fun LoginScreen(
                 contentAlignment = Alignment.Center
             ) {
                 StrokeText(text = "Logging in...",
-                    fontFamily = KaushanScript,
+                    fontFamily = ThemeManager.fontFamily,
                     fontSize = 48.sp,
                     fillColor = Color.White,
                     strokeColor = Color(0xFF002BFF),
@@ -94,9 +109,17 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .height(88.dp)
                 .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFF6A2CFF).copy(alpha = 0.85f), Color.Transparent)
-                    )
+                    if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC)
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(0xFF6A2CFF).copy(alpha = 0.85f),
+                                Color.Transparent
+                            )
+                        )
+                    else
+                        Brush.horizontalGradient(
+                            ThemeManager.headerGradient
+                        )
                 )
         ) {
             BackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
@@ -106,7 +129,7 @@ fun LoginScreen(
                     .padding(top = 24.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                GradientStrokeText(text = "LOGIN", fontSize = 28.sp, fontFamily = VampiroOne)
+                GradientStrokeText(text = "LOGIN", fontSize = 28.sp, fontFamily = ThemeManager.fontFamily)
             }
         }
 
@@ -119,20 +142,20 @@ fun LoginScreen(
             Spacer(Modifier.height(125.dp))
             StrokeText(
                 text = "Please Enter Your",
-                fontFamily = KaushanScript,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 48.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF002BFF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(24.dp))
             StrokeText(
                 text = "Username/Email:",
-                fontFamily = KaushanScript,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 40.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )
@@ -141,10 +164,10 @@ fun LoginScreen(
             Spacer(Modifier.height(22.dp))
             StrokeText(
                 text = "Password:",
-                fontFamily = KaushanScript,
+                fontFamily = ThemeManager.fontFamily,
                 fontSize = 40.sp,
                 fillColor = Color.White,
-                strokeColor = Color(0xFF0066FF),
+                strokeColor = ThemeManager.titleStroke,
                 strokeWidth = 1f,
                 textAlign = TextAlign.Center
             )

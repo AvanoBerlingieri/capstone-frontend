@@ -1,14 +1,24 @@
 package capstone.safeline.ui
-
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,8 +33,13 @@ import capstone.safeline.R
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.theme.ThemeManager
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 
-private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
+
 
 class SettingsAppearance : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,6 +69,8 @@ private fun SettingsPlaceholder(
     onBack: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    val context = LocalContext.current
+
     Scaffold(
         topBar = {},
         bottomBar = {
@@ -69,26 +86,166 @@ private fun SettingsPlaceholder(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(R.drawable.settings_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
 
-            StrokeTitle(
-                text = title,
-                fontFamily = Vampiro,
+                Image(
+                    painter = painterResource(R.drawable.settings_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
+                )
+
+            }
+
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 22.dp)
-            )
+                    .fillMaxWidth()
+                    .height(70.dp)
+            ) {
+
+                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    ThemeManager.headerGradient
+                                )
+                            )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(ThemeManager.topBarStroke)
+                    )
+                }
+
+                StrokeTitle(
+                    text = title,
+                    fontFamily = ThemeManager.fontFamily,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
             BackButton(
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.TopStart)
             )
+
+            LazyRow(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp)
+            ) {
+
+                item {
+                    ThemeCard(
+                        name = "Classic",
+                        image = R.drawable.theme_classic_preview,
+                        selected = ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC
+                    ) {
+                        ThemeManager.saveTheme(context, ThemeManager.Theme.CLASSIC)
+                    }
+                }
+
+                item {
+                    ThemeCard(
+                        name = "Gray",
+                        image = R.drawable.theme_gray_preview,
+                        selected = ThemeManager.currentTheme == ThemeManager.Theme.GRAY
+                    ) {
+                        ThemeManager.saveTheme(context, ThemeManager.Theme.GRAY)
+                    }
+                }
+
+                item {
+                    ThemeCard(
+                        name = "Blue Gray",
+                        image = R.drawable.theme_bluegray_preview,
+                        selected = ThemeManager.currentTheme == ThemeManager.Theme.BLUE_GRAY
+                    ) {
+                        ThemeManager.saveTheme(context, ThemeManager.Theme.BLUE_GRAY)
+                    }
+                }
+
+                item {
+                    ThemeCard(
+                        name = "Blue",
+                        image = R.drawable.theme_blue_preview,
+                        selected = ThemeManager.currentTheme == ThemeManager.Theme.BLUE
+                    ) {
+                        ThemeManager.saveTheme(context, ThemeManager.Theme.BLUE)
+                    }
+                }
+
+                item {
+                    ThemeCard(
+                        name = "Light Blue",
+                        image = R.drawable.theme_lightblue_preview,
+                        selected = ThemeManager.currentTheme == ThemeManager.Theme.LIGHT_BLUE
+                    ) {
+                        ThemeManager.saveTheme(context, ThemeManager.Theme.LIGHT_BLUE)
+                    }
+                }
+
+            }
         }
+    }
+}
+
+@Composable
+private fun ThemeCard(
+    name: String,
+    image: Int,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(320.dp)
+            .clickable { onClick() }
+    ) {
+
+        Box {
+
+            Image(
+                painter = painterResource(image),
+                contentDescription = name,
+                modifier = Modifier
+                    .width(250.dp)
+                    .aspectRatio(412f / 917f),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        Text(
+            text = name,
+            fontFamily = ThemeManager.fontFamily,
+            fontSize = 28.sp,
+            color = if (selected) Color(0xFF05E6FF) else Color.White,
+            modifier = Modifier.padding(top = 10.dp)
+        )
+
     }
 }
