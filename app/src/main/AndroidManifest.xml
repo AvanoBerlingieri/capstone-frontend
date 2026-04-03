@@ -121,6 +121,12 @@
         <activity
             android:name=".ui.GroupCallRoom"
             android:exported="true" />
+        <activity
+            android:name=".ui.GroupCallSetup"
+            android:exported="true" />
+        <activity
+            android:name=".ui.GroupCallRoom"
+            android:exported="true" />
 
         <activity
             android:name=".ui.IncomingCallActivity"
