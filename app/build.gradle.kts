@@ -34,7 +34,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-
     buildFeatures {
         viewBinding = true
         compose = true
@@ -60,20 +59,20 @@ dependencies {
     implementation("androidx.room:room-ktx:$room_version")
     ksp("androidx.room:room-compiler:$room_version")
 
-    implementation("androidx.datastore:datastore:1.2.1")
-    implementation("androidx.datastore:datastore-preferences:1.2.1")
+    implementation("androidx.datastore:datastore:1.1.2")
+    implementation("androidx.datastore:datastore-preferences:1.1.2")
 
     // --- Jetpack Compose Stack ---
-    val composeBom = platform("androidx.compose:compose-bom:2024.10.00")
+    val composeBom = platform("androidx.compose:compose-bom:2025.04.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    implementation("io.getstream:stream-webrtc-android:1.1.0")
+    implementation("io.getstream:stream-webrtc-android:1.3.8")
 
     implementation("androidx.activity:activity-compose:1.11.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3") // Version handled by BOM
+    implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.navigation:navigation-compose:2.8.0")
 
