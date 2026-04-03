@@ -45,6 +45,7 @@ import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
 
 
+
 private val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
 
 class Settings : ComponentActivity() {
