@@ -390,7 +390,6 @@ private fun AnsweredRow(item: UiCallItem) {
             StrokeText(
                 text = item.name,
                 fontFamily = ThemeManager.fontFamily,
-                fontFamily = ThemeManager.fontFamily,
                 fontSize = 24.sp,
                 fillColor = Color.White,
                 strokeColor = Color(0xFF002BFF),
