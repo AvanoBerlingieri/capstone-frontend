@@ -6,8 +6,10 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import capstone.safeline.apis.dto.messaging.IncomingGroupMessage
 import capstone.safeline.apis.dto.messaging.IncomingMessage
+import capstone.safeline.apis.dto.messaging.OutgoingGroupMessage
 import capstone.safeline.apis.dto.messaging.OutgoingMessage
 import capstone.safeline.data.local.dao.MessageDao
+import capstone.safeline.data.local.entity.GroupMessageEntity
 import capstone.safeline.data.local.entity.MessageEntity
 import capstone.safeline.data.repository.AuthRepository
 import com.google.gson.Gson
@@ -84,6 +86,7 @@ class WebSocketManager {
                     }
 
                     subscribeToMessages()
+//                    subscribeToGroups()
                     stompClient?.send("/app/message.sync")?.subscribe({
                         Log.d("WS", "Sync request sent")
                     }, { Log.e("WS", "Sync failed", it) })
@@ -130,7 +133,7 @@ class WebSocketManager {
                         isMine = false
                     )
                     // insert message
-                    messageDao?.insertMessage(entity)
+                    messageDao?.insertPrivateMessage(entity)
 
                     // ack the message
                     acknowledgeMessage(msg.messageId)
@@ -139,18 +142,40 @@ class WebSocketManager {
                 Log.e("WS", "Error processing message", e)
             }
         }
-//        // Listen for delivery acknowledgments
-//        stompClient?.topic("/user/queue/delivery")?.subscribe { ack ->
-//            Log.d("WS", "Message delivered to peer: ${ack.payload}")
-//        }
     }
 
-    // make it call api get all groups user is in
-    @SuppressLint("CheckResult")    // UUID works as String
+    @SuppressLint("CheckResult")
     private fun subscribeToGroups(groupIds: List<String>) {
+        val gson = Gson()
         groupIds.forEach { id ->
-            stompClient?.topic("/topic/room.$id")?.subscribe { msg ->
-                Log.d("WS", "Group $id Message: ${msg.payload}")
+            // Subscribing to each group's topic
+            stompClient?.topic("/topic/room.$id")?.subscribe { topicMessage ->
+                try {
+                    val msg = gson.fromJson(topicMessage.payload, OutgoingGroupMessage::class.java)
+                    Log.i("WS", "GROUP MESSAGE $msg")
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val myId = authRepository?.userIdFlow?.first() ?: ""
+
+                        // If user didn't send it, save it.
+                        if (msg.senderId != myId) {
+                            val entity = GroupMessageEntity(
+                                messageId = msg.messageId,
+                                senderId = msg.senderId,
+                                groupId = msg.groupId,
+                                content = msg.content,
+                                timestamp = msg.timestamp,
+                                status = "DELIVERED",
+                                isMine = false
+                            )
+                            messageDao?.insertGroupMessage(entity)
+                        } else{
+                            acknowledgeGroupMessage(msg.messageId)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("WS", "Group parse error", e)
+                }
             }
         }
     }
@@ -168,7 +193,7 @@ class WebSocketManager {
         stompClient?.send("/app/message.send", jsonMessage)?.subscribe({
             Log.d("WS", "Private message sent to server")
 
-            // Save to room db
+            // Save to messages table
             CoroutineScope(Dispatchers.IO).launch {
                 val myId = authRepository?.userIdFlow?.first() ?: ""
 
@@ -181,11 +206,11 @@ class WebSocketManager {
                     status = "SENT",
                     isMine = true
                 )
-                messageDao?.insertMessage(entity)
+                messageDao?.insertPrivateMessage(entity)
+
             }
         }, { error ->
             Log.e("WS", "Failed to send private message", error)
-            // Optionally update Room with status = "FAILED"
         })
     }
 
@@ -193,15 +218,33 @@ class WebSocketManager {
      * Sends a group message.
      * /group.send
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("CheckResult")
     fun sendGroupMessage(message: IncomingGroupMessage) {
-        val jsonMessage = Gson().toJson(message)
+        val gson = Gson()
+        val jsonMessage = gson.toJson(message)
+
         stompClient?.send("/app/group.send", jsonMessage)?.subscribe({
             Log.d("WS", "Group message sent to server")
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val myId = authRepository?.userIdFlow?.first() ?: ""
+
+                // Save to group_chat_messages table
+                val entity = GroupMessageEntity(
+                    messageId = message.messageId,
+                    senderId = myId,
+                    groupId = message.groupId,
+                    content = message.content,
+                    timestamp = LocalDateTime.now().toString(),
+                    status = "SENT",
+                    isMine = true
+                )
+                messageDao?.insertGroupMessage(entity)
+            }
         }, { error ->
             Log.e("WS", "Failed to send group message", error)
         })
-        // TODO: Save to rooms db and send group ack
 
     }
 
@@ -215,7 +258,12 @@ class WebSocketManager {
         val jsonAck = Gson().toJson(ackData)
 
         stompClient?.send("/app/message.ack", jsonAck)?.subscribe({
-            Log.d("WS", "Ack sent for $messageId")
+
+            CoroutineScope(Dispatchers.IO).launch {
+                messageDao?.updateMessageStatus(messageId, "DELIVERED")
+                Log.d("WS", "Ack sent for $messageId")
+            }
+
         }, { error ->
             Log.e("WS", "Ack failed", error)
         })
@@ -231,7 +279,12 @@ class WebSocketManager {
         val jsonAck = Gson().toJson(ackData)
 
         stompClient?.send("/app/group.ack", jsonAck)?.subscribe({
-            Log.d("WS", "Ack sent for $messageId")
+
+            CoroutineScope(Dispatchers.IO).launch {
+                messageDao?.updateGroupMessageStatus(messageId, "DELIVERED")
+                Log.d("WS", "Ack sent for $messageId")
+            }
+
         }, { error ->
             Log.e("WS", "Ack failed", error)
         })

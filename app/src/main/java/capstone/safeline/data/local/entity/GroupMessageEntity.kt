@@ -3,7 +3,7 @@ package capstone.safeline.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "group_messages")
+@Entity(tableName = "group_chat_messages")
 data class GroupMessageEntity(
     @PrimaryKey val messageId: String, // UUID
     val senderId: String,   // UUID
