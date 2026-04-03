@@ -40,6 +40,8 @@ import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
+import capstone.safeline.ui.chatting.DmPage
+import capstone.safeline.ui.calling.ContactCall
 
 
 class ContactProfile : ComponentActivity() {
@@ -74,16 +76,27 @@ class ContactProfile : ComponentActivity() {
                 },
                 onNavigate = { destination ->
                     val intent = when (destination) {
-                        "home" -> Intent(this, Home::class.java)
-                        "calls" -> Intent(this, Call::class.java)
-                        "chats" -> Intent(this, Chat::class.java)
-                        "profile" -> Intent(this, Profile::class.java)
-                        "communities" -> Intent(this, Community::class.java)
-                        "contacts" -> null
+                        "home" -> Intent(this, Home::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                        }
+                        "calls" -> Intent(this, Call::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        "chats" -> Intent(this, Chat::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        "profile" -> Intent(this, Profile::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        "communities" -> Intent(this, Community::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        "contacts" -> Intent(this, Contacts::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
                         else -> null
                     }
 
-                    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     intent?.let { startActivity(it) }
                 }
             )

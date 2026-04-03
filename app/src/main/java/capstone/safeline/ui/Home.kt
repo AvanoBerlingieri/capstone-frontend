@@ -57,22 +57,31 @@ private val HomeTextFont = FontFamily(Font(R.font.tapestry_regular))
 
 class Home : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.loadTheme(this) //This needs to be removed when we finish the project
         super.onCreate(savedInstanceState)
-        ThemeManager.loadTheme(this)
         setContent {
             HomeScreen(
                 onNavigate = { destination ->
                     val intent = when (destination) {
                         "home" -> null
-                        "calls" -> Intent(this, Call::class.java)
-                        "chats" -> Intent(this, Chat::class.java)
-                        "profile" -> Intent(this, Profile::class.java)
-                        "communities" -> Intent(this, Community::class.java)
-                        "contacts" -> Intent(this, Contacts::class.java)
+                        "calls" -> Intent(this, Call::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        "chats" -> Intent(this, Chat::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        "profile" -> Intent(this, Profile::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        "communities" -> Intent(this, Community::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        "contacts" -> Intent(this, Contacts::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
                         else -> null
                     }
 
-                    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     intent?.let { startActivity(it) }
                 },
                 onOpenSettings = { startActivity(Intent(this, Settings::class.java)) },
