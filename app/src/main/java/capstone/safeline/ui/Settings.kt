@@ -34,12 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import capstone.safeline.R
-import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.data.security.CryptoManager
-import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
@@ -53,13 +51,8 @@ class Settings : ComponentActivity() {
         setContent {
 
             val context = LocalContext.current
-            val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-            val repo = remember {
-                AuthRepository(
-                    dsManager,
-                    ApiClientAuth.provideApiService(context, dsManager)
-                )
-            }
+            val authRepo = remember { AuthRepository.getInstance(context) }
+
 
             SettingsScreen(
                 onBack = { finish() },
@@ -90,7 +83,7 @@ class Settings : ComponentActivity() {
                         // message to show users if network is slow
                         Toast.makeText(context, "Logging out...", Toast.LENGTH_SHORT).show()
 
-                        val result = repo.logout()
+                        authRepo.logout()
 
                         // Navigate regardless of success/failure to ensure user flow
                         val intent = Intent(this@Settings, StartPage::class.java).apply {
@@ -117,6 +110,9 @@ fun SettingsScreen(
     onOpenNotifications: () -> Unit,
     onLogout: () -> Unit
 ) {
+
+    InitializeSocket()
+
     Scaffold(
         topBar = {},
         bottomBar = {
