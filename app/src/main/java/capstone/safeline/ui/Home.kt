@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +74,8 @@ fun HomeScreen(
     InitializeSocket()
     val context = LocalContext.current
     val authRepo = remember { AuthRepository.getInstance(context) }
+    val username by authRepo.usernameFlow.collectAsState(initial = "Loading...")
+
 
     Scaffold(
         topBar = {},
@@ -147,7 +151,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Text(
-                    text = "WELCOME BACK ${authRepo.usernameFlow}",
+                    text = "WELCOME BACK $username",
                     fontFamily = HomeTextFont,
                     fontSize = 28.sp,
                     color = Color.White,
