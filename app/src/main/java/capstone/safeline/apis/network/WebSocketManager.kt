@@ -9,6 +9,7 @@ import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
+import java.util.UUID
 
 class WebSocketManager {
     companion object {
