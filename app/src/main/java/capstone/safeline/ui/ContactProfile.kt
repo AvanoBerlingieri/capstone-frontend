@@ -19,6 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.components.*
+import capstone.safeline.ui.components.BackButton
+import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.InitializeSocket
+import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 
 class ContactProfile : ComponentActivity() {
@@ -71,6 +76,9 @@ private fun ContactProfileScreen(
     onChat: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+
+    InitializeSocket()
+
     Scaffold(
         topBar = {},
         bottomBar = {
@@ -219,3 +227,4 @@ private fun ContactProfileScreen(
         }
     }
 }
+

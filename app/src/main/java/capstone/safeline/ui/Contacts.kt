@@ -5,15 +5,34 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.*
-import androidx.compose.ui.graphics.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -21,16 +40,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.apis.extractUserIdFromJwt
-import capstone.safeline.apis.network.ApiClientAuth
-import capstone.safeline.apis.network.ApiClientFriends
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.repository.FriendRepository
-import capstone.safeline.data.security.CryptoManager
-import capstone.safeline.ui.components.*
+import capstone.safeline.ui.components.BackButton
+import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.InitializeSocket
+import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.first
 import java.util.UUID
+
 
 private data class UiContactItem(
     val friendId: String,
@@ -80,22 +101,26 @@ private fun ContactsScreen(
     onGroupCall: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+
+    InitializeSocket()
+
     val context = LocalContext.current
-    val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-    val friendRepo = remember { FriendRepository(ApiClientFriends.provideService(context, dsManager)) }
-    val authRepo = remember { AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager)) }
+    val dsManager = remember { DataStoreManager.getInstance(context) }
+    val friendRepo = remember { FriendRepository.getInstance(context) }
+    val authRepo = remember { AuthRepository.getInstance(context) }
 
     var contacts by remember { mutableStateOf<List<UiContactItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
     var loadError by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
+        loadError = null
         try {
             val token = dsManager.tokenFlow.first()
             val userId = token?.let { extractUserIdFromJwt(it) }
 
             if (userId.isNullOrBlank()) {
-                loadError = "Not logged in"
+                loadError = "Sign in required to load contacts."
                 return@LaunchedEffect
             }
 
@@ -114,17 +139,26 @@ private fun ContactsScreen(
                                     )
                                 )
                             }
+                            .onFailure {
+                                resolved.add(
+                                    UiContactItem(
+                                        friendId = fid,
+                                        name = "Unknown user",
+                                        email = ""
+                                    )
+                                )
+                            }
                     }
-
                     contacts = resolved
                 }
-                .onFailure {
-                    loadError = "Failed to load contacts"
+                .onFailure { e ->
+                    Log.e("Contacts", "getAllFriends failed", e)
+                    loadError = e.message ?: "Failed to load contacts."
+                    contacts = emptyList()
                 }
-
         } catch (e: Exception) {
-            Log.e("Contacts", "Error", e)
-            loadError = e.message
+            Log.e("Contacts", "Failed to load friends", e)
+            loadError = e.message ?: "Failed to load contacts."
         } finally {
             isLoading = false
         }
@@ -153,11 +187,17 @@ private fun ContactsScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
+
             } else {
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Brush.verticalGradient(ThemeManager.backgroundGradient))
+                        .background(
+                            Brush.verticalGradient(
+                                ThemeManager.backgroundGradient
+                            )
+                        )
                 )
             }
 
@@ -178,23 +218,76 @@ private fun ContactsScreen(
                     .padding(top = 75.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
-                if (isLoading) {
-                    Text("Loading...", color = Color.White)
-                } else if (loadError != null) {
-                    Text(loadError!!, color = Color.Red)
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(contacts) { contact ->
-                            ContactRow(contact) {
-                                onContactClick(contact)
+                when {
+                    isLoading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Loading contacts…",
+                                color = Color.White
+                            )
+                        }
+                    }
+                    loadError != null -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(horizontal = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            StrokeText(
+                                text = loadError!!,
+                                fontFamily = ThemeManager.fontFamily,
+                                fontSize = 16.sp,
+                                fillColor = Color.White,
+                                strokeColor = Color(0xFF002BFF),
+                                strokeWidth = 1f
+                            )
+                        }
+                    }
+                    contacts.isEmpty() -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            StrokeText(
+                                text = "No friends yet.",
+                                fontFamily = ThemeManager.fontFamily,
+                                fontSize = 18.sp,
+                                fillColor = Color.White,
+                                strokeColor = Color(0xFF002BFF),
+                                strokeWidth = 1f
+                            )
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(horizontal = 0.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            items(contacts, key = { it.friendId }) { contact ->
+                                ContactRow(
+                                    contact = contact,
+                                    onClick = { onContactClick(contact) }
+                                )
                             }
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Image(
                     painter = painterResource(R.drawable.new_contact_btn),
@@ -226,6 +319,7 @@ private fun ContactRow(
             .fillMaxWidth()
             .height(60.dp)
             .clickable { onClick() }
+            .padding(horizontal = 0.dp)
     ) {
         Image(
             painter = painterResource(R.drawable.friend_contact_bg),
@@ -237,23 +331,24 @@ private fun ContactRow(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 12.dp),
+                .padding(start = 12.dp, end = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(R.drawable.chats_icon),
                 contentDescription = null,
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(width = 60.dp, height = 56.dp),
+                contentScale = ContentScale.Fit
             )
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.size(10.dp))
 
             StrokeText(
                 text = contact.name,
                 fontFamily = ThemeManager.fontFamily,
                 fontSize = 24.sp,
                 fillColor = Color.White,
-                strokeColor = Color.Blue,
+                strokeColor = Color(0xFF002BFF),
                 strokeWidth = 1f
             )
         }

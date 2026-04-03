@@ -45,12 +45,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.network.ApiClientAuth
-import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
@@ -63,21 +61,19 @@ class Profile : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val context = LocalContext.current
-            val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-            val repo = remember {
-                AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager))
-            }
+            val authRepo = remember { AuthRepository.getInstance(context) }
+
             val scope = rememberCoroutineScope()
 
             ProfileScreen(
-                repo = repo,
+                repo = authRepo,
                 onBack = { finish() },
                 onChangeUsername = { openUpdate("username") },
                 onChangePassword = { openUpdate("password") },
                 onChangeEmail = { openUpdate("email") },
                 onDeleteAccount = {
                     scope.launch {
-                        val success = repo.deleteAccount()
+                        val success = authRepo.deleteAccount()
                         if (success) {
                             val intent = Intent(this@Profile, StartPage::class.java).apply {
                                 flags =
@@ -121,6 +117,9 @@ private fun ProfileScreen(
     onDeleteAccount: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    InitializeSocket()
+
+
     val username by repo.usernameFlow.collectAsState(initial = "Loading...")
     val email by repo.emailFlow.collectAsState(initial = "Loading...")
 
