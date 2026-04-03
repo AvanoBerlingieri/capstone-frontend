@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -267,12 +268,32 @@ private fun HomeImageButton(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = bgRes),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
+            Image(
+                painter = painterResource(id = bgRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+        } else {
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            ThemeManager.buttonGradient
+                        ),
+                        shape = shape
+                    )
+                    .then(
+                        ThemeManager.buttonStroke?.let {
+                            Modifier.border(1.dp, it, shape)
+                        } ?: Modifier
+                    )
+            )
+        }
 
         Text(
             text = text,

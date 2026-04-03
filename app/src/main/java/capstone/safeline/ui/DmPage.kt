@@ -143,9 +143,9 @@ fun DmPageScreen(
                         .padding(horizontal = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
-                    reverseLayout = true
+                    reverseLayout = false
                 ) {
-                    items(chatMessages) { entity ->
+                    items(chatMessages.sortedBy { it.timestamp }) { entity ->
                         MessageBubble(
                             message = entity.content,
                             isMine = entity.isMine
