@@ -116,37 +116,58 @@ fun DmPageScreen(
 
     val sortedMessages = remember(chatMessages) {
         chatMessages.sortedWith(
-            compareByDescending<capstone.safeline.data.local.entity.MessageEntity> { it.timestamp }
-                .thenByDescending { it.messageId }
+            compareBy<capstone.safeline.data.local.entity.MessageEntity> { it.timestamp }
+                .thenBy { it.messageId }
         )
     }
 
     LaunchedEffect(sortedMessages.size) {
         if (sortedMessages.isNotEmpty()) {
-            listState.animateScrollToItem(0)
+            listState.animateScrollToItem(sortedMessages.size - 1)
         }
     }
 
     Scaffold(containerColor = Color.Transparent) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-                Image(painter = painterResource(id = R.drawable.dm_background), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                Image(
+                    painter = painterResource(id = R.drawable.dm_background),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
             } else {
-                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(ThemeManager.backgroundGradient)))
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Brush.verticalGradient(ThemeManager.backgroundGradient))
+                )
             }
 
-            Column(modifier = Modifier.fillMaxSize().padding(innerPadding).imePadding()) {
+            Column(modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .imePadding()) {
+
                 DmHeader(username, lastSeen, onBack, onCall)
 
                 LazyColumn(
                     state = listState,
-                    reverseLayout = true, // Forces layout from bottom up
-                    modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.Bottom),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
                 ) {
-                    items(items = sortedMessages, key = { it.messageId }) { entity ->
-                        MessageBubble(message = entity.content, isMine = entity.isMine)
+                    items(
+                        items = sortedMessages,
+                        key = { it.messageId }
+                    ) { entity ->
+                        MessageBubble(
+                            message = entity.content,
+                            isMine = entity.isMine
+                        )
                     }
                 }
 
@@ -155,17 +176,19 @@ fun DmPageScreen(
                     onValueChange = { text = it },
                     onAttach = {},
                     onSend = {
+                        if (text.isBlank() || partnerUserId == null) return@DmInputBar
+
+                        val newMessageId = UUID.randomUUID().toString()
                         val body = text.trim()
-                        if (body.isNotEmpty() && partnerUserId != null) {
-                            ws.sendPrivateMessage(
-                                IncomingMessage(
-                                    messageId = UUID.randomUUID().toString(),
-                                    receiver = partnerUserId!!,
-                                    content = body
-                                )
+
+                        ws.sendPrivateMessage(
+                            IncomingMessage(
+                                messageId = newMessageId,
+                                receiver = partnerUserId!!,
+                                content = body
                             )
-                            text = ""
-                        }
+                        )
+                        text = ""
                     }
                 )
             }
@@ -175,48 +198,202 @@ fun DmPageScreen(
 
 @Composable
 private fun DmHeader(username: String, lastSeen: String, onBack: () -> Unit, onCall: () -> Unit) {
-    Box(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(top = 10.dp)) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(top = 10.dp)
+    ) {
         if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-            Image(painter = painterResource(R.drawable.friend_nameplate_background), contentDescription = null, modifier = Modifier.align(Alignment.TopCenter).width(412.dp).height(69.dp), contentScale = ContentScale.FillBounds)
+            Image(
+                painter = painterResource(R.drawable.friend_nameplate_background),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .width(412.dp)
+                    .height(69.dp),
+                contentScale = ContentScale.FillBounds
+            )
         } else {
-            Box(modifier = Modifier.align(Alignment.TopCenter).width(412.dp).height(69.dp).background(Brush.horizontalGradient(ThemeManager.headerGradient)))
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .width(412.dp)
+                    .height(69.dp)
+                    .background(Brush.horizontalGradient(ThemeManager.headerGradient))
+            )
         }
-        Image(painter = painterResource(R.drawable.back_for_dm), contentDescription = null, modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 18.dp).size(width = 83.dp, height = 31.dp).clickable { onBack() }, contentScale = ContentScale.FillBounds)
-        Row(modifier = Modifier.align(Alignment.TopEnd).padding(end = 14.dp, top = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(painter = painterResource(R.drawable.avatar), contentDescription = null, modifier = Modifier.size(width = 39.dp, height = 31.dp), contentScale = ContentScale.Crop)
-            Image(painter = painterResource(R.drawable.call_for_dm), contentDescription = null, modifier = Modifier.size(width = 73.dp, height = 46.dp).clickable { onCall() }, contentScale = ContentScale.Fit)
+
+        Image(
+            painter = painterResource(R.drawable.back_for_dm),
+            contentDescription = null,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 14.dp, top = 18.dp)
+                .size(width = 83.dp, height = 31.dp)
+                .clickable { onBack() },
+            contentScale = ContentScale.FillBounds
+        )
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 14.dp, top = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(R.drawable.avatar),
+                contentDescription = null,
+                modifier = Modifier.size(width = 39.dp, height = 31.dp),
+                contentScale = ContentScale.Crop
+            )
+            Image(
+                painter = painterResource(R.drawable.call_for_dm),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(width = 73.dp, height = 46.dp)
+                    .clickable { onCall() },
+                contentScale = ContentScale.Fit
+            )
         }
-        Column(modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            StrokeText(text = username, fontFamily = ThemeManager.fontFamily, fontSize = 24.sp, fillColor = Color.White, strokeColor = ThemeManager.titleStroke, strokeWidth = 1f, textAlign = TextAlign.Center)
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            StrokeText(
+                text = username,
+                fontFamily = ThemeManager.fontFamily,
+                fontSize = 24.sp,
+                fillColor = Color.White,
+                strokeColor = ThemeManager.titleStroke,
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
             Spacer(modifier = Modifier.height(4.dp))
-            StrokeText(text = lastSeen, fontFamily = ThemeManager.fontFamily, fontSize = 12.sp, fillColor = Color.White, strokeColor = ThemeManager.titleStroke, strokeWidth = 1f, textAlign = TextAlign.Center)
+            StrokeText(
+                text = lastSeen,
+                fontFamily = ThemeManager.fontFamily,
+                fontSize = 12.sp,
+                fillColor = Color.White,
+                strokeColor = ThemeManager.titleStroke,
+                strokeWidth = 1f,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
 
 @Composable
 private fun MessageBubble(message: String, isMine: Boolean) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start) {
-        Box(modifier = Modifier.widthIn(max = 280.dp)) {
-            Image(painter = painterResource(R.drawable.message_bubble_background), contentDescription = null, modifier = Modifier.matchParentSize().graphicsLayer { scaleX = if (isMine) -1f else 1f }, contentScale = ContentScale.FillBounds)
-            Text(text = message, color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 12.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
+    ) {
+        Box(
+            modifier = Modifier.widthIn(max = 280.dp)
+        ) {
+            Image(
+                painter = painterResource(R.drawable.message_bubble_background),
+                contentDescription = null,
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer { scaleX = if (isMine) -1f else 1f },
+                contentScale = ContentScale.FillBounds
+            )
+            Text(
+                text = message,
+                color = Color.White,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 12.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun DmInputBar(value: String, onValueChange: (String) -> Unit, onAttach: () -> Unit, onSend: () -> Unit) {
-    Box(modifier = Modifier.fillMaxWidth().height(74.dp)) {
-        Image(painter = painterResource(R.drawable.input_background), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
-        Row(modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.weight(1f).height(46.dp)) {
-                Image(painter = painterResource(R.drawable.input_box), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
-                TextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp), placeholder = { Text("Type a message...", color = Color.White.copy(alpha = 0.55f)) }, singleLine = true, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, disabledContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, cursorColor = Color.White, focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+private fun DmInputBar(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onAttach: () -> Unit,
+    onSend: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(74.dp)
+    ) {
+        Image(
+            painter = painterResource(R.drawable.input_background),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(46.dp)
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.input_box),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds
+                )
+                TextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 14.dp),
+                    placeholder = {
+                        Text(
+                            "Type a message...",
+                            color = Color.White.copy(alpha = 0.55f)
+                        )
+                    },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = Color.White,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    )
+                )
             }
             Spacer(modifier = Modifier.width(10.dp))
-            Image(painter = painterResource(R.drawable.attach), contentDescription = null, modifier = Modifier.size(34.dp).clickable { onAttach() }, contentScale = ContentScale.Fit)
+            Image(
+                painter = painterResource(R.drawable.attach),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(34.dp)
+                    .clickable { onAttach() },
+                contentScale = ContentScale.Fit
+            )
             Spacer(modifier = Modifier.width(10.dp))
-            Image(painter = painterResource(R.drawable.enter_button), contentDescription = null, modifier = Modifier.size(46.dp).clickable { onSend() }, contentScale = ContentScale.Fit)
+            Image(
+                painter = painterResource(R.drawable.enter_button),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(46.dp)
+                    .clickable { onSend() },
+                contentScale = ContentScale.Fit
+            )
         }
     }
 }

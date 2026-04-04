@@ -21,8 +21,7 @@ import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.time.Instant
 
 class WebSocketManager {
     companion object {
@@ -124,8 +123,7 @@ class WebSocketManager {
                 Log.d("WS_TIMESTAMP", "Incoming timestamp: ${msg.timestamp}")
 
                 CoroutineScope(Dispatchers.IO).launch {
-                    val myId = authRepository?.userIdFlow?.first() ?: ""
-
+                    // create message entity for room db
                     val entity = MessageEntity(
                         messageId = msg.messageId,
                         senderId = msg.senderId,
@@ -133,14 +131,13 @@ class WebSocketManager {
                         content = msg.content,
                         timestamp = msg.timestamp,
                         status = "DELIVERED",
-                        isMine = msg.senderId == myId
+                        isMine = false
                     )
+                    // insert message
+                    messageDao?.insertPrivateMessage(entity)
 
-                    if (msg.senderId != myId) {
-                        messageDao?.insertPrivateMessage(entity)
-                    } else {
-                        acknowledgeMessage(msg.messageId)
-                    }
+                    // ack the message
+                    acknowledgeMessage(msg.messageId)
                 }
             } catch (e: Exception) {
                 Log.e("WS", "Error processing message", e)
@@ -206,7 +203,7 @@ class WebSocketManager {
                     senderId = myId,
                     receiverId = message.receiver,
                     content = message.content,
-                    timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                    timestamp = Instant.now().toString(),
                     status = "SENT",
                     isMine = true
                 )
@@ -240,7 +237,7 @@ class WebSocketManager {
                     senderId = myId,
                     groupId = message.groupId,
                     content = message.content,
-                    timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                    timestamp = Instant.now().toString(),
                     status = "SENT",
                     isMine = true
                 )
