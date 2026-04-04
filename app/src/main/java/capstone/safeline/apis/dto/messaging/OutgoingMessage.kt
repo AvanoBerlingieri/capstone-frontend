@@ -1,11 +1,11 @@
 package capstone.safeline.apis.dto.messaging
 
 import java.sql.Timestamp
-import java.util.UUID
 
 data class OutgoingMessage(
-    val messageId: String, // UUID
-    val senderId: String, // UUID
-    val content: String,
-    val timestamp: Timestamp,
+    val messageId: String,  // UUID
+    val senderId: String,   // UUID
+    val receiverId: String, // UUID
+    val content: String,    // Text body (String)
+    val timestamp: String,  // Timestamp
 )

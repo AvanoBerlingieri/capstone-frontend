@@ -38,7 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
-
+import capstone.safeline.ui.components.InitializeSocket
 
 
 class SettingsAppearance : ComponentActivity() {
@@ -69,6 +69,8 @@ private fun SettingsPlaceholder(
     onBack: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    InitializeSocket()
+
     val context = LocalContext.current
 
     Scaffold(

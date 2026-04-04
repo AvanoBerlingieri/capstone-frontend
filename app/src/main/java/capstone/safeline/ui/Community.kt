@@ -23,15 +23,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import capstone.safeline.R
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
+import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
-
 
 
 class Community : ComponentActivity() {
@@ -76,6 +74,9 @@ private fun CommunityIntroScreen(
     onContinue: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+
+    InitializeSocket()
+
     Scaffold(
         topBar = {},
         bottomBar = {
