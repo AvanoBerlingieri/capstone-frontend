@@ -4,27 +4,35 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import capstone.safeline.apis.dto.messaging.IncomingGroupMessage
 import capstone.safeline.apis.dto.messaging.IncomingMessage
-import capstone.safeline.apis.dto.messaging.OutgoingGroupMessage
 import capstone.safeline.apis.dto.messaging.OutgoingMessage
 import capstone.safeline.data.local.dao.MessageDao
-import capstone.safeline.data.local.entity.GroupMessageEntity
 import capstone.safeline.data.local.entity.MessageEntity
 import capstone.safeline.data.repository.AuthRepository
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.OkHttpClient
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
 import java.time.Instant
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
 
 class WebSocketManager {
     companion object {
+        private const val PRIVATE_SEND_MAX_ATTEMPTS = 4
+        private const val PRIVATE_SEND_RETRY_DELAY_MS = 2_000L
+
         @Volatile
         private var INSTANCE: WebSocketManager? = null
 
@@ -38,6 +46,9 @@ class WebSocketManager {
     private var authRepository: AuthRepository? = null
     private var messageDao: MessageDao? = null
 
+    private val _connectionStatus = MutableStateFlow(false)
+    val connectionStatus: StateFlow<Boolean> = _connectionStatus.asStateFlow()
+
     fun init(repo: AuthRepository, dao: MessageDao) {
         this.authRepository = repo
         this.messageDao = dao
@@ -46,27 +57,24 @@ class WebSocketManager {
     private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
+
     @SuppressLint("CheckResult")
     fun connect(token: String) {
-        val repo = authRepository
-        val dao = messageDao
-
-        if (repo == null || dao == null) {
-            Log.e("WS", "Cannot connect: Manager not fully initialized (Repo: ${repo != null}, Dao: ${dao != null})")
-            return
-        }
-
-        // check if connection is already alive
-        if (stompClient?.isConnected == true || isConnecting) {
-            Log.d("WS", "Already connected or connecting, skipping...")
-            return
-        }
+        if (authRepository == null || messageDao == null) return
+        if (stompClient?.isConnected == true || isConnecting) return
 
         isConnecting = true
 
-        // create new client if null
         if (stompClient == null) {
-            stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, gatewayWsUrl)
+            // Optimize OkHttpClient for faster handshakes on Pixel devices
+            val okHttpClient = OkHttpClient.Builder()
+                .connectTimeout(3, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
+                .build()
+
+            stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, gatewayWsUrl, null, okHttpClient)
         }
 
         val headers = listOf(StompHeader("Authorization", "Bearer $token"))
@@ -75,55 +83,37 @@ class WebSocketManager {
             when (lifecycleEvent.type) {
                 LifecycleEvent.Type.OPENED -> {
                     isConnecting = false
+                    _connectionStatus.value = true
                     Log.d("WS", "Connected to Gateway!")
 
                     CoroutineScope(Dispatchers.IO).launch {
-                        if (authRepository == null) {
-                            Log.e("WS", "AuthRepository is NULL")
-                        }
-                        val success = repo.updateStatus("ONLINE")
-                        Log.d("WS", "Status update successful: $success")
+                        authRepository?.updateStatus("ONLINE")
                     }
-
                     subscribeToMessages()
-//                    subscribeToGroups()
-                    stompClient?.send("/app/message.sync")?.subscribe({
-                        Log.d("WS", "Sync request sent")
-                    }, { Log.e("WS", "Sync failed", it) })
+                    stompClient?.send("/app/message.sync")?.subscribe({}, {})
                 }
-
                 LifecycleEvent.Type.ERROR -> {
                     isConnecting = false
+                    _connectionStatus.value = false
                     Log.e("WS", "Connection Error", lifecycleEvent.exception)
                 }
-
                 LifecycleEvent.Type.CLOSED -> {
                     isConnecting = false
-                    Log.d("WS", "Connection Closed")
+                    _connectionStatus.value = false
                 }
-
                 else -> {}
             }
         }
-
         stompClient?.connect(headers)
     }
 
     @SuppressLint("CheckResult")
     private fun subscribeToMessages() {
         val gson = Gson()
-        // Listen for private messages
         stompClient?.topic("/user/queue/messages")?.subscribe { topicMessage ->
-            val payload = topicMessage.payload
-            Log.d("WS", "Received Private Message: $payload")
-
             try {
-                // Parse the incoming message
-                val msg = gson.fromJson(payload, OutgoingMessage::class.java)
-                Log.d("WS_TIMESTAMP", "Incoming timestamp: ${msg.timestamp}")
-
+                val msg = gson.fromJson(topicMessage.payload, OutgoingMessage::class.java)
                 CoroutineScope(Dispatchers.IO).launch {
-                    // create message entity for room db
                     val entity = MessageEntity(
                         messageId = msg.messageId,
                         senderId = msg.senderId,
@@ -133,169 +123,77 @@ class WebSocketManager {
                         status = "DELIVERED",
                         isMine = false
                     )
-                    // insert message
                     messageDao?.insertPrivateMessage(entity)
-
-                    // ack the message
                     acknowledgeMessage(msg.messageId)
                 }
-            } catch (e: Exception) {
-                Log.e("WS", "Error processing message", e)
-            }
+            } catch (e: Exception) { Log.e("WS", "Error processing message", e) }
         }
     }
 
-    @SuppressLint("CheckResult")
-    private fun subscribeToGroups(groupIds: List<String>) {
-        val gson = Gson()
-        groupIds.forEach { id ->
-            // Subscribing to each group's topic
-            stompClient?.topic("/topic/room.$id")?.subscribe { topicMessage ->
-                try {
-                    val msg = gson.fromJson(topicMessage.payload, OutgoingGroupMessage::class.java)
-                    Log.i("WS", "GROUP MESSAGE $msg")
-
-                    CoroutineScope(Dispatchers.IO).launch {
-                        val myId = authRepository?.userIdFlow?.first() ?: ""
-
-                        if (msg.senderId == myId) {
-                            acknowledgeMessage(msg.messageId)
-                            return@launch
-                        } else {
-                            val entity = GroupMessageEntity(
-                                messageId = msg.messageId,
-                                senderId = msg.senderId,
-                                groupId = msg.groupId,
-                                content = msg.content,
-                                timestamp = msg.timestamp,
-                                status = "DELIVERED",
-                                isMine = false
-                            )
-                            messageDao?.insertGroupMessage(entity)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e("WS", "Group parse error", e)
-                }
-            }
-        }
-    }
-
-    /**
-     * Sends a 1-to-1 message.
-     */
     @RequiresApi(Build.VERSION_CODES.O)
-    @SuppressLint("CheckResult")
     fun sendPrivateMessage(message: IncomingMessage) {
-        val gson = Gson()
-        val jsonMessage = gson.toJson(message)
+        val jsonMessage = Gson().toJson(message)
+        CoroutineScope(Dispatchers.IO).launch {
+            repeat(PRIVATE_SEND_MAX_ATTEMPTS) { attempt ->
+                if (stompClient?.isConnected != true) {
+                    val token = authRepository?.tokenFlow?.first()
+                    if (!token.isNullOrBlank()) connect(token)
+                    delay(PRIVATE_SEND_RETRY_DELAY_MS)
+                }
 
-        // Send to Server
-        stompClient?.send("/app/message.send", jsonMessage)?.subscribe({
-            Log.d("WS", "Private message sent to server")
-
-            // Save to messages table
-            CoroutineScope(Dispatchers.IO).launch {
-                val myId = authRepository?.userIdFlow?.first() ?: ""
-
-                val entity = MessageEntity(
-                    messageId = message.messageId,
-                    senderId = myId,
-                    receiverId = message.receiver,
-                    content = message.content,
-                    timestamp = Instant.now().toString(),
-                    status = "SENT",
-                    isMine = true
-                )
-                messageDao?.insertPrivateMessage(entity)
-
+                if (trySendPrivateStomp(jsonMessage)) {
+                    persistOutboundPrivateMessage(message)
+                    return@launch
+                }
+                delay(PRIVATE_SEND_RETRY_DELAY_MS)
             }
-        }, { error ->
-            Log.e("WS", "Failed to send private message", error)
-        })
+        }
     }
 
-    /**
-     * Sends a group message.
-     * /group.send
-     */
+    private suspend fun trySendPrivateStomp(jsonMessage: String): Boolean =
+        suspendCancellableCoroutine { cont ->
+            val client = stompClient
+            if (client == null || !client.isConnected) {
+                if (cont.isActive) cont.resume(false)
+                return@suspendCancellableCoroutine
+            }
+            val d = client.send("/app/message.send", jsonMessage).subscribe(
+                { if (cont.isActive) cont.resume(true) },
+                { if (cont.isActive) cont.resume(false) }
+            )
+            cont.invokeOnCancellation { d.dispose() }
+        }
+
     @RequiresApi(Build.VERSION_CODES.O)
-    @SuppressLint("CheckResult")
-    fun sendGroupMessage(message: IncomingGroupMessage) {
-        val gson = Gson()
-        val jsonMessage = gson.toJson(message)
-
-        stompClient?.send("/app/group.send", jsonMessage)?.subscribe({
-            Log.d("WS", "Group message sent to server")
-
-            CoroutineScope(Dispatchers.IO).launch {
-                val myId = authRepository?.userIdFlow?.first() ?: ""
-
-                // Save to group_chat_messages table
-                val entity = GroupMessageEntity(
-                    messageId = message.messageId,
-                    senderId = myId,
-                    groupId = message.groupId,
-                    content = message.content,
-                    timestamp = Instant.now().toString(),
-                    status = "SENT",
-                    isMine = true
-                )
-                messageDao?.insertGroupMessage(entity)
-            }
-        }, { error ->
-            Log.e("WS", "Failed to send group message", error)
-        })
-
+    private suspend fun persistOutboundPrivateMessage(message: IncomingMessage) {
+        val myId = authRepository?.userIdFlow?.first() ?: ""
+        val entity = MessageEntity(
+            messageId = message.messageId,
+            senderId = myId,
+            receiverId = message.receiver,
+            content = message.content,
+            timestamp = Instant.now().toString(),
+            status = "SENT",
+            isMine = true
+        )
+        messageDao?.insertPrivateMessage(entity)
     }
 
-    /**
-     * Sends an acknowledgment for a received message.
-     * /message.ack
-     */
     @SuppressLint("CheckResult")
     fun acknowledgeMessage(messageId: String) {
-        val ackData = mapOf("messageId" to messageId)
-        val jsonAck = Gson().toJson(ackData)
-
+        val jsonAck = Gson().toJson(mapOf("messageId" to messageId))
         stompClient?.send("/app/message.ack", jsonAck)?.subscribe({
-
             CoroutineScope(Dispatchers.IO).launch {
                 messageDao?.updateMessageStatus(messageId, "DELIVERED")
-                Log.d("WS", "Ack sent for $messageId")
             }
-
-        }, { error ->
-            Log.e("WS", "Ack failed", error)
-        })
-    }
-
-    /**
-     * Sends an acknowledgment for a received group message.
-     * /message.ack
-     */
-    @SuppressLint("CheckResult")
-    fun acknowledgeGroupMessage(messageId: String) {
-        val ackData = mapOf("messageId" to messageId)
-        val jsonAck = Gson().toJson(ackData)
-
-        stompClient?.send("/app/group.ack", jsonAck)?.subscribe({
-
-            CoroutineScope(Dispatchers.IO).launch {
-                messageDao?.updateGroupMessageStatus(messageId, "DELIVERED")
-                Log.d("WS", "Ack sent for $messageId")
-            }
-
-        }, { error ->
-            Log.e("WS", "Ack failed", error)
-        })
+        }, {})
     }
 
     fun disconnect() {
-        // When disconnecting set user status to offline
         CoroutineScope(Dispatchers.IO).launch {
             authRepository?.updateStatus("OFFLINE")
             stompClient?.disconnect()
+            _connectionStatus.value = false
         }
     }
 }

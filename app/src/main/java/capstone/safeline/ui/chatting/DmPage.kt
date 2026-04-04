@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -98,14 +99,15 @@ fun DmPageScreen(
     val messageDao = database.messageDao()
     val ws = WebSocketManager.getInstance()
 
+    // Real-time connection observation
+    val isConnected by ws.connectionStatus.collectAsState()
+
     var partnerUserId by remember { mutableStateOf<String?>(null) }
     var text by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
     LaunchedEffect(username) {
-        authRepo.getIdByUsername(username).onSuccess { id ->
-            partnerUserId = id
-        }
+        authRepo.getIdByUsername(username).onSuccess { id -> partnerUserId = id }
     }
 
     val chatMessages by if (partnerUserId != null) {
@@ -122,9 +124,7 @@ fun DmPageScreen(
     }
 
     LaunchedEffect(sortedMessages.size) {
-        if (sortedMessages.isNotEmpty()) {
-            listState.animateScrollToItem(0)
-        }
+        if (sortedMessages.isNotEmpty()) listState.animateScrollToItem(0)
     }
 
     Scaffold(containerColor = Color.Transparent) { innerPadding ->
@@ -140,7 +140,7 @@ fun DmPageScreen(
 
                 LazyColumn(
                     state = listState,
-                    reverseLayout = true, // Forces layout from bottom up
+                    reverseLayout = true,
                     modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.Bottom),
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
@@ -153,22 +153,65 @@ fun DmPageScreen(
                 DmInputBar(
                     value = text,
                     onValueChange = { text = it },
-                    onAttach = {},
+                    isConnected = isConnected,
                     onSend = {
                         val body = text.trim()
                         if (body.isNotEmpty() && partnerUserId != null) {
-                            ws.sendPrivateMessage(
-                                IncomingMessage(
-                                    messageId = UUID.randomUUID().toString(),
-                                    receiver = partnerUserId!!,
-                                    content = body
-                                )
-                            )
+                            ws.sendPrivateMessage(IncomingMessage(messageId = UUID.randomUUID().toString(), receiver = partnerUserId!!, content = body))
                             text = ""
                         }
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun DmInputBar(value: String, onValueChange: (String) -> Unit, isConnected: Boolean, onSend: () -> Unit) {
+    Box(modifier = Modifier.fillMaxWidth().height(74.dp)) {
+        Image(painter = painterResource(R.drawable.input_background), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+        Row(modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.weight(1f).height(46.dp)) {
+                Image(painter = painterResource(R.drawable.input_box), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+                TextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
+                    placeholder = { Text("Type a message...", color = Color.White.copy(alpha = 0.55f)) },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, disabledContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, cursorColor = Color.White, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Image(painter = painterResource(R.drawable.attach), contentDescription = null, modifier = Modifier.size(34.dp), contentScale = ContentScale.Fit)
+            Spacer(modifier = Modifier.width(10.dp))
+
+            if (isConnected) {
+                Image(
+                    painter = painterResource(R.drawable.enter_button),
+                    contentDescription = null,
+                    modifier = Modifier.size(46.dp).clickable { onSend() },
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                // Show white spinner inside the input bar during the 7s delay
+                CircularProgressIndicator(
+                    modifier = Modifier.size(30.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MessageBubble(message: String, isMine: Boolean) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start) {
+        Box(modifier = Modifier.widthIn(max = 280.dp)) {
+            Image(painter = painterResource(R.drawable.message_bubble_background), contentDescription = null, modifier = Modifier.matchParentSize().graphicsLayer { scaleX = if (isMine) -1f else 1f }, contentScale = ContentScale.FillBounds)
+            Text(text = message, color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 12.dp))
         }
     }
 }
@@ -190,33 +233,6 @@ private fun DmHeader(username: String, lastSeen: String, onBack: () -> Unit, onC
             StrokeText(text = username, fontFamily = ThemeManager.fontFamily, fontSize = 24.sp, fillColor = Color.White, strokeColor = ThemeManager.titleStroke, strokeWidth = 1f, textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.height(4.dp))
             StrokeText(text = lastSeen, fontFamily = ThemeManager.fontFamily, fontSize = 12.sp, fillColor = Color.White, strokeColor = ThemeManager.titleStroke, strokeWidth = 1f, textAlign = TextAlign.Center)
-        }
-    }
-}
-
-@Composable
-private fun MessageBubble(message: String, isMine: Boolean) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start) {
-        Box(modifier = Modifier.widthIn(max = 280.dp)) {
-            Image(painter = painterResource(R.drawable.message_bubble_background), contentDescription = null, modifier = Modifier.matchParentSize().graphicsLayer { scaleX = if (isMine) -1f else 1f }, contentScale = ContentScale.FillBounds)
-            Text(text = message, color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 12.dp))
-        }
-    }
-}
-
-@Composable
-private fun DmInputBar(value: String, onValueChange: (String) -> Unit, onAttach: () -> Unit, onSend: () -> Unit) {
-    Box(modifier = Modifier.fillMaxWidth().height(74.dp)) {
-        Image(painter = painterResource(R.drawable.input_background), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
-        Row(modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.weight(1f).height(46.dp)) {
-                Image(painter = painterResource(R.drawable.input_box), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
-                TextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp), placeholder = { Text("Type a message...", color = Color.White.copy(alpha = 0.55f)) }, singleLine = true, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, disabledContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, cursorColor = Color.White, focusedTextColor = Color.White, unfocusedTextColor = Color.White))
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Image(painter = painterResource(R.drawable.attach), contentDescription = null, modifier = Modifier.size(34.dp).clickable { onAttach() }, contentScale = ContentScale.Fit)
-            Spacer(modifier = Modifier.width(10.dp))
-            Image(painter = painterResource(R.drawable.enter_button), contentDescription = null, modifier = Modifier.size(46.dp).clickable { onSend() }, contentScale = ContentScale.Fit)
         }
     }
 }
