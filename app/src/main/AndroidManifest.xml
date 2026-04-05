@@ -25,7 +25,6 @@
             </intent-filter>
         </activity>
 
-        <<<<<<< HEAD
         <!-- Core -->
         <activity android:name=".ui.Home" android:exported="true" />
 
@@ -38,36 +37,18 @@
         <activity android:name=".ui.calling.GroupCallRoom" android:exported="true" />
         <activity
             android:name=".ui.calling.IncomingCallActivity"
-
-        <activity android:name=".ui.Home" android:exported="true" />
-
-        <!-- Calling (WebRTC / STOMP) — classes in ui/calling/ may still use package capstone.safeline.ui -->
-        <activity android:name=".ui.calling.Call" android:exported="true" />
-        <activity android:name=".ui.ContactCall" android:exported="true" />
-        <activity android:name=".ui.CallingPage" android:exported="true" />
-        <activity android:name=".ui.calling.OngoingCallActivity" android:exported="true" />
-        <activity android:name=".ui.GroupCallSetup" android:exported="true" />
-        <activity android:name=".ui.GroupCallRoom" android:exported="true" />
-        <activity
-            android:name=".ui.IncomingCallActivity"
-            >>>>>>> origin/master
-        android:exported="true"
-        android:showOnLockScreen="true"
-        android:turnScreenOn="true"
-        tools:targetApi="27" />
+            android:exported="true"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            tools:targetApi="27" />
 
         <!-- Chat -->
         <activity android:name=".ui.chatting.Chat" android:exported="true" />
         <activity android:name=".ui.chatting.DmPage" android:exported="true" />
-
-        =======
-        <activity android:name=".ui.chatting.UserChat" android:exported="true" />
-        >>>>>>> origin/master
         <activity android:name=".ui.chatting.GroupChatPage" android:exported="true" />
         <activity android:name=".ui.chatting.GroupSettingsPage" android:exported="true" />
         <activity android:name=".ui.chatting.InviteUsersPage" android:exported="true" />
         <activity android:name=".ui.chatting.CreateGroup" android:exported="true" />
-
 
         <!-- Friends/Contacts -->
         <activity android:name=".ui.friends.Contacts" android:exported="true" />
@@ -77,16 +58,6 @@
         <!-- Profile -->
         <activity android:name=".ui.profile.Profile" android:exported="true" />
         <activity android:name=".ui.profile.AccountUpdateActivity" android:exported="true" />
-        =======
-        <!-- Profile -->
-        <activity android:name=".ui.profile.Profile" android:exported="true" />
-        <activity android:name=".ui.profile.AccountUpdateActivity" android:exported="true" />
-
-        <!-- Friends / contacts (Kotlin package is often capstone.safeline.ui, not ui.friends) -->
-        <activity android:name=".ui.Contacts" android:exported="true" />
-        <activity android:name=".ui.friends.FriendRequests" android:exported="true" />
-        <activity android:name=".ui.ContactProfile" android:exported="true" />
-        >>>>>>> origin/master
 
         <!-- Settings -->
         <activity android:name=".ui.settings.Settings" android:exported="true" />
@@ -107,10 +78,6 @@
         <activity android:name=".ui.community.InviteUsers" android:exported="true" />
         <activity android:name=".ui.community.EditRole" android:exported="true" />
 
-
     </application>
-</manifest>
 
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+</manifest>
