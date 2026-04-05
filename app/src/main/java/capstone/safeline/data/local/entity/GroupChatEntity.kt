@@ -6,4 +6,5 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "group_chats")
 data class GroupChatEntity(
     @PrimaryKey val groupId: String, // UUID
+    val name: String
 )

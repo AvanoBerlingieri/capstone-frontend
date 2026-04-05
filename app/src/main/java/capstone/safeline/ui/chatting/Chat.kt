@@ -58,7 +58,6 @@ import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.first
-import java.util.UUID
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.unit.TextUnit
 import capstone.safeline.ui.friends.Contacts
@@ -163,7 +162,7 @@ fun ChatScreen(
             val resolved = mutableListOf<ChatUser>()
             val placeholderMsg = listOf(Message("", ""))
             friendIds.forEach { fid ->
-                authRepo.getUserById(UUID.fromString(fid))
+                authRepo.getUserById(fid)
                     .onSuccess { user ->
                         resolved.add(ChatUser(user.username, placeholderMsg))
                     }
