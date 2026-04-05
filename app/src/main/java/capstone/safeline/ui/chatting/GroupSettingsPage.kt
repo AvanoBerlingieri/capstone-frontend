@@ -3,6 +3,7 @@ package capstone.safeline.ui.chatting
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -10,14 +11,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,17 +27,27 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import capstone.safeline.R
-import capstone.safeline.ui.friends.Contacts
+import capstone.safeline.apis.dto.auth.GetUserByIdResponse
+import capstone.safeline.data.local.AppDatabase
+import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.repository.FriendRepository
+import capstone.safeline.data.repository.MessageRepository
 import capstone.safeline.ui.Home
 import capstone.safeline.ui.calling.Call
-import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.community.Community
-import capstone.safeline.ui.community.CommunityData
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.friends.Contacts
+import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
+import kotlinx.coroutines.launch
+import java.util.UUID
 
 class GroupSettingsPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,32 +56,30 @@ class GroupSettingsPage : ComponentActivity() {
         val groupId = intent.getStringExtra("groupId") ?: ""
 
         setContent {
+            val context = LocalContext.current
+            val db = AppDatabase.getDatabase(context)
+            val authRepo = AuthRepository.getInstance(context)
+            val friendsRepo = FriendRepository.getInstance(context)
+            val messageRepo = MessageRepository.getInstance(context, db.messageDao())
+
+            val vm: GroupSettingsViewModel = viewModel(
+                factory = GroupSettingsViewModelFactory(authRepo, friendsRepo, messageRepo)
+            )
+
             GroupSettingsScreen(
                 groupId = groupId,
+                viewModel = vm,
                 onBack = { finish() },
                 onNavigate = { destination ->
                     val intent = when (destination) {
-                        "home" -> Intent(this, Home::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                        }
-                        "calls" -> Intent(this, Call::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "chats" -> Intent(this, Chat::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "profile" -> Intent(this, Profile::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "communities" -> Intent(this, Community::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "contacts" -> Intent(this, Contacts::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
+                        "home" -> Intent(this, Home::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT) }
+                        "calls" -> Intent(this, Call::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) }
+                        "chats" -> Intent(this, Chat::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) }
+                        "profile" -> Intent(this, Profile::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) }
+                        "communities" -> Intent(this, Community::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) }
+                        "contacts" -> Intent(this, Contacts::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) }
                         else -> null
                     }
-
                     intent?.let { startActivity(it) }
                 }
             )
@@ -85,136 +90,50 @@ class GroupSettingsPage : ComponentActivity() {
 @Composable
 fun GroupSettingsScreen(
     groupId: String,
+    viewModel: GroupSettingsViewModel,
     onBack: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
-
     val context = LocalContext.current
+    var groupNameInput by remember { mutableStateOf("") }
 
-    val group = CommunityData.groupChats.find { it.id == groupId }
-
-    var name by remember(group) { mutableStateOf(group?.name?.value ?: "") }
-
-    val users = group?.users ?: mutableStateListOf()
+    LaunchedEffect(groupId) {
+        viewModel.loadGroupMembers(groupId)
+    }
 
     Scaffold(
-        bottomBar = {
-            BottomNavBar(
-                currentScreen = "chats",
-                onNavigate = onNavigate
-            )
-        },
+        bottomBar = { BottomNavBar(currentScreen = "chats", onNavigate = onNavigate) },
         containerColor = Color.Transparent
     ) { padding ->
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Background
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-                Image(
-                    painter = painterResource(R.drawable.dm_background),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                ThemeManager.backgroundGradient
-                            )
-                        )
-                )
+                Image(painterResource(R.drawable.dm_background), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            } else {
+                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(ThemeManager.backgroundGradient)))
             }
 
-            BackButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart)
-            )
+            BackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .height(70.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                StrokeText(
-                    text = "MANAGE GROUP",
-                    fontFamily = ThemeManager.fontFamily,
-                    fontSize = 28.sp,
-                    fillColor = Color.White,
-                    strokeColor = Color(0xFFB30FFF),
-                    strokeWidth = 2f
-                )
-            }
-
+            // Header and Body
             Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 90.dp),
+                modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 90.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Box(modifier = Modifier.width(360.dp).fillMaxHeight(0.85f).clip(RoundedCornerShape(50.dp))
+                    .background(Brush.horizontalGradient(ThemeManager.groupCardGradient)).padding(20.dp)) {
 
-                Box(
-                    modifier = Modifier
-                        .width(360.dp)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                ThemeManager.groupCardGradient
-                            )
-                        )
-                        .padding(20.dp)
-                ) {
+                    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        StrokeText("GROUP NAME", ThemeManager.fontFamily, 20.sp, Color.White, Color(0xFF193DEF), 1f)
 
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-
-                        StrokeText(
-                            text = "GROUP NAME",
-                            fontFamily = ThemeManager.fontFamily,
-                            fontSize = 20.sp,
-                            fillColor = Color.White,
-                            strokeColor = Color(0xFF193DEF),
-                            strokeWidth = 1f
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(44.dp)
-                            ) {
-
-                                Image(
-                                    painter = painterResource(R.drawable.group_name_input),
-                                    contentDescription = null,
-                                    modifier = Modifier.matchParentSize(),
-                                    contentScale = ContentScale.FillBounds
-                                )
-
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.weight(1f).height(44.dp)) {
+                                Image(painterResource(R.drawable.group_name_input), null, Modifier.matchParentSize(), contentScale = ContentScale.FillBounds)
                                 TextField(
-                                    value = name,
-                                    onValueChange = { name = it },
+                                    value = groupNameInput,
+                                    onValueChange = { groupNameInput = it },
                                     modifier = Modifier.fillMaxSize(),
-                                    textStyle = TextStyle(
-                                        color = Color.White,
-                                        fontFamily = ThemeManager.fontFamily
-                                    ),
+                                    textStyle = TextStyle(color = Color.White, fontFamily = ThemeManager.fontFamily),
                                     colors = TextFieldDefaults.colors(
                                         focusedContainerColor = Color.Transparent,
                                         unfocusedContainerColor = Color.Transparent,
@@ -223,187 +142,100 @@ fun GroupSettingsScreen(
                                     )
                                 )
                             }
-
                             Spacer(modifier = Modifier.width(8.dp))
-
-                            Box(
-                                modifier = Modifier
-                                    .width(80.dp)
-                                    .height(36.dp)
-                                    .clickable {
-                                        group?.name?.value = name.toString()
-
-                                        (context as Activity).finish()
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-
-                                Image(
-                                    painter = painterResource(R.drawable.add_users_btn),
-                                    contentDescription = null,
-                                    modifier = Modifier.matchParentSize()
-                                )
-
-                                Text(
-                                    "Change",
-                                    color = Color.White,
-                                    fontFamily = ThemeManager.fontFamily,
-                                    fontSize = 12.sp
-                                )
+                            // Note: Your current backend might not support name changes yet,
+                            // but this is where you'd trigger it.
+                            Box(modifier = Modifier.width(80.dp).height(36.dp).clickable { /* Future: API Call */ }, contentAlignment = Alignment.Center) {
+                                Image(painterResource(R.drawable.add_users_btn), null, Modifier.matchParentSize())
+                                Text("Change", color = Color.White, fontSize = 12.sp)
                             }
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
+                        StrokeText("MEMBERS", ThemeManager.fontFamily, 20.sp, Color.White, Color(0xFF193DEF), 1f)
 
-                        StrokeText(
-                            text = "MEMBERS",
-                            fontFamily = ThemeManager.fontFamily,
-                            fontSize = 20.sp,
-                            fillColor = Color.White,
-                            strokeColor = Color(0xFF193DEF),
-                            strokeWidth = 1f
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(320.dp)
-                                .background(
-                                    Brush.horizontalGradient(
-                                        ThemeManager.groupInnerGradient
-                                    )
-                                )
-                                .border(1.dp, ThemeManager.groupStroke)
-                                .padding(10.dp)
-                        ) {
-
-                            Column(
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-
-                                LazyColumn(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    items(users) { user ->
-
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(44.dp),
-                                            contentAlignment = Alignment.CenterStart
-                                        ) {
-
-                                            Image(
-                                                painter = painterResource(R.drawable.group_user_item),
-                                                contentDescription = null,
-                                                modifier = Modifier.matchParentSize(),
-                                                contentScale = ContentScale.FillBounds
-                                            )
-
-                                            Text(
-                                                text = user,
-                                                color = Color.White,
-                                                fontFamily = ThemeManager.fontFamily,
-                                                modifier = Modifier.padding(start = 16.dp),
-                                                fontSize = 16.sp
-                                            )
-                                        }
-
-                                        Spacer(modifier = Modifier.width(8.dp))
-
-                                        Box(
-                                            modifier = Modifier
-                                                .width(80.dp)
-                                                .height(36.dp)
-                                                .clickable {
-                                                    users.remove(user)
-                                                },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-
-                                            Image(
-                                                painter = painterResource(R.drawable.delete_btn),
-                                                contentDescription = null,
-                                                modifier = Modifier.matchParentSize()
-                                            )
-
-                                            Text(
-                                                "Delete",
-                                                color = Color.White,
-                                                fontFamily = ThemeManager.fontFamily
-                                            )
+                        Box(modifier = Modifier.fillMaxWidth().height(320.dp).background(Brush.horizontalGradient(ThemeManager.groupInnerGradient)).border(1.dp, ThemeManager.groupStroke).padding(10.dp)) {
+                            Column {
+                                LazyColumn(modifier = Modifier.weight(1f)) {
+                                    items(viewModel.memberList) { user ->
+                                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Box(modifier = Modifier.weight(1f).height(44.dp), contentAlignment = Alignment.CenterStart) {
+                                                Image(painterResource(R.drawable.group_user_item), null, Modifier.matchParentSize(), contentScale = ContentScale.FillBounds)
+                                                Text(user.username, color = Color.White, modifier = Modifier.padding(start = 16.dp))
+                                            }
                                         }
                                     }
-                                    }
-
+                                }
+                                // Add Users Button
+                                Box(modifier = Modifier.align(Alignment.CenterHorizontally).size(width = 146.dp, height = 47.dp)
+                                    .clickable {
+                                        val intent = Intent(context, InviteUsersPage::class.java).apply {
+                                            putExtra("groupId", groupId)
+                                        }
+                                        context.startActivity(intent)
+                                    }, contentAlignment = Alignment.Center) {
+                                    Image(painterResource(R.drawable.add_users_btn), null, Modifier.matchParentSize())
+                                    Text("Add Users", color = Color.White)
                                 }
                             }
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .size(width = 146.dp, height = 47.dp)
-                                    .clickable {
-                                        context.startActivity(Intent(context, InviteUsersPage::class.java))
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-
-                                Image(
-                                    painter = painterResource(R.drawable.add_users_btn),
-                                    contentDescription = null,
-                                    modifier = Modifier.matchParentSize()
-                                )
-
-                                Text(
-                                    "Add Users",
-                                    color = Color.White,
-                                    fontFamily = ThemeManager.fontFamily
-                                )
-                            }
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 20.dp)
-                    .size(width = 220.dp, height = 35.dp)
-                    .clickable {
-                        val index = CommunityData.groupChats.indexOfFirst { it.id == groupId }
-                        if (index != -1) {
-                            CommunityData.groupChats.removeAt(index)
-                        }
-
+            // Leave Group Button
+            Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp).size(220.dp, 35.dp)
+                .clickable {
+                    viewModel.leaveGroup(groupId) {
+                        Toast.makeText(context, "Left Group", Toast.LENGTH_SHORT).show()
                         (context as Activity).finish()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-
-                Image(
-                    painter = painterResource(R.drawable.delete_server_btn),
-                    contentDescription = null,
-                    modifier = Modifier.matchParentSize()
-                )
-
-                Text(
-                    "LEAVE GROUP",
-                    color = Color.White,
-                    fontFamily = ThemeManager.fontFamily
-                )
+                    }
+                }, contentAlignment = Alignment.Center) {
+                Image(painterResource(R.drawable.delete_server_btn), null, Modifier.matchParentSize())
+                Text("LEAVE GROUP", color = Color.White, fontFamily = ThemeManager.fontFamily)
             }
         }
+    }
+}
+
+class GroupSettingsViewModel(
+    private val authRepo: AuthRepository,
+    private val friendsRepo: FriendRepository,
+    private val messageRepo: MessageRepository
+) : ViewModel() {
+
+    var memberList by mutableStateOf<List<GetUserByIdResponse>>(emptyList())
+    var isLoading by mutableStateOf(false)
+
+    fun loadGroupMembers(groupId: String) {
+        viewModelScope.launch {
+            isLoading = true
+            // TODO: Add method to fetch all group members
+
+            isLoading = false
+        }
+    }
+
+    fun leaveGroup(groupId: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val success = messageRepo.leaveGroup(groupId)
+            if (success) onComplete()
+        }
+    }
+    fun deleteGroup(groupId: String){
+        viewModelScope.launch {
+           val success = messageRepo.deleteGroup(groupId)
+            // TODO: add redirection back to chats page
+        }
+    }
+}
+
+class GroupSettingsViewModelFactory(
+    private val authRepo: AuthRepository,
+    private val friendsRepo: FriendRepository,
+    private val messageRepo: MessageRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return GroupSettingsViewModel(authRepo, friendsRepo, messageRepo) as T
     }
 }

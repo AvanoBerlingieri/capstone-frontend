@@ -174,7 +174,7 @@ fun DmPageScreen(
 }
 
 @Composable
-private fun DmHeader(username: String, lastSeen: String, onBack: () -> Unit, onCall: () -> Unit) {
+fun DmHeader(username: String, lastSeen: String, onBack: () -> Unit, onCall: () -> Unit) {
     Box(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(top = 10.dp)) {
         if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
             Image(painter = painterResource(R.drawable.friend_nameplate_background), contentDescription = null, modifier = Modifier.align(Alignment.TopCenter).width(412.dp).height(69.dp), contentScale = ContentScale.FillBounds)
@@ -195,7 +195,7 @@ private fun DmHeader(username: String, lastSeen: String, onBack: () -> Unit, onC
 }
 
 @Composable
-private fun MessageBubble(message: String, isMine: Boolean) {
+fun MessageBubble(message: String, isMine: Boolean) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start) {
         Box(modifier = Modifier.widthIn(max = 280.dp)) {
             Image(painter = painterResource(R.drawable.message_bubble_background), contentDescription = null, modifier = Modifier.matchParentSize().graphicsLayer { scaleX = if (isMine) -1f else 1f }, contentScale = ContentScale.FillBounds)
@@ -205,7 +205,7 @@ private fun MessageBubble(message: String, isMine: Boolean) {
 }
 
 @Composable
-private fun DmInputBar(value: String, onValueChange: (String) -> Unit, onAttach: () -> Unit, onSend: () -> Unit) {
+fun DmInputBar(value: String, onValueChange: (String) -> Unit, onAttach: () -> Unit, onSend: () -> Unit) {
     Box(modifier = Modifier.fillMaxWidth().height(74.dp)) {
         Image(painter = painterResource(R.drawable.input_background), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
         Row(modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {

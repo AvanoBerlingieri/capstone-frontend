@@ -7,19 +7,23 @@ import androidx.compose.ui.platform.LocalContext
 import capstone.safeline.apis.network.WebSocketManager
 import capstone.safeline.data.local.AppDatabase
 import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.repository.FriendRepository
+import capstone.safeline.data.repository.MessageRepository
 
 @Composable
 fun InitializeSocket() {
     val context = LocalContext.current
 
-    val repo = remember { AuthRepository.getInstance(context) }
+    val authRepo = remember { AuthRepository.getInstance(context) }
     val db = remember { AppDatabase.getDatabase(context) }
+    val friendRepo = remember { FriendRepository.getInstance(context) }
+    val msgRepo = remember { MessageRepository.getInstance(context, db.messageDao()) }
     val ws = remember { WebSocketManager.getInstance() }
 
     LaunchedEffect(Unit) {
-        ws.init(repo, db.messageDao())
+        ws.init(authRepo, db.messageDao(), friendRepo, msgRepo)
 
-        repo.tokenFlow.collect { token ->
+        authRepo.tokenFlow.collect { token ->
             if (!token.isNullOrBlank()) {
                 ws.connect(token)
             }

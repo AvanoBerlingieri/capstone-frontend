@@ -16,7 +16,6 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
-import java.util.UUID
 
 interface ApiServiceAuth {
 
@@ -47,11 +46,11 @@ interface ApiServiceAuth {
     suspend fun updateStatus(@Body request: UpdateUserStatusDto): retrofit2.Response<UpdateUserStatusDto>
 
     @GET("api/auth/users/{id}")
-    suspend fun getUserById(@Path("id") id: UUID): retrofit2.Response<GetUserByIdResponse>
+    suspend fun getUserById(@Path("id") id: String): retrofit2.Response<GetUserByIdResponse>
 
     @GET("users/{id}")
     suspend fun getUserByIdUnderUsers(
-        @Path("id") id: UUID
+        @Path("id") id: String
     ): retrofit2.Response<GetUserByIdResponse>
 
     @GET("api/auth/users/get-id-by-username/{username}")
