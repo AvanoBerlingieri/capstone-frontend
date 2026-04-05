@@ -14,7 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -27,7 +27,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.ui.friends.Contacts
+import capstone.safeline.apis.network.CallingApiClient
+import capstone.safeline.data.local.DataStoreManager
+import capstone.safeline.data.security.CryptoManager
+import capstone.safeline.ui.ContactCall
+import capstone.safeline.ui.Contacts
 import capstone.safeline.ui.Home
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.community.Community
@@ -37,8 +41,8 @@ import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
-
-
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 private val Tapestry = FontFamily(Font(R.font.tapestry_regular))
 
@@ -47,6 +51,8 @@ private enum class CallType { ANSWERED, MISSED }
 private data class UiCallItem(
     val type: CallType,
     val name: String,
+    /** Shown for non-completed rows (missed / declined / failed). */
+    val outcomeLabel: String,
     val date: String,
     val time: String,
     val duration: String? = null
@@ -56,49 +62,84 @@ class Call : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val callItems = listOf(
-            UiCallItem(CallType.MISSED, "Matthew", "11/21/2025", "1:21 PM"),
-            UiCallItem(CallType.MISSED, "Matthew", "11/22/2025", "6:29 PM"),
-            UiCallItem(CallType.ANSWERED, "Matthew", "11/22/2025", "8:06 PM", "Call Duration: 32 minutes"),
-            UiCallItem(CallType.ANSWERED, "Matthew", "11/22/2025", "10:10 PM", "Call Duration: 45 minutes"),
-            UiCallItem(CallType.MISSED, "Matthew", "11/24/2025", "6:59 PM"),
-            UiCallItem(CallType.ANSWERED, "Matthew", "11/25/2025", "9:59 PM", "Call Duration: 50 minutes"),
-            UiCallItem(CallType.ANSWERED, "Matthew", "11/26/2025", "11:39 PM", "Call Duration: 52 minutes"),
-            UiCallItem(CallType.ANSWERED, "Matthew", "11/27/2025", "5:58 AM", "Call Duration: 20 minutes"),
-            UiCallItem(CallType.ANSWERED, "Matthew", "11/27/2025", "5:58 AM", "Call Duration: 20 minutes")
-        )
+        val cryptoManager = CryptoManager()
+        val dataStoreManager = DataStoreManager(this, cryptoManager)
 
         setContent {
+            val scope = rememberCoroutineScope()
+            var callItems by remember { mutableStateOf<List<UiCallItem>>(emptyList()) }
+            var isLoading by remember { mutableStateOf(true) }
+            var loadError by remember { mutableStateOf<String?>(null) }
+
+            LaunchedEffect(Unit) {
+                scope.launch {
+                    try {
+                        loadError = null
+                        val username = dataStoreManager.usernameFlow.first()
+
+                        val response = CallingApiClient.service.getCallHistory(username)
+                        if (response.isSuccessful) {
+                            callItems = response.body()?.map { record ->
+                                val status = record.status.trim().lowercase()
+                                val isMissed = status == "missed"
+                                        || status == "declined"
+                                        || status == "failed"
+
+                                val outcomeLabel = when (status) {
+                                    "declined" -> "Declined"
+                                    "failed" -> "Failed"
+                                    "missed" -> "Missed"
+                                    else -> ""
+                                }
+
+                                UiCallItem(
+                                    type = if (isMissed) CallType.MISSED else CallType.ANSWERED,
+                                    name = if (record.callerId == username)
+                                        record.receiverId else record.callerId,
+                                    outcomeLabel = outcomeLabel,
+                                    date = record.startTime
+                                        ?.substring(0, 10)
+                                        ?.replace("-", "/") ?: "",
+                                    time = record.startTime
+                                        ?.substring(11, 16) ?: "",
+                                    duration = record.duration
+                                        ?.let { "Call Duration: $it seconds" }
+                                )
+                            } ?: emptyList()
+                        } else {
+                            loadError = "Could not load call history (HTTP ${response.code()})"
+                        }
+                    } catch (e: Exception) {
+                        loadError = "Could not load call history: ${e.message ?: "unknown error"}"
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            }
+
             CallScreen(
                 callItems = callItems,
+                isLoading = isLoading,
+                loadError = loadError,
                 onBack = { finish() },
-                onCallClick = { callerName ->
+                onCallClick = { peerId ->
                     val intent = Intent(this, ContactCall::class.java)
-                    intent.putExtra("callerName", callerName)
+                    intent.putExtra("callerName", peerId)
+                    intent.putExtra("targetUserId", peerId)
                     startActivity(intent)
                 },
+                onMakeCall = {
+                    startActivity(Intent(this, Contacts::class.java))
+                },
                 onNavigate = { destination ->
-                    val intent = when (destination) {
-                        "home" -> Intent(this, Home::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                        }
-                        "calls" -> null
-                        "chats" -> Intent(this, Chat::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "profile" -> Intent(this, Profile::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "communities" -> Intent(this, Community::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "contacts" -> Intent(this, Contacts::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        else -> null
+                    when (destination) {
+                        "home" -> startActivity(Intent(this, Home::class.java))
+                        "calls" -> {}
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
+                        "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> startActivity(Intent(this, Contacts::class.java))
                     }
-
-                    intent?.let { startActivity(it) }
                 }
             )
         }
@@ -108,11 +149,13 @@ class Call : ComponentActivity() {
 @Composable
 private fun CallScreen(
     callItems: List<UiCallItem>,
+    isLoading: Boolean,
+    loadError: String?,
     onBack: () -> Unit,
-    onCallClick: (String) -> Unit,
+    onCallClick: (peerId: String) -> Unit,
+    onMakeCall: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
-
     Scaffold(
         topBar = {},
         bottomBar = {
@@ -128,48 +171,39 @@ private fun CallScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // ThemeManager background from master
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
                 Image(
                     painter = painterResource(R.drawable.calls_bg),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
             } else {
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            Brush.verticalGradient(
-                                ThemeManager.backgroundGradient
-                            )
+                            Brush.verticalGradient(ThemeManager.backgroundGradient)
                         )
                 )
-
             }
 
+            // ThemeManager header from master
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
                     .height(70.dp)
             ) {
-
                 if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
-
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
-                                Brush.horizontalGradient(
-                                    ThemeManager.headerGradient
-                                )
+                                Brush.horizontalGradient(ThemeManager.headerGradient)
                             )
                     )
-
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -197,19 +231,65 @@ private fun CallScreen(
                     .padding(top = 120.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(30.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    items(callItems) { item ->
-                        CallRow(
-                            item = item,
-                            onClick = { onCallClick(item.name) }
-                        )
+                // Real API loading states from your branch
+                when {
+                    isLoading -> {
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Loading...",
+                                color = Color.White,
+                                fontFamily = Tapestry,
+                                fontSize = 18.sp
+                            )
+                        }
+                    }
+                    loadError != null -> {
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = loadError,
+                                color = Color(0xFFFFB4B4),
+                                fontFamily = Tapestry,
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 24.dp)
+                            )
+                        }
+                    }
+                    callItems.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No call history yet",
+                                color = Color.White,
+                                fontFamily = Tapestry,
+                                fontSize = 18.sp
+                            )
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(30.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            items(callItems) { item ->
+                                CallRow(
+                                    item = item,
+                                    onClick = { onCallClick(item.name) }
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -221,6 +301,8 @@ private fun CallScreen(
                     modifier = Modifier
                         .size(width = 127.dp, height = 76.dp)
                         .padding(bottom = 10.dp)
+                        .clickable { onMakeCall() },  // ADD THIS
+                    contentScale = ContentScale.Fit
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -239,13 +321,10 @@ private fun CallRow(
             .size(width = 379.97.dp, height = 48.97.dp)
             .clickable { onClick() }
     ) {
+        // ThemeManager styling from master
         if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
-            val bg =
-                if (item.type == CallType.ANSWERED)
-                    R.drawable.calls_anwsered_bg
-                else
-                    R.drawable.calls_missed_bg
+            val bg = if (item.type == CallType.ANSWERED)
+                R.drawable.calls_anwsered_bg else R.drawable.calls_missed_bg
 
             Image(
                 painter = painterResource(bg),
@@ -253,18 +332,13 @@ private fun CallRow(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds
             )
-
         } else {
-
-            val shape = RoundedCornerShape(18.dp)
-
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.horizontalGradient(
-                            ThemeManager.buttonGradient
-                        ),
+                        Brush.horizontalGradient(ThemeManager.buttonGradient),
                         shape = shape
                     )
                     .then(
@@ -277,7 +351,6 @@ private fun CallRow(
                         } ?: Modifier
                     )
             )
-
         }
 
         when (item.type) {
@@ -319,16 +392,27 @@ private fun MissedRow(item: UiCallItem) {
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        StrokeText(
-            text = item.name,
-            fontFamily = ThemeManager.fontFamily,
-            fontSize = 32.sp,
-            fillColor = Color.White,
-            strokeColor = Color(0xFFFF0099),
-            strokeWidth = 1f
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            StrokeText(
+                text = item.name,
+                fontFamily = ThemeManager.fontFamily,
+                fontSize = 32.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFFFF0099),
+                strokeWidth = 1f
+            )
+            if (item.outcomeLabel.isNotEmpty()) {
+                Text(
+                    text = item.outcomeLabel,
+                    fontFamily = Tapestry,
+                    fontSize = 14.sp,
+                    color = Color(0xFFB0B0B0),
+                    textAlign = TextAlign.Start
+                )
+            }
+        }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.width(8.dp))
 
         Image(
             painter = painterResource(R.drawable.calls_missed_icon),
@@ -404,5 +488,3 @@ private fun AnsweredRow(item: UiCallItem) {
         }
     }
 }
-
-

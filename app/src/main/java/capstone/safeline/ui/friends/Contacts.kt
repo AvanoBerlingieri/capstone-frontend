@@ -1,4 +1,4 @@
-package capstone.safeline.ui.friends
+package capstone.safeline.ui
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,7 +7,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,7 +43,6 @@ import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.repository.FriendRepository
-import capstone.safeline.ui.Home
 import capstone.safeline.ui.calling.Call
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.community.Community
@@ -57,7 +55,6 @@ import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.first
 
-
 private data class UiContactItem(
     val friendId: String,
     val name: String,
@@ -65,51 +62,36 @@ private data class UiContactItem(
 )
 
 class Contacts : ComponentActivity() {
-    var deletedContactId by mutableStateOf<String?>(null)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             ContactsScreen(
                 onBack = { finish() },
+
                 onContactClick = { contact ->
                     val intent = Intent(this, ContactProfile::class.java)
-                    intent.putExtra("contactId", contact.friendId)
                     intent.putExtra("contactName", contact.name)
                     intent.putExtra("contactEmail", contact.email)
-                    startActivityForResult(intent, 2001)
+                    intent.putExtra("friendId", contact.friendId)
+                    startActivity(intent)
+                },
+
+                onGroupCall = {
+                    startActivity(Intent(this, GroupCallSetup::class.java))
                 },
 
                 onNavigate = { destination ->
-                    val intent = when (destination) {
-                        "home" -> Intent(this, Home::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                        }
-                        "calls" -> Intent(this, Call::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "chats" -> Intent(this, Chat::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "profile" -> Intent(this, Profile::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "communities" -> Intent(this, Community::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "contacts" -> null
-                        else -> null
+                    when (destination) {
+                        "home" -> startActivity(Intent(this, Home::class.java))
+                        "calls" -> startActivity(Intent(this, Call::class.java))
+                        "chats" -> startActivity(Intent(this, Chat::class.java))
+                        "profile" -> startActivity(Intent(this, Profile::class.java))
+                        "communities" -> startActivity(Intent(this, Community::class.java))
+                        "contacts" -> {}
                     }
-
-                    intent?.let { startActivity(it) }
                 }
             )
-        }
-    }
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 2001 && resultCode == RESULT_OK) {
-            deletedContactId = data?.getStringExtra("deleted_contact_id")
         }
     }
 }
@@ -118,26 +100,29 @@ class Contacts : ComponentActivity() {
 private fun ContactsScreen(
     onBack: () -> Unit,
     onContactClick: (UiContactItem) -> Unit,
+    onGroupCall: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
-
     InitializeSocket()
 
     val context = LocalContext.current
     val dsManager = remember { DataStoreManager.getInstance(context) }
     val friendRepo = remember { FriendRepository.getInstance(context) }
     val authRepo = remember { AuthRepository.getInstance(context) }
-    val deletedContactId = (context as Contacts).deletedContactId
 
     var contacts by remember { mutableStateOf<List<UiContactItem>>(emptyList()) }
     var loadError by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
+        val token = dsManager.tokenFlow.first()
+        android.util.Log.d("CONTACTS", "Token: $token")
+        android.util.Log.d("CONTACTS", "UserId: ${token?.let { extractUserIdFromJwt(it) }}")
         loadError = null
         try {
             val token = dsManager.tokenFlow.first()
             val userId = token?.let { extractUserIdFromJwt(it) }
+
             if (userId.isNullOrBlank()) {
                 loadError = "Sign in required to load contacts."
                 return@LaunchedEffect
@@ -183,7 +168,6 @@ private fun ContactsScreen(
     }
 
     Scaffold(
-        topBar = {},
         bottomBar = {
             BottomNavBar(
                 currentScreen = "contacts",
@@ -192,67 +176,32 @@ private fun ContactsScreen(
         },
         containerColor = Color.Transparent
     ) { innerPadding ->
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
                 Image(
                     painter = painterResource(R.drawable.contacts_bg),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
             } else {
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                ThemeManager.backgroundGradient
-                            )
-                        )
-                )
-
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .height(70.dp)
-            ) {
-
-                if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    ThemeManager.headerGradient
-                                )
-                            )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(ThemeManager.topBarStroke)
-                    )
-                }
-
-                StrokeTitle(
-                    text = "CONTACTS",
-                    fontFamily = ThemeManager.fontFamily,
-                    modifier = Modifier.align(Alignment.Center)
+                        .background(Brush.verticalGradient(ThemeManager.backgroundGradient))
                 )
             }
+
+            StrokeTitle(
+                text = "CONTACTS",
+                fontFamily = ThemeManager.fontFamily,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
 
             BackButton(
                 onClick = onBack,
@@ -268,15 +217,10 @@ private fun ContactsScreen(
                 when {
                     isLoading -> {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
+                            modifier = Modifier.fillMaxWidth().weight(1f),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Loading contacts…",
-                                color = Color.White
-                            )
+                            Text(text = "Loading contacts…", color = Color.White)
                         }
                     }
                     loadError != null -> {
@@ -299,9 +243,7 @@ private fun ContactsScreen(
                     }
                     contacts.isEmpty() -> {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
+                            modifier = Modifier.fillMaxWidth().weight(1f),
                             contentAlignment = Alignment.Center
                         ) {
                             StrokeText(
@@ -324,10 +266,7 @@ private fun ContactsScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
-                            items(
-                                contacts.filter { it.friendId != deletedContactId },
-                                key = { it.friendId }
-                            ) { contact ->
+                            items(contacts, key = { it.friendId }) { contact ->
                                 ContactRow(
                                     contact = contact,
                                     onClick = { onContactClick(contact) }
@@ -342,14 +281,20 @@ private fun ContactsScreen(
                 Image(
                     painter = painterResource(R.drawable.new_contact_btn),
                     contentDescription = null,
+                    modifier = Modifier.size(127.dp, 76.dp)
+                )
+
+                // Your group call button ✅
+                Image(
+                    painter = painterResource(R.drawable.calls_make_call_btn),
+                    contentDescription = "Group Call",
                     modifier = Modifier
                         .size(width = 127.dp, height = 76.dp)
                         .padding(bottom = 10.dp)
-                        .clickable {
-                            val intent = Intent(context, FriendRequests::class.java)
-                            context.startActivity(intent)
-                        },
+                        .clickable { onGroupCall() }
                 )
+
+                Spacer(modifier = Modifier.height(10.dp))
             }
         }
     }
@@ -367,40 +312,12 @@ private fun ContactRow(
             .clickable { onClick() }
             .padding(horizontal = 0.dp)
     ) {
-        if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
-
-            Image(
-                painter = painterResource(R.drawable.friend_contact_bg),
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.FillWidth
-            )
-
-        } else {
-
-            val shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            ThemeManager.buttonGradient
-                        ),
-                        shape = shape
-                    )
-                    .then(
-                        ThemeManager.buttonStroke?.let {
-                            Modifier.border(
-                                1.dp,
-                                it,
-                                shape
-                            )
-                        } ?: Modifier
-                    )
-            )
-
-        }
+        Image(
+            painter = painterResource(R.drawable.friend_contact_bg),
+            contentDescription = null,
+            modifier = Modifier.fillMaxWidth(),
+            contentScale = ContentScale.FillWidth
+        )
 
         Row(
             modifier = Modifier
@@ -414,9 +331,7 @@ private fun ContactRow(
                 modifier = Modifier.size(width = 60.dp, height = 56.dp),
                 contentScale = ContentScale.Fit
             )
-
             Spacer(modifier = Modifier.size(10.dp))
-
             StrokeText(
                 text = contact.name,
                 fontFamily = ThemeManager.fontFamily,
