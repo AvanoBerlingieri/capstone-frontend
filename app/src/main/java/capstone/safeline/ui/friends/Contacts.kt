@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,7 +56,6 @@ import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.first
-import java.util.UUID
 
 
 private data class UiContactItem(
@@ -149,7 +147,7 @@ private fun ContactsScreen(
                 .onSuccess { friendIds ->
                     val resolved = mutableListOf<UiContactItem>()
                     friendIds.forEach { fid ->
-                        authRepo.getUserById(UUID.fromString(fid))
+                        authRepo.getUserById(fid)
                             .onSuccess { user ->
                                 resolved.add(
                                     UiContactItem(
