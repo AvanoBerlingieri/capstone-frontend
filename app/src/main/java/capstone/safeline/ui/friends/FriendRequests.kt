@@ -58,7 +58,8 @@ import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.repository.FriendRepository
-import capstone.safeline.ui.friends.Contacts
+import capstone.safeline.ui.ContactProfile
+import capstone.safeline.ui.Contacts
 import capstone.safeline.ui.Home
 import capstone.safeline.ui.calling.Call
 import capstone.safeline.ui.chatting.Chat

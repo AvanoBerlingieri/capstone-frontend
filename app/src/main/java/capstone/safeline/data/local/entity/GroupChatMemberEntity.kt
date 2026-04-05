@@ -1,11 +1,13 @@
 package capstone.safeline.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "group_chat_member")
+@Entity(
+    tableName = "group_chat_member",
+    primaryKeys = ["groupId", "userId"]
+)
 data class GroupChatMemberEntity(
-    @PrimaryKey val groupId: String, // UUID
-    val userId: String, // UUID
+    val groupId: String,
+    val userId: String,
     val username: String
 )

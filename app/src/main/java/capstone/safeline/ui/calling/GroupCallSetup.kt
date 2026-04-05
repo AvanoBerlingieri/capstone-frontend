@@ -1,4 +1,4 @@
-package capstone.safeline.ui.calling
+package capstone.safeline.ui
 
 import androidx.compose.foundation.layout.statusBarsPadding
 import android.content.Intent
@@ -26,8 +26,7 @@ import capstone.safeline.R
 import capstone.safeline.apis.network.CallingApiClient
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
-import capstone.safeline.ui.friends.Contacts
-import capstone.safeline.ui.Home
+import capstone.safeline.ui.calling.Call
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.community.Community
 import capstone.safeline.ui.components.BackButton

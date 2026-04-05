@@ -3,6 +3,7 @@ package capstone.safeline.ui.chatting
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,12 +11,31 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,10 +47,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import capstone.safeline.R
 import capstone.safeline.apis.dto.auth.GetUserByIdResponse
 import capstone.safeline.data.local.AppDatabase
@@ -43,17 +65,17 @@ import capstone.safeline.ui.community.Community
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
-import capstone.safeline.ui.friends.Contacts
+import capstone.safeline.ui.Contacts
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 class GroupSettingsPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val groupId = intent.getStringExtra("groupId") ?: ""
+        val groupName = intent.getStringExtra("groupName") ?: ""
 
         setContent {
             val context = LocalContext.current
@@ -68,6 +90,7 @@ class GroupSettingsPage : ComponentActivity() {
 
             GroupSettingsScreen(
                 groupId = groupId,
+                initialGroupName = groupName,
                 viewModel = vm,
                 onBack = { finish() },
                 onNavigate = { destination ->
@@ -90,15 +113,24 @@ class GroupSettingsPage : ComponentActivity() {
 @Composable
 fun GroupSettingsScreen(
     groupId: String,
+    initialGroupName: String,
     viewModel: GroupSettingsViewModel,
     onBack: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     val context = LocalContext.current
-    var groupNameInput by remember { mutableStateOf("") }
+    var groupNameInput by remember(groupId, initialGroupName) { mutableStateOf(initialGroupName) }
 
-    LaunchedEffect(groupId) {
-        viewModel.loadGroupMembers(groupId)
+    val activity = context as? ComponentActivity
+    DisposableEffect(activity, groupId) {
+        val act = activity ?: return@DisposableEffect onDispose { }
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadGroupMembers(groupId)
+            }
+        }
+        act.lifecycle.addObserver(observer)
+        onDispose { act.lifecycle.removeObserver(observer) }
     }
 
     Scaffold(
@@ -143,9 +175,26 @@ fun GroupSettingsScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            // Note: Your current backend might not support name changes yet,
-                            // but this is where you'd trigger it.
-                            Box(modifier = Modifier.width(80.dp).height(36.dp).clickable { /* Future: API Call */ }, contentAlignment = Alignment.Center) {
+                            Box(
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(36.dp)
+                                    .clickable {
+                                        val name = groupNameInput.trim()
+                                        if (name.isEmpty()) {
+                                            Toast.makeText(context, "Enter a name", Toast.LENGTH_SHORT).show()
+                                            return@clickable
+                                        }
+                                        viewModel.renameGroup(groupId, name) { ok ->
+                                            Toast.makeText(
+                                                context,
+                                                if (ok) "Group name updated" else "Could not update name",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Image(painterResource(R.drawable.add_users_btn), null, Modifier.matchParentSize())
                                 Text("Change", color = Color.White, fontSize = 12.sp)
                             }
@@ -188,7 +237,16 @@ fun GroupSettingsScreen(
                 .clickable {
                     viewModel.leaveGroup(groupId) {
                         Toast.makeText(context, "Left Group", Toast.LENGTH_SHORT).show()
-                        (context as Activity).finish()
+                        val act = context as Activity
+                        act.startActivity(
+                            Intent(act, Chat::class.java).apply {
+                                addFlags(
+                                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                )
+                            }
+                        )
+                        act.finish()
                     }
                 }, contentAlignment = Alignment.Center) {
                 Image(painterResource(R.drawable.delete_server_btn), null, Modifier.matchParentSize())
@@ -210,9 +268,38 @@ class GroupSettingsViewModel(
     fun loadGroupMembers(groupId: String) {
         viewModelScope.launch {
             isLoading = true
-            // TODO: Add method to fetch all group members
+            try {
+                if (groupId.isBlank()) {
+                    memberList = emptyList()
+                    return@launch
+                }
 
-            isLoading = false
+                val rows = messageRepo.getGroupMembersWithCache(groupId)
+                memberList = rows.map { row ->
+                    authRepo.getUserById(row.userId).getOrNull()?.let { profile ->
+                        GetUserByIdResponse(
+                            id = profile.id,
+                            username = profile.username,
+                            email = profile.email.orEmpty()
+                        )
+                    } ?: GetUserByIdResponse(
+                        id = row.userId,
+                        username = row.username.ifBlank { row.userId.take(8).ifEmpty { "?" } },
+                        email = ""
+                    )
+                }
+            } catch (e: Exception) {
+                Log.d("messaging", e.toString())
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun renameGroup(groupId: String, newName: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val ok = messageRepo.renameGroup(groupId, newName)
+            onResult(ok)
         }
     }
 
@@ -222,10 +309,11 @@ class GroupSettingsViewModel(
             if (success) onComplete()
         }
     }
-    fun deleteGroup(groupId: String){
+    fun deleteGroup(groupId: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-           val success = messageRepo.deleteGroup(groupId)
-            // TODO: add redirection back to chats page
+            if (messageRepo.deleteGroup(groupId)) {
+                onSuccess()
+            }
         }
     }
 }

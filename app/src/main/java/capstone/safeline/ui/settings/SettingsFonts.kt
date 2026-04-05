@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.sp
 import capstone.safeline.ui.calling.Call
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.community.Community
-import capstone.safeline.ui.friends.Contacts
+import capstone.safeline.ui.Contacts
 import capstone.safeline.ui.Home
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.components.InitializeSocket

@@ -1,5 +1,6 @@
 package capstone.safeline.ui.chatting
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -97,6 +98,13 @@ class GroupChatPage : ComponentActivity() {
                             content = text
                         )
                     )
+                },
+                onSettings = {
+                    val intent = Intent(this, GroupSettingsPage::class.java).apply {
+                        putExtra("groupId", groupId)
+                        putExtra("groupName", groupName)
+                    }
+                    startActivity(intent)
                 }
             )
         }
@@ -110,16 +118,12 @@ fun GroupChatScreen(
     groupName: String,
     messages: List<GroupMessageEntity>,
     onBack: () -> Unit,
+    onSettings: () -> Unit,
     onSendMessage: (String) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     LocalContext.current
-
-    // Auto-scroll on new message
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(0)
-    }
 
     Scaffold(containerColor = Color.Transparent) { padding ->
         Box(modifier = Modifier
@@ -143,7 +147,7 @@ fun GroupChatScreen(
             Column(modifier = Modifier
                 .fillMaxSize()
                 .imePadding()) {
-                GroupHeader(groupName, onBack)
+                GroupHeader(groupName, onBack, onSettings)
 
                 LazyColumn(
                     state = listState,
@@ -176,7 +180,7 @@ fun GroupChatScreen(
 }
 
 @Composable
-fun GroupHeader(username: String, onBack: () -> Unit) {
+fun GroupHeader(username: String, onBack: () -> Unit, onSettings: () -> Unit) {
     Box(modifier = Modifier
         .fillMaxWidth()
         .statusBarsPadding()
@@ -218,10 +222,11 @@ fun GroupHeader(username: String, onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(R.drawable.avatar),
+                painter = painterResource(R.drawable.group_settings),
                 contentDescription = null,
-                modifier = Modifier.size(width = 39.dp, height = 31.dp),
-                contentScale = ContentScale.Crop
+                modifier = Modifier
+                    .size(width = 39.dp, height = 31.dp)
+                    .clickable { onSettings() },
             )
         }
         Column(

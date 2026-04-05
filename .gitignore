@@ -16,3 +16,6 @@ local.properties
 .idea
 .kotlin/
 hs_err_pid*
+
+# Nested clone / accidental copy — not part of this project (breaks IDE + merges)
+capstone-frontend/

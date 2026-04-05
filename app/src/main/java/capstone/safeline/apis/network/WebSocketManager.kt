@@ -26,6 +26,7 @@ import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 class WebSocketManager {
     companion object {
@@ -59,6 +60,9 @@ class WebSocketManager {
     private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
+
+    /** Avoid duplicate STOMP subscriptions when sync runs more than once while connected. */
+    private val subscribedGroupIds: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     @SuppressLint("CheckResult")
     fun connect(token: String) {
@@ -95,6 +99,7 @@ class WebSocketManager {
                 LifecycleEvent.Type.OPENED -> {
                     isConnecting = false
                     Log.d("WS", "Connected to Gateway!")
+                    subscribedGroupIds.clear()
 
                     CoroutineScope(Dispatchers.IO).launch {
                         if (authRepository == null) {
@@ -140,12 +145,6 @@ class WebSocketManager {
         friendRepository?.getAllFriends(myId)?.onSuccess { friendIds ->
             Log.d("WS_SYNC", "Server returned ${friendIds.size} friends")
             friendIds.forEach { fid ->
-                val existing = messageDao?.findFriend(fid)
-                if (existing != null) {
-                    Log.v("WS_SYNC", "Friend $fid already exists in local DB, skipping...")
-                    return@forEach
-                }
-
                 authRepository?.getUserById(fid)?.onSuccess { user ->
                     Log.i("WS_SYNC", "Adding NEW friend to local DB: ${user.username}")
                     messageDao?.insertFriend(FriendEntity(fid, user.id, user.username))
@@ -161,7 +160,7 @@ class WebSocketManager {
             val ids = groups.map { it.groupId }
 
             groups.forEach { group ->
-                Log.v("WS_SYNC", "Saving group metadata: ${group.groupName}")
+                Log.v("WS_SYNC", "Saving group metadata:\nID: ${group.groupId}\nName: ${group.groupName}")
                 messageDao?.insertGroup(GroupChatEntity(group.groupId, group.groupName))
             }
 
@@ -169,6 +168,17 @@ class WebSocketManager {
                 subscribeToGroups(ids)
             }
         }?.onFailure { Log.e("WS_SYNC", "Failed to fetch groups", it) }
+    }
+
+    fun syncMetadata() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val authRepo = authRepository ?: return@launch
+            val myId = authRepo.userIdFlow.first() ?: return@launch
+
+            Log.d("WS_SYNC", "Manual metadata sync triggered")
+            syncFriends(myId)
+            syncGroups(myId)
+        }
     }
 
     @SuppressLint("CheckResult")
