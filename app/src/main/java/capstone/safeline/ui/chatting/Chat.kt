@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.apis.network.WebSocketManager
 import capstone.safeline.data.local.AppDatabase
 import capstone.safeline.data.repository.MessageRepository
 import capstone.safeline.models.ChatUser
@@ -112,11 +114,17 @@ fun ChatScreen(
     InitializeSocket()
 
     val context = LocalContext.current
+    val wsManager = remember { WebSocketManager.getInstance() }
     val messageRepo = remember {
         MessageRepository.getInstance(
             context,
             AppDatabase.getDatabase(context).messageDao()
         )
+    }
+
+    // on launch query list of friends and group chats from server and update local db
+    LaunchedEffect(Unit) {
+        wsManager.syncMetadata()
     }
 
     // Observe the combined flow

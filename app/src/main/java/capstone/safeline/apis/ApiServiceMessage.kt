@@ -12,6 +12,11 @@ interface ApiServiceMessage {
 
     // History Routes
 
+    @GET("history/private/{userId}")
+    suspend fun getPrivateHistory(
+        @Path("userId") userId: String
+    ): Response<List<OutgoingMessage>>
+
     @GET("history/group/{groupId}")
     suspend fun getGroupHistory(
         @Path("groupId") groupId: String

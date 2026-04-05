@@ -128,6 +128,30 @@ class MessageRepository(
         }
     }
 
+    suspend fun fetchPrivateHistory(otherUserId: String): Result<Unit> {
+        return try {
+            val response = apiService.getPrivateHistory(otherUserId) // Assumes this endpoint exists
+            if (response.isSuccessful) {
+                val history = response.body() ?: emptyList()
+                history.forEach { msg ->
+                    val myId = dataStoreManager.userIdFlow.first() ?: ""
+                    messageDao.insertPrivateMessage(
+                        MessageEntity(
+                            messageId = msg.messageId,
+                            senderId = msg.senderId,
+                            receiverId = msg.receiverId,
+                            content = msg.content,
+                            timestamp = msg.timestamp,
+                            status = "DELIVERED",
+                            isMine = msg.senderId == myId
+                        )
+                    )
+                }
+                Result.success(Unit)
+            } else Result.failure(Exception("Error ${response.code()}"))
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
     /**
      * Get list of groups the user belongs to
      */
