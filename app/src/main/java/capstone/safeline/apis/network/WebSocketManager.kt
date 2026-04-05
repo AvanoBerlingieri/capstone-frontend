@@ -26,6 +26,7 @@ import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 class WebSocketManager {
     companion object {
@@ -59,6 +60,9 @@ class WebSocketManager {
     private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
+
+    /** Avoid duplicate STOMP subscriptions when sync runs more than once while connected. */
+    private val subscribedGroupIds: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     @SuppressLint("CheckResult")
     fun connect(token: String) {
@@ -95,6 +99,7 @@ class WebSocketManager {
                 LifecycleEvent.Type.OPENED -> {
                     isConnecting = false
                     Log.d("WS", "Connected to Gateway!")
+                    subscribedGroupIds.clear()
 
                     CoroutineScope(Dispatchers.IO).launch {
                         if (authRepository == null) {
