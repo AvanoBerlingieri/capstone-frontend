@@ -31,16 +31,25 @@ interface ApiServiceMessage {
         @Body request: CreateGroupRequest
     ): Response<CreateGroupRequest>
 
+    /** Add member — POST with `userId` query only (no body; avoids Retrofit/Spring issues with nullable @Body). */
+    @POST("groups/{groupId}/members")
+    suspend fun addUserToGroup(
+        @Path("groupId") groupId: String,
+        @Query("userId") userId: String
+    ): Response<Void>
+
     /**
-     * Backend allows POST only on this path ([Allow: POST] for GET).
-     * - [userId] set: add that user to the group (optional [body] if server requires it).
-     * - [userId] null, [body] null or `{}`: list members (response body is JSON array or wrapper).
+     * List members — GET is 405 on this server; use POST. Separate methods so invite/add never sends a JSON body.
      */
     @POST("groups/{groupId}/members")
-    suspend fun postGroupMembers(
+    suspend fun listGroupMembersWithBody(
         @Path("groupId") groupId: String,
-        @Query("userId") userId: String?,
-        @Body body: RequestBody?
+        @Body body: RequestBody
+    ): Response<ResponseBody>
+
+    @POST("groups/{groupId}/members")
+    suspend fun listGroupMembersNoBody(
+        @Path("groupId") groupId: String
     ): Response<ResponseBody>
 
     @PUT("groups/{groupId}")

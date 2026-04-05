@@ -180,9 +180,10 @@ class MessageRepository(
      */
     suspend fun addUserToGroup(groupId: String, userIdToAdd: String): Boolean {
         return try {
-            val response = apiService.postGroupMembers(groupId, userIdToAdd, null)
+            val response = apiService.addUserToGroup(groupId, userIdToAdd)
             response.isSuccessful
         } catch (e: Exception) {
+            Log.w("MessagingRepo", "addUserToGroup failed", e)
             false
         }
     }
@@ -200,13 +201,13 @@ class MessageRepository(
             val jsonMedia = "application/json; charset=utf-8".toMediaType()
             val emptyListBody = "{}".toRequestBody(jsonMedia)
             // Server returns 405 for GET …/members; only POST is allowed (see Allow: POST).
-            var response = apiService.postGroupMembers(groupId, null, emptyListBody)
+            var response = apiService.listGroupMembersWithBody(groupId, emptyListBody)
             if (!response.isSuccessful) {
                 Log.w(
                     "MessagingRepo",
-                    "postGroupMembers list with empty JSON body failed code=${response.code()}, retrying without body"
+                    "listGroupMembersWithBody failed code=${response.code()}, retrying without body"
                 )
-                response = apiService.postGroupMembers(groupId, null, null)
+                response = apiService.listGroupMembersNoBody(groupId)
             }
             if (response.isSuccessful) {
                 apiSucceeded = true
@@ -221,11 +222,11 @@ class MessageRepository(
             } else {
                 Log.e(
                     "MessagingRepo",
-                    "postGroupMembers (list) failed code=${response.code()} body=${response.errorBody()?.string()}"
+                    "listGroupMembers failed code=${response.code()} body=${response.errorBody()?.string()}"
                 )
             }
         } catch (e: Exception) {
-            Log.w("MessagingRepo", "postGroupMembers (list) request failed", e)
+            Log.w("MessagingRepo", "listGroupMembers request failed", e)
         }
 
         if (apiSucceeded) {
