@@ -70,7 +70,7 @@ class Chat : ComponentActivity() {
                 onUserClick = { id, name, isGroup ->
                     if (isGroup) {
                         val intent = Intent(this, GroupChatPage::class.java).apply {
-                            putExtra("groupId", id) // Pass the raw UUID
+                            putExtra("groupId", id)
                             putExtra("groupName", name)
                         }
                         startActivity(intent)
