@@ -43,14 +43,17 @@ import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.repository.FriendRepository
+import capstone.safeline.ui.calling.Call
+import capstone.safeline.ui.chatting.Chat
+import capstone.safeline.ui.community.Community
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.first
-import java.util.UUID
 
 
 private data class UiContactItem(
@@ -132,7 +135,7 @@ private fun ContactsScreen(
                     val resolved = mutableListOf<UiContactItem>()
 
                     friendIds.forEach { fid ->
-                        authRepo.getUserById(UUID.fromString(fid))
+                        authRepo.getUserById(fid)
                             .onSuccess { user ->
                                 resolved.add(
                                     UiContactItem(

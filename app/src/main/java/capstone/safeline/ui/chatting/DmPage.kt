@@ -54,7 +54,7 @@ import capstone.safeline.apis.dto.messaging.IncomingMessage
 import capstone.safeline.apis.network.WebSocketManager
 import capstone.safeline.data.local.AppDatabase
 import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.ui.calling.CallingPage
+import capstone.safeline.ui.CallingPage
 import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager

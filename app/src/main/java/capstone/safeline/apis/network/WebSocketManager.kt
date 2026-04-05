@@ -12,6 +12,8 @@ import capstone.safeline.data.local.dao.MessageDao
 import capstone.safeline.data.local.entity.GroupMessageEntity
 import capstone.safeline.data.local.entity.MessageEntity
 import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.repository.FriendRepository
+import capstone.safeline.data.repository.MessageRepository
 
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
@@ -39,7 +41,12 @@ class WebSocketManager {
     private var authRepository: AuthRepository? = null
     private var messageDao: MessageDao? = null
 
-    fun init(repo: AuthRepository, dao: MessageDao) {
+    fun init(
+        repo: AuthRepository,
+        dao: MessageDao,
+        friendRepo: FriendRepository,
+        msgRepo: MessageRepository
+    ) {
         this.authRepository = repo
         this.messageDao = dao
     }
@@ -146,7 +153,7 @@ class WebSocketManager {
     }
 
     @SuppressLint("CheckResult")
-    private fun subscribeToGroups(groupIds: List<String>) {
+    fun subscribeToGroups(groupIds: List<String>) {
         val gson = Gson()
         groupIds.forEach { id ->
             // Subscribing to each group's topic

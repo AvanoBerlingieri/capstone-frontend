@@ -35,7 +35,7 @@ import capstone.safeline.ui.calling.Call
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
-import capstone.safeline.ui.friends.Contacts
+import capstone.safeline.ui.Contacts
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
 
