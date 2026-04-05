@@ -78,31 +78,41 @@ class MessageRepository(
     // Syncs group history from server and saves to Room
     suspend fun fetchGroupHistory(groupId: String): Result<Unit> {
         return try {
-            val myId = dataStoreManager.userIdFlow.first() ?: ""
             val response = apiService.getGroupHistory(groupId)
 
             if (response.isSuccessful) {
+
                 val history = response.body() ?: emptyList()
                 Log.d("HISTORY", "Fetched ${history.size} messages for group $groupId")
 
                 history.forEach { msg ->
-                    // 1. Check if the message already exists in local DB
-                    val existingMessage = messageDao.findGroupMessage(msg.messageId)
+                    val actualSenderId = msg.groupId // These are flipped and i can't fix
+                    val actualGroupId = msg.senderId
 
+                    val myId = dataStoreManager.userIdFlow.first()?.trim() ?: ""
+                    val isActuallyMine = actualSenderId.equals(myId, ignoreCase = true)
+                    Log.i("HISTORY", "User $myId is fetching history for group $groupId")
+                    Log.i("HISTORY", "message: $msg")
+                    Log.i("HISTORY", "message is mine: $isActuallyMine")
+
+
+                    // Check if the message already exists in local DB
+                    val existingMessage = messageDao.findGroupMessage(msg.messageId)
                     if (existingMessage == null) {
-                        // insert if it's a new message we don't have
+                        Log.i("HISTORY","Inserting message into local db")
                         messageDao.insertGroupMessage(
                             GroupMessageEntity(
                                 messageId = msg.messageId,
-                                senderId = msg.senderId,
-                                groupId = msg.groupId,
+                                senderId = actualSenderId,
+                                groupId = groupId,
                                 content = msg.content,
                                 timestamp = msg.timestamp,
                                 status = "DELIVERED",
-                                isMine = msg.senderId == myId
+                                isMine = isActuallyMine
                             )
                         )
                     } else {
+                        Log.i("HISTORY", "Message already exists in local db")
                         if (existingMessage.status != "DELIVERED") {
                             messageDao.updateMessageStatus(msg.messageId, "DELIVERED")
                         }

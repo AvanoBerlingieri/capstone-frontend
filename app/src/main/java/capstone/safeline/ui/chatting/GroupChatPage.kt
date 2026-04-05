@@ -116,11 +116,6 @@ fun GroupChatScreen(
     val listState = rememberLazyListState()
     LocalContext.current
 
-    // Auto-scroll on new message
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(0)
-    }
-
     Scaffold(containerColor = Color.Transparent) { padding ->
         Box(modifier = Modifier
             .fillMaxSize()
