@@ -39,31 +39,49 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.apis.dto.messaging.CreateGroupRequest
+import capstone.safeline.apis.network.WebSocketManager
 import capstone.safeline.data.local.AppDatabase
 import capstone.safeline.data.repository.MessageRepository
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class CreateGroup : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val messageRepo = MessageRepository.getInstance(this, AppDatabase.getDatabase(this).messageDao())
+        val messageRepo =
+            MessageRepository.getInstance(this, AppDatabase.getDatabase(this).messageDao())
 
         setContent {
             val scope = rememberCoroutineScope()
+            val newGroupId = UUID.randomUUID().toString()
             CreateGroupScreen(
                 onBack = { finish() },
                 onConfirm = { name ->
                     scope.launch {
-                        val success = messageRepo.createGroup(name)
-                        if (success) {
-                            setResult(RESULT_OK)
-                            finish()
-                        } else {
-                            Toast.makeText(this@CreateGroup, "Failed to create group", Toast.LENGTH_SHORT).show()
+                        CoroutineScope(Dispatchers.IO).launch {
+                            messageRepo.createGroup(
+                                CreateGroupRequest(
+                                    groupId = newGroupId,
+                                    name = name
+                                )
+                            ).onSuccess {
+                                // subscribe to room after creating it
+                                WebSocketManager.getInstance().subscribeToGroups(listOf(newGroupId))
+                                finish()
+                            }.onFailure {
+                                Toast.makeText(
+                                    this@CreateGroup,
+                                    "Error: ${it.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     }
                 }

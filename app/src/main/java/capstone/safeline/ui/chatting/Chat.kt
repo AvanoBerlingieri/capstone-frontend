@@ -27,9 +27,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,93 +41,57 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.extractUserIdFromJwt
-import capstone.safeline.data.local.DataStoreManager
-import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.data.repository.FriendRepository
+import capstone.safeline.data.local.AppDatabase
+import capstone.safeline.data.repository.MessageRepository
 import capstone.safeline.models.ChatUser
 import capstone.safeline.models.Message
+import capstone.safeline.ui.Home
+import capstone.safeline.ui.calling.Call
+import capstone.safeline.ui.community.Community
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
-import capstone.safeline.ui.theme.ThemeManager
-import kotlinx.coroutines.flow.first
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.ui.unit.TextUnit
 import capstone.safeline.ui.friends.Contacts
-import capstone.safeline.ui.Home
-import capstone.safeline.ui.calling.Call
 import capstone.safeline.ui.profile.Profile
-import capstone.safeline.ui.community.Community
-import capstone.safeline.ui.community.CommunityData
+import capstone.safeline.ui.theme.ThemeManager
 
 
 class Chat : ComponentActivity() {
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 1001 && resultCode == RESULT_OK) {
-            val name = data?.getStringExtra("group_name") ?: return
-
-            val newGroup = CommunityData.GroupChat(
-                id = System.currentTimeMillis().toString(),
-                name = mutableStateOf(name),
-                users = mutableStateListOf()
-            )
-            CommunityData.groupChats.add(newGroup)
-
-            val intent = Intent(this, GroupChatPage::class.java)
-            intent.putExtra("groupId", newGroup.id)
-            startActivity(intent)
-        }
-    }
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             ChatScreen(
-                onUserClick = { user, isGroup ->
-                    val intent = Intent(
-                        this,
-                        if (isGroup) GroupChatPage::class.java else DmPage::class.java
-                    )
+                onUserClick = { id, name, isGroup ->
                     if (isGroup) {
-                        val groupId = user.name.substringBefore("|")
-                        intent.putExtra("groupId", groupId)
+                        val intent = Intent(this, GroupChatPage::class.java).apply {
+                            putExtra("groupId", id) // Pass the raw UUID
+                            putExtra("groupName", name)
+                        }
                         startActivity(intent)
-                } else {
-                    intent.putExtra("userName", user.name)
-                    startActivity(intent)
-                }
+                    } else {
+                        val intent = Intent(this, DmPage::class.java).apply {
+                            putExtra("userId", id)
+                            putExtra("userName", name)
+                        }
+                        startActivity(intent)
+                    }
                 },
                 onNavigate = { destination ->
                     val intent = when (destination) {
-                        "home" -> Intent(this, Home::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                        }
-                        "calls" -> Intent(this, Call::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
+                        "home" -> Intent(this, Home::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT) }
+                        "calls" -> Intent(this, Call::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) }
                         "chats" -> null
-                        "profile" -> Intent(this, Profile::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "communities" -> Intent(this, Community::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
-                        "contacts" -> Intent(this, Contacts::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        }
+                        "profile" -> Intent(this, Profile::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) }
+                        "communities" -> Intent(this, Community::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) }
+                        "contacts" -> Intent(this, Contacts::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) }
                         else -> null
                     }
-
                     intent?.let { startActivity(it) }
                 },
                 onBack = { finish() }
@@ -141,7 +104,7 @@ private enum class ChatsTab { ALL, UNREAD, FAVORITES, GROUPS }
 
 @Composable
 fun ChatScreen(
-    onUserClick: (ChatUser, Boolean) -> Unit,
+    onUserClick: (String, String, Boolean) -> Unit,
     onNavigate: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -149,50 +112,29 @@ fun ChatScreen(
     InitializeSocket()
 
     val context = LocalContext.current
-    val dsManager = remember { DataStoreManager.getInstance(context) }
-    val friendRepo = remember { FriendRepository.getInstance(context) }
-    val authRepo = remember { AuthRepository.getInstance(context) }
-
-    var chatUsers by remember { mutableStateOf<List<ChatUser>>(emptyList()) }
-
-    LaunchedEffect(Unit) {
-        val token = dsManager.tokenFlow.first()
-        val userId = token?.let { extractUserIdFromJwt(it) } ?: return@LaunchedEffect
-        friendRepo.getAllFriends(userId).onSuccess { friendIds ->
-            val resolved = mutableListOf<ChatUser>()
-            val placeholderMsg = listOf(Message("", ""))
-            friendIds.forEach { fid ->
-                authRepo.getUserById(fid)
-                    .onSuccess { user ->
-                        resolved.add(ChatUser(user.username, placeholderMsg))
-                    }
-                    .onFailure {
-                        resolved.add(ChatUser("Unknown user", placeholderMsg))
-                    }
-            }
-            chatUsers = resolved
-        }
+    val messageRepo = remember {
+        MessageRepository.getInstance(
+            context,
+            AppDatabase.getDatabase(context).messageDao()
+        )
     }
 
+    // Observe the combined flow
+    val allChats by messageRepo.getAllChatsFlow().collectAsState(initial = emptyList())
     var selectedTab by remember { mutableStateOf(ChatsTab.ALL) }
 
-    val mapped = chatUsers.map { user -> user to false }
-
-    val groups = CommunityData.groupChats
-
-    val visible = when (selectedTab) {
-        ChatsTab.UNREAD -> mapped.filter { it.second }
-        ChatsTab.GROUPS -> groups.map {
-            val name by remember { derivedStateOf { it.name } }
-            ChatUser("${it.id}|${it.name.value}", messages = listOf(Message("Group created", "1:00 PM"))) to false
+    // Filter based on tab
+    val visibleItems = remember(allChats, selectedTab) {
+        when (selectedTab) {
+            ChatsTab.GROUPS -> allChats.filterIsInstance<MessageRepository.ChatSummary.Group>()
+            ChatsTab.ALL -> allChats
+            // Add other filters when read receipts are created
+            else -> allChats
         }
-        else -> (
-                mapped + groups.map {
-                    val name by remember { derivedStateOf { it.name } }
-                    ChatUser("${it.id}|${it.name.value}", messages = listOf(Message("Group created", "1:00 PM"))) to false
-                }
-                )
     }
+
+
+
 
     Scaffold(
         topBar = {},
@@ -323,17 +265,21 @@ fun ChatScreen(
                     modifier = Modifier.padding(horizontal = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(visible) { (user, hasNew) ->
-                        val isGroupItem = user.name.contains("|")
+                    items(visibleItems) { chat ->
+                        val isGroup = chat is MessageRepository.ChatSummary.Group
                         ChatRow(
-                            user = user,
-                            hasNew = hasNew,
-                            isGroup = isGroupItem,
-                            onClick = { onUserClick(user, isGroupItem) }
+                            user = ChatUser(
+                                name = chat.displayName,
+                                messages = listOf(Message("Tap to chat", ""))
+                            ),
+                            hasNew = false,
+                            isGroup = isGroup,
+                            onClick = {
+                                // Pass the actual ID and Name from the ChatSummary object
+                                onUserClick(chat.id, chat.displayName, isGroup)
+                            }
                         )
                     }
-
-                    item { Spacer(modifier = Modifier.height(90.dp)) }
                 }
             }
         }

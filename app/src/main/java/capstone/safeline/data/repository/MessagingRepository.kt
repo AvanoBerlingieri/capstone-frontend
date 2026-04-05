@@ -5,14 +5,15 @@ import android.util.Log
 import capstone.safeline.apis.ApiServiceMessage
 import capstone.safeline.apis.dto.messaging.CreateGroupRequest
 import capstone.safeline.apis.dto.messaging.GroupInfoDto
-import capstone.safeline.apis.dto.messaging.OutgoingGroupMessage
-import capstone.safeline.apis.dto.messaging.OutgoingMessage
 import capstone.safeline.apis.network.ApiClientMessaging
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.local.dao.MessageDao
+import capstone.safeline.data.local.entity.FriendEntity
+import capstone.safeline.data.local.entity.GroupChatEntity
 import capstone.safeline.data.local.entity.GroupMessageEntity
 import capstone.safeline.data.local.entity.MessageEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 
 class MessageRepository(
@@ -33,91 +34,86 @@ class MessageRepository(
         }
     }
 
-    // Add these to MessageRepository class
-    /**
-     * Saves an incoming private message received via WebSocket
-     */
-    suspend fun saveIncomingPrivateMessage(msg: OutgoingMessage) {
-        val myId = dataStoreManager.userIdFlow.first() ?: ""
-        val entity = MessageEntity(
-            messageId = msg.messageId,
-            senderId = msg.senderId,
-            receiverId = msg.receiverId,
-            content = msg.content,
-            timestamp = msg.timestamp,
-            status = "DELIVERED",
-            isMine = msg.senderId == myId
-        )
-        messageDao.insertPrivateMessage(entity)
-    }
-
-    /**
-     * Saves an incoming group message received via WebSocket
-     */
-    suspend fun saveIncomingGroupMessage(msg: OutgoingGroupMessage) {
-        val myId = dataStoreManager.userIdFlow.first() ?: ""
-        val entity = GroupMessageEntity(
-            messageId = msg.messageId,
-            senderId = msg.senderId,
-            groupId = msg.groupId,
-            content = msg.content,
-            timestamp = msg.timestamp,
-            status = "DELIVERED",
-            isMine = msg.senderId == myId
-        )
-        messageDao.insertGroupMessage(entity)
-    }
-
-    /**
-     * Updates message status in local DB (e.g., when Ack is successful)
-     */
-    suspend fun updateLocalMessageStatus(messageId: String, isGroup: Boolean, status: String) {
-        if (isGroup) {
-            messageDao.updateGroupMessageStatus(messageId, status)
-        } else {
-            messageDao.updateMessageStatus(messageId, status)
-        }
-    }
-
     // Local Database Flows
-
-    fun getPrivateChatFlow(otherUserId: String): Flow<List<MessageEntity>> {
+    fun getPrivateChatMessageFlow(otherUserId: String): Flow<List<MessageEntity>> {
         return messageDao.getMessagesForUser(otherUserId)
     }
 
-    fun getGroupChatFlow(groupId: String): Flow<List<GroupMessageEntity>> {
+    fun getGroupChatMessagesFlow(groupId: String): Flow<List<GroupMessageEntity>> {
+        Log.d("REPO_DEBUG", "Fetching local messages for Group ID: '$groupId'")
         return messageDao.getMessagesForGroup(groupId)
     }
 
-    // REST API
+    sealed class ChatSummary {
+        data class Private(val friend: FriendEntity) : ChatSummary()
+        data class Group(val group: GroupChatEntity) : ChatSummary()
 
-    /**
-     * Syncs group history from server and saves to Room
-     */
+        val id: String
+            get() = when (this) {
+                is Private -> friend.userId
+                is Group -> group.groupId
+            }
+
+        val displayName: String
+            get() = when (this) {
+                is Private -> friend.username
+                is Group -> group.name
+            }
+    }
+
+    // Combine the two flows
+    fun getAllChatsFlow(): Flow<List<ChatSummary>> {
+        return combine(
+            messageDao.getAllFriends(),
+            messageDao.getAllGroupChats()
+        ) { friends, groups ->
+            val list = mutableListOf<ChatSummary>()
+            list.addAll(friends.map { ChatSummary.Private(it) })
+            list.addAll(groups.map { ChatSummary.Group(it) })
+            list
+        }
+    }
+
+    // REST API
+    // Syncs group history from server and saves to Room
     suspend fun fetchGroupHistory(groupId: String): Result<Unit> {
         return try {
+            val myId = dataStoreManager.userIdFlow.first() ?: ""
             val response = apiService.getGroupHistory(groupId)
+
             if (response.isSuccessful) {
                 val history = response.body() ?: emptyList()
+                Log.d("HISTORY", "Fetched ${history.size} messages for group $groupId")
+
                 history.forEach { msg ->
-                    val myId = dataStoreManager.userIdFlow.first() ?: ""
-                    messageDao.insertGroupMessage(
-                        GroupMessageEntity(
-                            messageId = msg.messageId,
-                            senderId = msg.senderId,
-                            groupId = msg.groupId,
-                            content = msg.content,
-                            timestamp = msg.timestamp,
-                            status = "DELIVERED",
-                            isMine = msg.senderId == myId
+                    // 1. Check if the message already exists in local DB
+                    val existingMessage = messageDao.findGroupMessage(msg.messageId)
+
+                    if (existingMessage == null) {
+                        // insert if it's a new message we don't have
+                        messageDao.insertGroupMessage(
+                            GroupMessageEntity(
+                                messageId = msg.messageId,
+                                senderId = msg.senderId,
+                                groupId = msg.groupId,
+                                content = msg.content,
+                                timestamp = msg.timestamp,
+                                status = "DELIVERED",
+                                isMine = msg.senderId == myId
+                            )
                         )
-                    )
+                    } else {
+                        if (existingMessage.status != "DELIVERED") {
+                            messageDao.updateMessageStatus(msg.messageId, "DELIVERED")
+                        }
+                    }
                 }
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Failed to fetch group history"))
+                Result.failure(Exception("Server error: ${response.code()}"))
             }
         } catch (e: Exception) {
+            Log.e("HISTORY", "Failed to sync", e)
             Result.failure(e)
         }
     }
@@ -127,9 +123,11 @@ class MessageRepository(
      */
     suspend fun getMyGroups(): Result<List<GroupInfoDto>> {
         return try {
-            val myId = dataStoreManager.userIdFlow.first() ?: return Result.failure(Exception("No User ID"))
+            val myId = dataStoreManager.userIdFlow.first()
+                ?: return Result.failure(Exception("No User ID"))
             val response = apiService.getAllUserGroups(myId)
             if (response.isSuccessful) {
+                Log.i("MessagingRepo", "List of groups retrieved\n$response")
                 Result.success(response.body() ?: emptyList())
             } else {
                 Result.failure(Exception("Failed to load groups"))
@@ -140,15 +138,28 @@ class MessageRepository(
     }
 
     /**
-     * Creates a new group on the server
+     * Creates a new group chat
      */
-    suspend fun createGroup(name: String): Boolean {
+    suspend fun createGroup(dto: CreateGroupRequest): Result<CreateGroupRequest> {
         return try {
-            val response = apiService.createGroup(CreateGroupRequest(name))
-            response.isSuccessful
+            val group = CreateGroupRequest(dto.groupId, dto.name)
+            val response = apiService.createGroup(group)
+            if (response.isSuccessful && response.body() != null) {
+                //Build group chat
+                val entity = GroupChatEntity(
+                    groupId = dto.groupId,
+                    name = dto.name
+                )
+                // insert into rooms db
+                messageDao.insertGroup(entity)
+                Log.i("MessageRepo", "Group $group created")
+                Result.success(response.body()!!)
+            } else {
+                Log.e("MessageRepo", "Error Code: ${response.code()}")
+                Result.failure(Exception("Server returned ${response.code()}"))
+            }
         } catch (e: Exception) {
-            Log.e("MessageRepo", "Create group failed", e)
-            false
+            Result.failure(e)
         }
     }
 
@@ -172,10 +183,10 @@ class MessageRepository(
         }
     }
 
-    suspend fun deleteGroup(groupId: String): Boolean{
-        return try{
+    suspend fun deleteGroup(groupId: String): Boolean {
+        return try {
             apiService.deleteGroup(groupId).isSuccessful
-        } catch (e: Exception){
+        } catch (e: Exception) {
             false
         }
     }

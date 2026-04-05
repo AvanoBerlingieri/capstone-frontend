@@ -22,7 +22,7 @@ interface ApiServiceMessage {
     @POST("groups")
     suspend fun createGroup(
         @Body request: CreateGroupRequest
-    ): Response<Void>
+    ): Response<CreateGroupRequest>
 
     @POST("groups/{groupId}/members")
     suspend fun addUserToGroup(

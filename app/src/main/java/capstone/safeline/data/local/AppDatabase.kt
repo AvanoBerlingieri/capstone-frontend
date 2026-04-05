@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import capstone.safeline.data.local.dao.MessageDao
 import capstone.safeline.data.local.entity.FriendEntity
 import capstone.safeline.data.local.entity.GroupChatEntity
+import capstone.safeline.data.local.entity.GroupChatMemberEntity
 import capstone.safeline.data.local.entity.GroupMessageEntity
 import capstone.safeline.data.local.entity.MessageEntity
 
@@ -14,10 +15,11 @@ import capstone.safeline.data.local.entity.MessageEntity
     entities = [
         MessageEntity::class,
         GroupMessageEntity::class,
+        GroupChatMemberEntity::class,
         GroupChatEntity::class,
         FriendEntity::class
     ],
-    version = 2
+    version = 3
 )
 
 abstract class AppDatabase : RoomDatabase() {
