@@ -2,6 +2,7 @@ package capstone.safeline.apis
 
 import capstone.safeline.apis.dto.messaging.CreateGroupRequest
 import capstone.safeline.apis.dto.messaging.GroupInfoDto
+import capstone.safeline.apis.dto.messaging.OutgoingMessage
 import capstone.safeline.apis.dto.messaging.OutgoingGroupMessage
 import capstone.safeline.apis.dto.messaging.RenameGroupRequest
 import okhttp3.RequestBody
