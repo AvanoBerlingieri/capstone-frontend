@@ -34,6 +34,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    kotlinOptions {
+        jvmTarget = "21"
+    }
+
 
     buildFeatures {
         viewBinding = true
@@ -53,6 +57,10 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.foundation.foundation.layout)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.benchmark.traceprocessor)
 
     // --- Local Data Storage (Room & DataStore) ---
     val room_version = "2.6.1"

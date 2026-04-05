@@ -25,14 +25,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
-import capstone.safeline.apis.network.ApiClientAuth
-import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.GradientStrokeText
 import capstone.safeline.ui.components.ImageInputField
@@ -46,18 +45,16 @@ fun LoginScreen(
     onBack: () -> Unit,
     onSuccess: () -> Unit,
 ) {
+    val Kaushan = FontFamily(Font(R.font.kaushan_script_regular))
     var usernameOrEmail by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val authRepo = remember { AuthRepository.getInstance(context) }
 
-    val dsManager = remember { DataStoreManager(context, CryptoManager()) }
-    val repo =
-        remember { AuthRepository(dsManager, ApiClientAuth.provideApiService(context, dsManager)) }
-
-    val isLoggedIn by repo.isLoggedIn.collectAsState(initial = false)
+    val isLoggedIn by authRepo.isLoggedIn.collectAsState(initial = false)
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn)
             onSuccess()
@@ -142,7 +139,7 @@ fun LoginScreen(
             Spacer(Modifier.height(125.dp))
             StrokeText(
                 text = "Please Enter Your",
-                fontFamily = ThemeManager.fontFamily,
+                fontFamily = Kaushan,
                 fontSize = 48.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -152,7 +149,7 @@ fun LoginScreen(
             Spacer(Modifier.height(24.dp))
             StrokeText(
                 text = "Username/Email:",
-                fontFamily = ThemeManager.fontFamily,
+                fontFamily = Kaushan,
                 fontSize = 40.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -164,7 +161,7 @@ fun LoginScreen(
             Spacer(Modifier.height(22.dp))
             StrokeText(
                 text = "Password:",
-                fontFamily = ThemeManager.fontFamily,
+                fontFamily = Kaushan,
                 fontSize = 40.sp,
                 fillColor = Color.White,
                 strokeColor = ThemeManager.titleStroke,
@@ -190,7 +187,7 @@ fun LoginScreen(
                             scope.launch {
                                 isLoading = true
 
-                                val success = repo.login(usernameOrEmail, password)
+                                val success = authRepo.login(usernameOrEmail, password)
 
                                 if (success) {
                                     kotlinx.coroutines.delay(500)

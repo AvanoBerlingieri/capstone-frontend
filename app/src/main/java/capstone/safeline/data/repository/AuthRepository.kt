@@ -1,5 +1,6 @@
 package capstone.safeline.data.repository
 
+import android.content.Context
 import android.util.Log
 import capstone.safeline.apis.ApiServiceAuth
 import capstone.safeline.apis.dto.auth.GetUserByIdResponse
@@ -7,20 +8,37 @@ import capstone.safeline.apis.dto.auth.LoginRequest
 import capstone.safeline.apis.dto.auth.RegisterRequest
 import capstone.safeline.apis.dto.auth.UpdateEmailDto
 import capstone.safeline.apis.dto.auth.UpdatePasswordDto
+import capstone.safeline.apis.dto.auth.UpdateUserStatusDto
 import capstone.safeline.apis.dto.auth.UpdateUsernameDto
+import capstone.safeline.apis.extractUserIdFromJwt
+import capstone.safeline.apis.network.ApiClientAuth
 import capstone.safeline.data.local.DataStoreManager
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import java.util.UUID
 
 class AuthRepository(
     private val dataStoreManager: DataStoreManager,
     private val apiServiceAuth: ApiServiceAuth
 ) {
+    companion object {
+        @Volatile
+        private var INSTANCE: AuthRepository? = null
+
+        fun getInstance(context: Context): AuthRepository {
+            return INSTANCE ?: synchronized(this) {
+                val ds = DataStoreManager.getInstance(context)
+                val api = ApiClientAuth.provideApiService(context, ds)
+
+                INSTANCE ?: AuthRepository(ds, api).also { INSTANCE = it }
+            }
+        }
+    }
     val tokenFlow: Flow<String?> = dataStoreManager.tokenFlow
     val isLoggedIn: Flow<Boolean> = tokenFlow.map { !it.isNullOrBlank() }
     val usernameFlow = dataStoreManager.usernameFlow
     val emailFlow = dataStoreManager.emailFlow
+    val userIdFlow = dataStoreManager.userIdFlow
 
     suspend fun logout(): Result<Unit> {
         return try {
@@ -59,9 +77,13 @@ class AuthRepository(
             println("Parsed Body: $body")
 
             if (response.isSuccessful && body != null) {
+                val extractedId = extractUserIdFromJwt(body.token)
                 kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
                     dataStoreManager.saveToken(body.token)
                     dataStoreManager.saveUserInfo(body.username, body.email)
+                    if (extractedId != null) {
+                        dataStoreManager.saveUserId(extractedId)
+                    }
                 }
                 return true
             }
@@ -98,9 +120,23 @@ class AuthRepository(
         false
     }
 
+    suspend fun updateStatus(status: String): Boolean {
+        return try {
+            val userId = dataStoreManager.userIdFlow.first() ?: return false
+
+            val response = apiServiceAuth.updateStatus(
+                UpdateUserStatusDto(userId = userId, status = status)
+            )
+            response.isSuccessful
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Status update failed", e)
+            false
+        }
+    }
+
     suspend fun deleteAccount() = try {
         val response = apiServiceAuth.deleteAccount()
-        if (response.isSuccessful){
+        if (response.isSuccessful) {
             dataStoreManager.clearAll()
         }
         response.isSuccessful
@@ -108,7 +144,7 @@ class AuthRepository(
         false
     }
 
-    suspend fun getUserById(id: UUID): Result<GetUserByIdResponse> {
+    suspend fun getUserById(id: String): Result<GetUserByIdResponse> {
         return try {
             val primary = apiServiceAuth.getUserById(id)
             val primaryBody = primary.body()
@@ -152,7 +188,11 @@ class AuthRepository(
             }
             Result.failure(Exception("Failed to fetch username"))
         } catch (e: Exception) {
-            Log.e("AuthRepository", "getIdByUsername exception: username=$username message=${e.message}", e)
+            Log.e(
+                "AuthRepository",
+                "getIdByUsername exception: username=$username message=${e.message}",
+                e
+            )
             Result.failure(e)
         }
     }

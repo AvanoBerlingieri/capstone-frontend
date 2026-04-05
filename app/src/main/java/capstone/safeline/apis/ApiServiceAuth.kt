@@ -8,6 +8,7 @@ import capstone.safeline.apis.dto.auth.RegisterResponse
 import capstone.safeline.apis.dto.auth.UpdateEmailDto
 import capstone.safeline.apis.dto.auth.UpdatePasswordDto
 import capstone.safeline.apis.dto.auth.UpdateResponseDto
+import capstone.safeline.apis.dto.auth.UpdateUserStatusDto
 import capstone.safeline.apis.dto.auth.UpdateUsernameDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -15,7 +16,6 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
-import java.util.UUID
 
 interface ApiServiceAuth {
 
@@ -42,13 +42,15 @@ interface ApiServiceAuth {
     @PUT("api/auth/email")
     suspend fun changeEmail(@Body request: UpdateEmailDto): retrofit2.Response<UpdateResponseDto>
 
-    /** Same module as [login] — try this first. */
+    @PUT("api/auth/status")
+    suspend fun updateStatus(@Body request: UpdateUserStatusDto): retrofit2.Response<UpdateUserStatusDto>
+
     @GET("api/auth/users/{id}")
-    suspend fun getUserById(@Path("id") id: UUID): retrofit2.Response<GetUserByIdResponse>
+    suspend fun getUserById(@Path("id") id: String): retrofit2.Response<GetUserByIdResponse>
 
     @GET("users/{id}")
     suspend fun getUserByIdUnderUsers(
-        @Path("id") id: UUID
+        @Path("id") id: String
     ): retrofit2.Response<GetUserByIdResponse>
 
     @GET("api/auth/users/get-id-by-username/{username}")

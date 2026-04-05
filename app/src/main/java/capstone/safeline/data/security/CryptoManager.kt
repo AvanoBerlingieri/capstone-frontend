@@ -7,6 +7,16 @@ import javax.crypto.*
 import javax.crypto.spec.GCMParameterSpec
 
 class CryptoManager {
+    companion object {
+        @Volatile
+        private var INSTANCE: CryptoManager? = null
+
+        fun getInstance(): CryptoManager {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: CryptoManager().also { INSTANCE = it }
+            }
+        }
+    }
 
     private val keyAlias = "jwt_key"
     private val transformation = "AES/GCM/NoPadding"

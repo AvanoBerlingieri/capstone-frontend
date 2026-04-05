@@ -5,11 +5,11 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "messages")
 data class MessageEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val messageUuid: String,
-    val senderId: String,
-    val receiverId: String,
-    val content: String,
-    val timestamp: Long = System.currentTimeMillis(),
-    val status: String = "PENDING" // Options: PENDING, SENT, DELIVERED
+    @PrimaryKey val messageId: String, // UUID
+    val senderId: String,   // UUID
+    val receiverId: String, // UUID
+    val content: String,    // Text Body (String)
+    val timestamp: String,  // Date
+    val status: String,     // ENUM: SENT, DELIVERED
+    val isMine: Boolean     // To see ownership quick and for easier display usage
 )
