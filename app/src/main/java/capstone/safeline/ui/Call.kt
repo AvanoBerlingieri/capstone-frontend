@@ -44,6 +44,8 @@ private enum class CallType { ANSWERED, MISSED }
 private data class UiCallItem(
     val type: CallType,
     val name: String,
+    /** Shown for non-completed rows (missed / declined / failed). */
+    val outcomeLabel: String,
     val date: String,
     val time: String,
     val duration: String? = null
@@ -60,23 +62,34 @@ class Call : ComponentActivity() {
             val scope = rememberCoroutineScope()
             var callItems by remember { mutableStateOf<List<UiCallItem>>(emptyList()) }
             var isLoading by remember { mutableStateOf(true) }
+            var loadError by remember { mutableStateOf<String?>(null) }
 
             LaunchedEffect(Unit) {
                 scope.launch {
                     try {
+                        loadError = null
                         val username = dataStoreManager.usernameFlow.first()
 
                         val response = CallingApiClient.service.getCallHistory(username)
                         if (response.isSuccessful) {
                             callItems = response.body()?.map { record ->
-                                val isMissed = record.status == "missed"
-                                        || record.status == "declined"
-                                        || record.status == "failed"
+                                val status = record.status.trim().lowercase()
+                                val isMissed = status == "missed"
+                                        || status == "declined"
+                                        || status == "failed"
+
+                                val outcomeLabel = when (status) {
+                                    "declined" -> "Declined"
+                                    "failed" -> "Failed"
+                                    "missed" -> "Missed"
+                                    else -> ""
+                                }
 
                                 UiCallItem(
                                     type = if (isMissed) CallType.MISSED else CallType.ANSWERED,
                                     name = if (record.callerId == username)
                                         record.receiverId else record.callerId,
+                                    outcomeLabel = outcomeLabel,
                                     date = record.startTime
                                         ?.substring(0, 10)
                                         ?.replace("-", "/") ?: "",
@@ -86,9 +99,11 @@ class Call : ComponentActivity() {
                                         ?.let { "Call Duration: $it seconds" }
                                 )
                             } ?: emptyList()
+                        } else {
+                            loadError = "Could not load call history (HTTP ${response.code()})"
                         }
                     } catch (e: Exception) {
-                        // keep empty list on error
+                        loadError = "Could not load call history: ${e.message ?: "unknown error"}"
                     } finally {
                         isLoading = false
                     }
@@ -98,11 +113,16 @@ class Call : ComponentActivity() {
             CallScreen(
                 callItems = callItems,
                 isLoading = isLoading,
+                loadError = loadError,
                 onBack = { finish() },
-                onCallClick = { callerName ->
+                onCallClick = { peerId ->
                     val intent = Intent(this, ContactCall::class.java)
-                    intent.putExtra("callerName", callerName)
+                    intent.putExtra("callerName", peerId)
+                    intent.putExtra("targetUserId", peerId)
                     startActivity(intent)
+                },
+                onMakeCall = {
+                    startActivity(Intent(this, Contacts::class.java))
                 },
                 onNavigate = { destination ->
                     when (destination) {
@@ -123,8 +143,10 @@ class Call : ComponentActivity() {
 private fun CallScreen(
     callItems: List<UiCallItem>,
     isLoading: Boolean,
+    loadError: String?,
     onBack: () -> Unit,
-    onCallClick: (String) -> Unit,
+    onCallClick: (peerId: String) -> Unit,
+    onMakeCall: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     Scaffold(
@@ -217,6 +239,21 @@ private fun CallScreen(
                             )
                         }
                     }
+                    loadError != null -> {
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = loadError,
+                                color = Color(0xFFFFB4B4),
+                                fontFamily = Tapestry,
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 24.dp)
+                            )
+                        }
+                    }
                     callItems.isEmpty() -> {
                         Box(
                             modifier = Modifier.weight(1f),
@@ -257,6 +294,8 @@ private fun CallScreen(
                     modifier = Modifier
                         .size(width = 127.dp, height = 76.dp)
                         .padding(bottom = 10.dp)
+                        .clickable { onMakeCall() },  // ADD THIS
+                    contentScale = ContentScale.Fit
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -346,16 +385,27 @@ private fun MissedRow(item: UiCallItem) {
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        StrokeText(
-            text = item.name,
-            fontFamily = ThemeManager.fontFamily,
-            fontSize = 32.sp,
-            fillColor = Color.White,
-            strokeColor = Color(0xFFFF0099),
-            strokeWidth = 1f
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            StrokeText(
+                text = item.name,
+                fontFamily = ThemeManager.fontFamily,
+                fontSize = 32.sp,
+                fillColor = Color.White,
+                strokeColor = Color(0xFFFF0099),
+                strokeWidth = 1f
+            )
+            if (item.outcomeLabel.isNotEmpty()) {
+                Text(
+                    text = item.outcomeLabel,
+                    fontFamily = Tapestry,
+                    fontSize = 14.sp,
+                    color = Color(0xFFB0B0B0),
+                    textAlign = TextAlign.Start
+                )
+            }
+        }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.width(8.dp))
 
         Image(
             painter = painterResource(R.drawable.calls_missed_icon),

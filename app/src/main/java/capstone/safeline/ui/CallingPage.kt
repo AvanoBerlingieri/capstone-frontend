@@ -8,18 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,7 +23,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.offset
 import capstone.safeline.R
+import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.StrokeText
@@ -43,13 +35,7 @@ import capstone.safeline.webrtc.SignalingClient
 import capstone.safeline.webrtc.WebRTCManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.webrtc.DataChannel
-import org.webrtc.IceCandidate
-import org.webrtc.MediaStream
-import org.webrtc.PeerConnection
-import org.webrtc.SdpObserver
-import org.webrtc.SessionDescription
-
+import org.webrtc.*
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 
@@ -69,9 +55,8 @@ class CallingPage : ComponentActivity() {
         val dataStoreManager = DataStoreManager(this, cryptoManager)
 
         webRTCManager = WebRTCManager(this).also { it.init() }
-        signalingClient = SignalingClient("ws://10.0.2.2:8093/ws-call/websocket")
+        signalingClient = SignalingClient("http://10.0.2.2:8093/ws-call/websocket")
 
-        // Request mic permission
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED
         ) {
@@ -85,18 +70,20 @@ class CallingPage : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 scope.launch {
-                    val currentUserId = dataStoreManager.usernameFlow.first()
+                    val token = dataStoreManager.tokenFlow.first()
+                    val currentUserId = token?.let {
+                        extractUserIdFromJwt(it)
+                    } ?: dataStoreManager.usernameFlow.first()
 
-                    signalingClient.connect(currentUserId)
+                    android.util.Log.d("CALLING", "Connecting as: $currentUserId")
 
+                    // Set callbacks before connect() — onConnected fires when STOMP is open.
+                    // sendAnswer/sendOffer on a not-yet-open connection are silently dropped.
                     signalingClient.onSignalReceived = { signal ->
                         when (signal.type) {
                             "answer" -> {
                                 webRTCManager.setRemoteDescription(
-                                    SessionDescription(
-                                        SessionDescription.Type.ANSWER,
-                                        signal.sdp
-                                    ),
+                                    SessionDescription(SessionDescription.Type.ANSWER, signal.sdp),
                                     object : SdpObserver {
                                         override fun onSetSuccess() {
                                             runOnUiThread { callStatus = "Connected" }
@@ -122,9 +109,7 @@ class CallingPage : ComponentActivity() {
                             "decline" -> {
                                 runOnUiThread {
                                     callStatus = "Call Declined"
-                                    android.os.Handler(mainLooper).postDelayed({
-                                        finish()
-                                    }, 1500)
+                                    android.os.Handler(mainLooper).postDelayed({ finish() }, 1500)
                                 }
                             }
                             "error" -> {
@@ -136,9 +121,7 @@ class CallingPage : ComponentActivity() {
                     val peerObserver = object : PeerConnection.Observer {
                         override fun onIceCandidate(candidate: IceCandidate?) {
                             candidate?.let {
-                                signalingClient.sendIceCandidate(
-                                    targetUserId, it.sdp, currentUserId
-                                )
+                                signalingClient.sendIceCandidate(targetUserId, it.sdp, currentUserId)
                             }
                         }
                         override fun onIceConnectionChange(state: PeerConnection.IceConnectionState?) {
@@ -161,68 +144,64 @@ class CallingPage : ComponentActivity() {
                         override fun onIceConnectionReceivingChange(p0: Boolean) {}
                     }
 
-                    webRTCManager.createPeerConnection(peerObserver)
+                    // Start WebRTC negotiation only after STOMP is open so
+                    // sendAnswer/sendOffer go out on a live connection.
+                    signalingClient.onConnected = {
+                        android.util.Log.d("CALLING", "STOMP open — starting WebRTC negotiation")
+                        webRTCManager.createPeerConnection(peerObserver)
 
-                    if (incomingSdp != null) {
-                        webRTCManager.setRemoteDescription(
-                            SessionDescription(SessionDescription.Type.OFFER, incomingSdp),
-                            object : SdpObserver {
-                                override fun onSetSuccess() {
-                                    webRTCManager.createAnswer(object : SdpObserver {
-                                        override fun onCreateSuccess(sdp: SessionDescription?) {
-                                            sdp?.let {
-                                                webRTCManager.setLocalDescription(
-                                                    it,
-                                                    object : SdpObserver {
+                        if (incomingSdp != null) {
+                            webRTCManager.setRemoteDescription(
+                                SessionDescription(SessionDescription.Type.OFFER, incomingSdp),
+                                object : SdpObserver {
+                                    override fun onSetSuccess() {
+                                        webRTCManager.createAnswer(object : SdpObserver {
+                                            override fun onCreateSuccess(sdp: SessionDescription?) {
+                                                sdp?.let {
+                                                    webRTCManager.setLocalDescription(it, object : SdpObserver {
                                                         override fun onSetSuccess() {
-                                                            signalingClient.sendAnswer(
-                                                                targetUserId,
-                                                                it.description,
-                                                                currentUserId
-                                                            )
+                                                            signalingClient.sendAnswer(targetUserId, it.description, currentUserId)
                                                         }
                                                         override fun onSetFailure(p0: String?) {}
                                                         override fun onCreateSuccess(p0: SessionDescription?) {}
                                                         override fun onCreateFailure(p0: String?) {}
-                                                    }
-                                                )
+                                                    })
+                                                }
                                             }
-                                        }
-                                        override fun onCreateFailure(p0: String?) {}
-                                        override fun onSetSuccess() {}
-                                        override fun onSetFailure(p0: String?) {}
-                                    })
+                                            override fun onCreateFailure(p0: String?) {}
+                                            override fun onSetSuccess() {}
+                                            override fun onSetFailure(p0: String?) {}
+                                        })
+                                    }
+                                    override fun onSetFailure(p0: String?) {}
+                                    override fun onCreateSuccess(p0: SessionDescription?) {}
+                                    override fun onCreateFailure(p0: String?) {}
                                 }
+                            )
+                        } else {
+                            webRTCManager.createOffer(object : SdpObserver {
+                                override fun onCreateSuccess(sdp: SessionDescription?) {
+                                    sdp?.let {
+                                        webRTCManager.setLocalDescription(it, object : SdpObserver {
+                                            override fun onSetSuccess() {
+                                                signalingClient.sendOffer(targetUserId, it.description, currentUserId)
+                                            }
+                                            override fun onSetFailure(p0: String?) {}
+                                            override fun onCreateSuccess(p0: SessionDescription?) {}
+                                            override fun onCreateFailure(p0: String?) {}
+                                        })
+                                    }
+                                }
+                                override fun onCreateFailure(p0: String?) {
+                                    runOnUiThread { callStatus = "Failed to start call" }
+                                }
+                                override fun onSetSuccess() {}
                                 override fun onSetFailure(p0: String?) {}
-                                override fun onCreateSuccess(p0: SessionDescription?) {}
-                                override fun onCreateFailure(p0: String?) {}
-                            }
-                        )
-                    } else {
-                        webRTCManager.createOffer(object : SdpObserver {
-                            override fun onCreateSuccess(sdp: SessionDescription?) {
-                                sdp?.let {
-                                    webRTCManager.setLocalDescription(it, object : SdpObserver {
-                                        override fun onSetSuccess() {
-                                            signalingClient.sendOffer(
-                                                targetUserId,
-                                                it.description,
-                                                currentUserId
-                                            )
-                                        }
-                                        override fun onSetFailure(p0: String?) {}
-                                        override fun onCreateSuccess(p0: SessionDescription?) {}
-                                        override fun onCreateFailure(p0: String?) {}
-                                    })
-                                }
-                            }
-                            override fun onCreateFailure(p0: String?) {
-                                runOnUiThread { callStatus = "Failed to start call" }
-                            }
-                            override fun onSetSuccess() {}
-                            override fun onSetFailure(p0: String?) {}
-                        })
+                            })
+                        }
                     }
+
+                    signalingClient.connect(currentUserId, token ?: "")
                 }
             }
 
@@ -231,7 +210,10 @@ class CallingPage : ComponentActivity() {
                 callStatus = callStatus,
                 onEndCall = {
                     scope.launch {
-                        val currentUserId = dataStoreManager.usernameFlow.first()
+                        val token = dataStoreManager.tokenFlow.first()
+                        val currentUserId = token?.let {
+                            extractUserIdFromJwt(it)
+                        } ?: dataStoreManager.usernameFlow.first()
                         signalingClient.sendHangup(targetUserId, currentUserId)
                         webRTCManager.hangUp()
                         signalingClient.disconnect()
@@ -279,7 +261,6 @@ fun CallingFriendScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ThemeManager background from master
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
                 Image(
                     painter = painterResource(R.drawable.top_background),
@@ -291,9 +272,7 @@ fun CallingFriendScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(ThemeManager.backgroundGradient)
-                        )
+                        .background(Brush.verticalGradient(ThemeManager.backgroundGradient))
                 )
             }
 
@@ -310,9 +289,8 @@ fun CallingFriendScreen(
                     contentScale = ContentScale.Fit
                 )
 
-                Spacer(modifier = Modifier.height(0.dp))
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(0.dp))
 
-                // Dynamic call status from your branch
                 StrokeText(
                     text = callStatus,
                     fontFamily = ThemeManager.fontFamily,
@@ -327,7 +305,6 @@ fun CallingFriendScreen(
                         .height(39.51.dp)
                 )
 
-                // Username with widthIn from master
                 StrokeText(
                     text = username,
                     fontFamily = ThemeManager.fontFamily,
@@ -373,9 +350,7 @@ fun CallingFriendScreen(
                     IconBtn(R.drawable.go_to_chat_button, 92.dp, 94.dp, onGoToChat)
                 }
 
-                Box(
-                    modifier = Modifier.offset(x = (-15).dp)
-                ) {
+                Box(modifier = Modifier.offset(x = (-15).dp)) {
                     IconBtn(R.drawable.end_call_button, 181.dp, 159.dp, onEndCall, true)
                 }
 

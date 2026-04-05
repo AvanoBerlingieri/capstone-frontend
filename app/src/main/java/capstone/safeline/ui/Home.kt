@@ -32,18 +32,69 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.lifecycleScope
 import capstone.safeline.R
+import capstone.safeline.apis.extractUserIdFromJwt
+import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.webrtc.SignalingClient
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 private val HomeTitleFont = FontFamily(Font(R.font.vampiro_one_regular))
 private val HomeTextFont = FontFamily(Font(R.font.tapestry_regular))
 
 class Home : ComponentActivity() {
+
+    private var signalingClient: SignalingClient? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val cryptoManager = CryptoManager()
+        val dataStoreManager = DataStoreManager(this, cryptoManager)
+        signalingClient = SignalingClient("http://10.0.2.2:8093/ws-call/websocket")
+
+        lifecycleScope.launch {
+            try {
+                android.util.Log.d("HOME", "Starting signaling setup...")
+
+                val token = dataStoreManager.tokenFlow.first()
+                android.util.Log.d("HOME", "Token exists: ${token != null}")
+
+                val currentUserId = token?.let {
+                    extractUserIdFromJwt(it)
+                } ?: dataStoreManager.usernameFlow.first()
+
+                // Set the callback before connect() so no signal can arrive unhandled.
+                signalingClient?.onSignalReceived = { signal ->
+                    android.util.Log.d("HOME", "Signal received: ${signal.type}")
+                    when (signal.type) {
+                        "offer" -> {
+                            runOnUiThread {
+                                android.util.Log.d("HOME", "Incoming call from: ${signal.senderId}")
+                                val intent = Intent(this@Home, IncomingCallActivity::class.java)
+                                intent.putExtra("callerName", signal.senderId)
+                                intent.putExtra("targetUserId", signal.senderId)
+                                intent.putExtra("incomingSdp", signal.sdp)
+                                startActivity(intent)
+                            }
+                        }
+                    }
+                }
+
+                android.util.Log.d("HOME", "Connecting as: $currentUserId")
+                signalingClient?.connect(currentUserId, token ?: "")
+                android.util.Log.d("HOME", "connect() called (handshake is async)")
+            } catch (e: Exception) {
+                android.util.Log.e("HOME", "Signaling error: ${e.message}")
+            }
+        }
+
         setContent {
             HomeScreen(
                 onNavigate = { destination ->
@@ -60,6 +111,11 @@ class Home : ComponentActivity() {
                 onOpenFriendRequests = { startActivity(Intent(this, FriendRequests::class.java)) }
             )
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        signalingClient?.disconnect()
     }
 }
 
@@ -242,5 +298,3 @@ private fun HomeImageButton(
         )
     }
 }
-
-

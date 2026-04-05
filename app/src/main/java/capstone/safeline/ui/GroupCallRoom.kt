@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.apis.network.CallingApiClient
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
@@ -46,14 +47,13 @@ class GroupCallRoom : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val roomId = intent.getStringExtra("roomId") ?: ""
-        val currentUserId = intent.getStringExtra("currentUserId") ?: ""
         val participants = intent.getStringArrayListExtra("participants") ?: arrayListOf()
 
         val cryptoManager = CryptoManager()
         val dataStoreManager = DataStoreManager(this, cryptoManager)
 
         webRTCManager = WebRTCManager(this).also { it.init() }
-        signalingClient = SignalingClient("ws://10.0.2.2:8093/ws-call/websocket")
+        signalingClient = SignalingClient("http://10.0.2.2:8093/ws-call/websocket")
 
         setContent {
             val scope = rememberCoroutineScope()
@@ -63,48 +63,57 @@ class GroupCallRoom : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 scope.launch {
-                    val userId = dataStoreManager.usernameFlow.first()
+                    try {
+                        // Use UUID from token
+                        val token = dataStoreManager.tokenFlow.first()
+                        val userId = token?.let {
+                            extractUserIdFromJwt(it)
+                        } ?: dataStoreManager.usernameFlow.first()
 
-                    // Connect to signaling
-                    signalingClient.connect(userId)
-                    callStatus = "Connected"
+                        android.util.Log.d("GROUP", "Connecting as: $userId")
 
-                    // Listen for group signals
-                    signalingClient.onSignalReceived = { signal ->
-                        when (signal.type) {
-                            "group-join" -> {
-                                runOnUiThread {
-                                    if (!activeParticipants.contains(signal.senderId)) {
-                                        activeParticipants = activeParticipants + signal.senderId
+                        // Connect with token
+                        signalingClient.connect(userId, token ?: "")
+                        callStatus = "Connected"
+
+                        signalingClient.onSignalReceived = { signal ->
+                            when (signal.type) {
+                                "group-join" -> {
+                                    runOnUiThread {
+                                        if (!activeParticipants.contains(signal.senderId)) {
+                                            activeParticipants = activeParticipants + signal.senderId
+                                        }
                                     }
                                 }
-                            }
-                            "group-leave" -> {
-                                runOnUiThread {
-                                    activeParticipants = activeParticipants.filter {
-                                        it != signal.senderId
+                                "group-leave" -> {
+                                    runOnUiThread {
+                                        activeParticipants = activeParticipants.filter {
+                                            it != signal.senderId
+                                        }
                                     }
                                 }
-                            }
-                            "ice-candidate" -> {
-                                signal.candidate?.let {
-                                    webRTCManager.addIceCandidate(
-                                        org.webrtc.IceCandidate("", 0, it)
-                                    )
+                                "ice-candidate" -> {
+                                    signal.candidate?.let {
+                                        webRTCManager.addIceCandidate(
+                                            org.webrtc.IceCandidate("", 0, it)
+                                        )
+                                    }
                                 }
-                            }
-                            "hangup", "end" -> {
-                                runOnUiThread {
-                                    webRTCManager.hangUp()
-                                    signalingClient.disconnect()
-                                    finish()
+                                "hangup", "end" -> {
+                                    runOnUiThread {
+                                        webRTCManager.hangUp()
+                                        signalingClient.disconnect()
+                                        finish()
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // Notify others you joined
-                    signalingClient.sendGroupJoin(roomId, userId)
+                        signalingClient.sendGroupJoin(roomId, userId)
+
+                    } catch (e: Exception) {
+                        android.util.Log.e("GROUP", "Error: ${e.message}")
+                    }
                 }
             }
 
@@ -120,12 +129,19 @@ class GroupCallRoom : ComponentActivity() {
                 },
                 onLeave = {
                     scope.launch {
-                        val userId = dataStoreManager.usernameFlow.first()
-                        // Leave room in backend
-                        CallingApiClient.service.leaveGroupRoom(roomId, userId)
-                        signalingClient.sendGroupLeave(roomId, userId)
-                        webRTCManager.hangUp()
-                        signalingClient.disconnect()
+                        try {
+                            val token = dataStoreManager.tokenFlow.first()
+                            val userId = token?.let {
+                                extractUserIdFromJwt(it)
+                            } ?: dataStoreManager.usernameFlow.first()
+
+                            CallingApiClient.service.leaveGroupRoom(roomId, userId)
+                            signalingClient.sendGroupLeave(roomId, userId)
+                            webRTCManager.hangUp()
+                            signalingClient.disconnect()
+                        } catch (e: Exception) {
+                            android.util.Log.e("GROUP", "Leave error: ${e.message}")
+                        }
                     }
                     startActivity(Intent(this, Contacts::class.java))
                     finish()
@@ -156,7 +172,6 @@ private fun GroupCallRoomScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Same background as CallingPage
             Image(
                 painter = painterResource(R.drawable.top_background),
                 contentDescription = null,
@@ -170,14 +185,12 @@ private fun GroupCallRoomScreen(
                     .padding(top = 60.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Title
                 StrokeTitle(
                     text = "GROUP CALL",
                     fontFamily = Vampiro,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // Room ID
                 Text(
                     text = "Room: $roomId",
                     fontFamily = Tapestry,
@@ -188,7 +201,6 @@ private fun GroupCallRoomScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Call status
                 StrokeText(
                     text = callStatus,
                     fontFamily = Vampiro,
@@ -201,7 +213,6 @@ private fun GroupCallRoomScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Participants row
                 Text(
                     text = "${participants.size} participant(s)",
                     fontFamily = Tapestry,
@@ -226,7 +237,6 @@ private fun GroupCallRoomScreen(
                 Spacer(modifier = Modifier.weight(1f))
             }
 
-            // Bottom buttons — same style as CallingPage
             Image(
                 painter = painterResource(R.drawable.down_background_for_buttons),
                 contentDescription = null,
@@ -246,7 +256,6 @@ private fun GroupCallRoomScreen(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Mute button
                 GroupIconBtn(
                     res = R.drawable.microphone_button,
                     width = 92.dp,
@@ -255,7 +264,6 @@ private fun GroupCallRoomScreen(
                     onClick = onMute
                 )
 
-                // End call button
                 GroupIconBtn(
                     res = R.drawable.end_call_button,
                     width = 181.dp,
@@ -265,7 +273,6 @@ private fun GroupCallRoomScreen(
                     big = true
                 )
 
-                // Camera button
                 GroupIconBtn(
                     res = R.drawable.camera_button,
                     width = 92.dp,
@@ -280,9 +287,7 @@ private fun GroupCallRoomScreen(
 
 @Composable
 private fun ParticipantAvatar(name: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Image(
             painter = painterResource(R.drawable.avatar_placeholder),
             contentDescription = name,
@@ -312,9 +317,7 @@ private fun GroupIconBtn(
     onClick: () -> Unit,
     big: Boolean = false
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
                 .size(width, height)

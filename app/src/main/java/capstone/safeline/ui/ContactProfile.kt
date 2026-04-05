@@ -32,6 +32,7 @@ class ContactProfile : ComponentActivity() {
 
         val username = intent.getStringExtra("contactName") ?: "USERNAME"
         val email = intent.getStringExtra("contactEmail") ?: "email@email.com"
+        val friendId = intent.getStringExtra("friendId") ?: username
 
         setContent {
             ContactProfileScreen(
@@ -42,7 +43,7 @@ class ContactProfile : ComponentActivity() {
                 onCall = {
                     val intent = Intent(this, ContactCall::class.java)
                     intent.putExtra("callerName", username)
-                    intent.putExtra("targetUserId", username)
+                    intent.putExtra("targetUserId", friendId)
                     startActivity(intent)
                 },
 

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.StrokeText
@@ -45,9 +46,8 @@ class ContactCall : ComponentActivity() {
         val dataStoreManager = DataStoreManager(this, cryptoManager)
 
         webRTCManager = WebRTCManager(this).also { it.init() }
-        signalingClient = SignalingClient("ws://10.0.2.2:8093/ws-call/websocket")
+        signalingClient = SignalingClient("http://10.0.2.2:8093/ws-call/websocket")
 
-        // Mic permission
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED
         ) {
@@ -60,12 +60,17 @@ class ContactCall : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 scope.launch {
-                    val currentUserId = dataStoreManager.usernameFlow.first()
-                    signalingClient.connect(currentUserId)
+                    val token = dataStoreManager.tokenFlow.first()
+                    val currentUserId = token?.let {
+                        extractUserIdFromJwt(it)
+                    } ?: dataStoreManager.usernameFlow.first()
 
+                    android.util.Log.d("CALL", "Calling as: $currentUserId to: $targetUserId")
+
+                    // Set callbacks before connect() — onConnected fires when STOMP is open.
+                    // sendOffer() called on a not-yet-open connection is silently dropped.
                     signalingClient.onSignalReceived = { signal ->
                         when (signal.type) {
-
                             "answer" -> {
                                 webRTCManager.setRemoteDescription(
                                     SessionDescription(
@@ -82,15 +87,11 @@ class ContactCall : ComponentActivity() {
                                     }
                                 )
                             }
-
                             "ice-candidate" -> {
                                 signal.candidate?.let {
-                                    webRTCManager.addIceCandidate(
-                                        IceCandidate("", 0, it)
-                                    )
+                                    webRTCManager.addIceCandidate(IceCandidate("", 0, it))
                                 }
                             }
-
                             "decline" -> {
                                 runOnUiThread {
                                     callStatus = "Call Declined"
@@ -100,7 +101,6 @@ class ContactCall : ComponentActivity() {
                                     }, 1500)
                                 }
                             }
-
                             "hangup", "end" -> {
                                 runOnUiThread {
                                     webRTCManager.hangUp()
@@ -109,78 +109,68 @@ class ContactCall : ComponentActivity() {
                                     finish()
                                 }
                             }
-
                             "error" -> {
                                 runOnUiThread { callStatus = "Connection Error" }
                             }
                         }
                     }
 
-                    webRTCManager.createPeerConnection(object : PeerConnection.Observer {
-
-                        override fun onIceCandidate(candidate: IceCandidate?) {
-                            candidate?.let {
-                                signalingClient.sendIceCandidate(
-                                    targetUserId,
-                                    it.sdp,
-                                    currentUserId
-                                )
-                            }
-                        }
-
-                        override fun onIceConnectionChange(state: PeerConnection.IceConnectionState?) {
-                            runOnUiThread {
-                                callStatus = when (state) {
-                                    PeerConnection.IceConnectionState.CONNECTED -> "Connected"
-                                    PeerConnection.IceConnectionState.DISCONNECTED -> "Disconnected"
-                                    PeerConnection.IceConnectionState.FAILED -> "Connection Failed"
-                                    else -> callStatus
+                    // Start WebRTC negotiation only after STOMP is open so sendOffer
+                    // goes out on a live connection instead of being silently dropped.
+                    signalingClient.onConnected = {
+                        android.util.Log.d("CALL", "STOMP open — creating offer")
+                        webRTCManager.createPeerConnection(object : PeerConnection.Observer {
+                            override fun onIceCandidate(candidate: IceCandidate?) {
+                                candidate?.let {
+                                    signalingClient.sendIceCandidate(targetUserId, it.sdp, currentUserId)
                                 }
                             }
-                        }
-
-                        // IMPORTANT for audio
-                        override fun onTrack(transceiver: RtpTransceiver?) {
-                            val track = transceiver?.receiver?.track() as? AudioTrack
-                            track?.setEnabled(true)
-                        }
-
-                        override fun onSignalingChange(p0: PeerConnection.SignalingState?) {}
-                        override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {}
-                        override fun onIceCandidatesRemoved(p0: Array<out IceCandidate>?) {}
-                        override fun onAddStream(p0: MediaStream?) {}
-                        override fun onRemoveStream(p0: MediaStream?) {}
-                        override fun onDataChannel(p0: DataChannel?) {}
-                        override fun onRenegotiationNeeded() {}
-                        override fun onIceConnectionReceivingChange(p0: Boolean) {}
-                    })
-
-                    // Create Offer
-                    webRTCManager.createOffer(object : SdpObserver {
-                        override fun onCreateSuccess(sdp: SessionDescription?) {
-                            sdp?.let {
-                                webRTCManager.setLocalDescription(it, object : SdpObserver {
-                                    override fun onSetSuccess() {
-                                        signalingClient.sendOffer(
-                                            targetUserId,
-                                            it.description,
-                                            currentUserId
-                                        )
+                            override fun onIceConnectionChange(state: PeerConnection.IceConnectionState?) {
+                                runOnUiThread {
+                                    callStatus = when (state) {
+                                        PeerConnection.IceConnectionState.CONNECTED -> "Connected"
+                                        PeerConnection.IceConnectionState.DISCONNECTED -> "Disconnected"
+                                        PeerConnection.IceConnectionState.FAILED -> "Connection Failed"
+                                        else -> callStatus
                                     }
-                                    override fun onSetFailure(p0: String?) {}
-                                    override fun onCreateSuccess(p0: SessionDescription?) {}
-                                    override fun onCreateFailure(p0: String?) {}
-                                })
+                                }
                             }
-                        }
+                            override fun onTrack(transceiver: RtpTransceiver?) {
+                                val track = transceiver?.receiver?.track() as? AudioTrack
+                                track?.setEnabled(true)
+                            }
+                            override fun onSignalingChange(p0: PeerConnection.SignalingState?) {}
+                            override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {}
+                            override fun onIceCandidatesRemoved(p0: Array<out IceCandidate>?) {}
+                            override fun onAddStream(p0: MediaStream?) {}
+                            override fun onRemoveStream(p0: MediaStream?) {}
+                            override fun onDataChannel(p0: DataChannel?) {}
+                            override fun onRenegotiationNeeded() {}
+                            override fun onIceConnectionReceivingChange(p0: Boolean) {}
+                        })
 
-                        override fun onCreateFailure(p0: String?) {
-                            runOnUiThread { callStatus = "Failed to start call" }
-                        }
+                        webRTCManager.createOffer(object : SdpObserver {
+                            override fun onCreateSuccess(sdp: SessionDescription?) {
+                                sdp?.let {
+                                    webRTCManager.setLocalDescription(it, object : SdpObserver {
+                                        override fun onSetSuccess() {
+                                            signalingClient.sendOffer(targetUserId, it.description, currentUserId)
+                                        }
+                                        override fun onSetFailure(p0: String?) {}
+                                        override fun onCreateSuccess(p0: SessionDescription?) {}
+                                        override fun onCreateFailure(p0: String?) {}
+                                    })
+                                }
+                            }
+                            override fun onCreateFailure(p0: String?) {
+                                runOnUiThread { callStatus = "Failed to start call" }
+                            }
+                            override fun onSetSuccess() {}
+                            override fun onSetFailure(p0: String?) {}
+                        })
+                    }
 
-                        override fun onSetSuccess() {}
-                        override fun onSetFailure(p0: String?) {}
-                    })
+                    signalingClient.connect(currentUserId, token ?: "")
                 }
             }
 
@@ -189,7 +179,10 @@ class ContactCall : ComponentActivity() {
                 callStatus = callStatus,
                 onEndCall = {
                     scope.launch {
-                        val currentUserId = dataStoreManager.usernameFlow.first()
+                        val token = dataStoreManager.tokenFlow.first()
+                        val currentUserId = token?.let {
+                            extractUserIdFromJwt(it)
+                        } ?: dataStoreManager.usernameFlow.first()
                         signalingClient.sendHangup(targetUserId, currentUserId)
                         webRTCManager.hangUp()
                         signalingClient.disconnect()
@@ -215,7 +208,6 @@ private fun ContactCallScreen(
     onEndCall: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-
         if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
             Image(
                 painter = painterResource(R.drawable.contactcall_bg),
@@ -227,11 +219,7 @@ private fun ContactCallScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            ThemeManager.backgroundGradient
-                        )
-                    )
+                    .background(Brush.verticalGradient(ThemeManager.backgroundGradient))
             )
         }
 

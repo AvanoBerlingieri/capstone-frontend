@@ -114,6 +114,9 @@ private fun ContactsScreen(
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
+        val token = dsManager.tokenFlow.first()
+        android.util.Log.d("CONTACTS", "Token: $token")
+        android.util.Log.d("CONTACTS", "UserId: ${token?.let { extractUserIdFromJwt(it) }}")
         loadError = null
         try {
             val token = dsManager.tokenFlow.first()
