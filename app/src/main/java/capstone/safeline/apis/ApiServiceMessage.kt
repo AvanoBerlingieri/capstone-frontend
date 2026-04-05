@@ -1,5 +1,7 @@
 package capstone.safeline.apis
 
+import capstone.safeline.apis.dto.messaging.CreateGroupRequest
+import capstone.safeline.apis.dto.messaging.GroupInfoDto
 import capstone.safeline.apis.dto.messaging.OutgoingGroupMessage
 import capstone.safeline.apis.dto.messaging.OutgoingMessage
 import retrofit2.Response
@@ -12,34 +14,39 @@ interface ApiServiceMessage {
 
     @GET("history/private/{userId}")
     suspend fun getPrivateHistory(
-        @Path("userId") userId: UUID
+        @Path("userId") userId: String
     ): Response<List<OutgoingMessage>>
 
     @GET("history/group/{groupId}")
     suspend fun getGroupHistory(
-        @Path("groupId") groupId: UUID
+        @Path("groupId") groupId: String
     ): Response<List<OutgoingGroupMessage>>
 
     // Group Management
 
     @POST("groups")
     suspend fun createGroup(
-        @Query("name") name: String
+        @Body request: CreateGroupRequest
     ): Response<Void>
 
     @POST("groups/{groupId}/members")
     suspend fun addUserToGroup(
-        @Path("groupId") groupId: UUID,
-        @Query("userId") userId: UUID
+        @Path("groupId") groupId: String,
+        @Query("userId") userId: String
     ): Response<Void>
 
     @DELETE("groups/{groupId}/leave")
     suspend fun leaveGroup(
-        @Path("groupId") groupId: UUID
+        @Path("groupId") groupId: String
     ): Response<Void>
 
     @DELETE("groups/{groupId}")
     suspend fun deleteGroup(
-        @Path("groupId") groupId: UUID
+        @Path("groupId") groupId: String
     ): Response<Void>
+
+    @GET("groups/{userId}")
+    suspend fun getAllUserGroups(
+        @Path("userId") userId: String
+    ): Response<List<GroupInfoDto>>
 }
