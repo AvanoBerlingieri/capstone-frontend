@@ -42,6 +42,7 @@ import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.ui.chatting.DmPage
 import capstone.safeline.ui.calling.ContactCall
+import capstone.safeline.ui.friends.Contacts
 
 
 class ContactProfile : ComponentActivity() {
@@ -51,6 +52,7 @@ class ContactProfile : ComponentActivity() {
         val contactId = intent.getStringExtra("contactId") ?: ""
         val username = intent.getStringExtra("contactName") ?: "USERNAME"
         val email = intent.getStringExtra("contactEmail") ?: "email@email.com"
+        val friendId = intent.getStringExtra("friendId") ?: username
 
         setContent {
             ContactProfileScreen(
@@ -66,6 +68,7 @@ class ContactProfile : ComponentActivity() {
                 onCall = {
                     val intent = Intent(this, ContactCall::class.java)
                     intent.putExtra("callerName", username)
+                    intent.putExtra("targetUserId", friendId)
                     startActivity(intent)
                 },
                 onDelete = {

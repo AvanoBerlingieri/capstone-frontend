@@ -1,4 +1,5 @@
-package capstone.safeline.ui
+package capstone.safeline.ui.calling
+
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -29,6 +30,7 @@ import capstone.safeline.R
 import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
+import capstone.safeline.ui.chatting.DmPage
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.webrtc.SignalingClient

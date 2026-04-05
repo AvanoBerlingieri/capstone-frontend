@@ -38,9 +38,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.lifecycleScope
 import capstone.safeline.R
+import capstone.safeline.apis.extractUserIdFromJwt
+import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.calling.Call
+import capstone.safeline.ui.calling.IncomingCallActivity
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.community.Community
 import capstone.safeline.ui.components.BottomNavBar
@@ -51,14 +56,60 @@ import capstone.safeline.ui.friends.FriendRequests
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.settings.Settings
 import capstone.safeline.ui.theme.ThemeManager
+import capstone.safeline.webrtc.SignalingClient
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 private val HomeTitleFont = FontFamily(Font(R.font.vampiro_one_regular))
 private val HomeTextFont = FontFamily(Font(R.font.tapestry_regular))
 
 class Home : ComponentActivity() {
+
+    private var signalingClient: SignalingClient? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        ThemeManager.loadTheme(this) //This needs to be removed when we finish the project
+        ThemeManager.loadTheme(this)
         super.onCreate(savedInstanceState)
+
+        // Setup signaling for incoming calls
+        val cryptoManager = CryptoManager()
+        val dataStoreManager = DataStoreManager(this, cryptoManager)
+        signalingClient = SignalingClient("http://10.0.2.2:8093/ws-call/websocket")
+
+        lifecycleScope.launch {
+            try {
+                android.util.Log.d("HOME", "Starting signaling setup...")
+                val token = dataStoreManager.tokenFlow.first()
+                android.util.Log.d("HOME", "Token exists: ${token != null}")
+
+                val currentUserId = token?.let {
+                    extractUserIdFromJwt(it)
+                } ?: dataStoreManager.usernameFlow.first()
+
+                signalingClient?.onSignalReceived = { signal ->
+                    android.util.Log.d("HOME", "Signal received: ${signal.type}")
+                    when (signal.type) {
+                        "offer" -> {
+                            runOnUiThread {
+                                android.util.Log.d("HOME", "Incoming call from: ${signal.senderId}")
+                                val intent = Intent(this@Home, IncomingCallActivity::class.java)
+                                intent.putExtra("callerName", "Incoming Call")
+                                intent.putExtra("targetUserId", signal.senderId)
+                                intent.putExtra("incomingSdp", signal.sdp)
+                                startActivity(intent)
+                            }
+                        }
+                    }
+                }
+
+                android.util.Log.d("HOME", "Connecting as: $currentUserId")
+                signalingClient?.connect(currentUserId, token ?: "")
+                android.util.Log.d("HOME", "connect() called (handshake is async)")
+            } catch (e: Exception) {
+                android.util.Log.e("HOME", "Signaling error: ${e.message}")
+            }
+        }
+
         setContent {
             HomeScreen(
                 onNavigate = { destination ->
@@ -81,13 +132,17 @@ class Home : ComponentActivity() {
                         }
                         else -> null
                     }
-
                     intent?.let { startActivity(it) }
                 },
                 onOpenSettings = { startActivity(Intent(this, Settings::class.java)) },
                 onOpenFriendRequests = { startActivity(Intent(this, FriendRequests::class.java)) }
             )
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        signalingClient?.disconnect()
     }
 }
 
@@ -100,8 +155,8 @@ fun HomeScreen(
     InitializeSocket()
     val context = LocalContext.current
     val authRepo = remember { AuthRepository.getInstance(context) }
+    // ✅ Fixed username display
     val username by authRepo.usernameFlow.collectAsState(initial = "Loading...")
-
 
     Scaffold(
         topBar = {},
@@ -129,11 +184,7 @@ fun HomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                ThemeManager.backgroundGradient
-                            )
-                        )
+                        .background(Brush.verticalGradient(ThemeManager.backgroundGradient))
                 )
             }
 
@@ -143,18 +194,12 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .height(70.dp)
             ) {
-
                 if (ThemeManager.currentTheme != ThemeManager.Theme.CLASSIC) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    ThemeManager.headerGradient
-                                )
-                            )
+                            .background(Brush.horizontalGradient(ThemeManager.headerGradient))
                     )
-
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -163,7 +208,6 @@ fun HomeScreen(
                             .background(ThemeManager.topBarStroke)
                     )
                 }
-
                 StrokeTitle(
                     text = "HOME",
                     fontFamily = ThemeManager.fontFamily,
@@ -187,7 +231,6 @@ fun HomeScreen(
                         .size(width = 55.dp, height = 69.dp)
                         .clickable { onNavigate("profile") }
                 )
-
                 Image(
                     painter = painterResource(id = R.drawable.home_setting_btn),
                     contentDescription = null,
@@ -214,6 +257,7 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
+                // ✅ Fixed username
                 Text(
                     text = "WELCOME BACK $username",
                     fontFamily = HomeTextFont,
@@ -244,7 +288,6 @@ fun HomeScreen(
                             .size(width = 180.dp, height = 150.dp)
                             .clickable { onNavigate("chats") }
                     )
-
                     HomeImageButton(
                         bgRes = R.drawable.home_btn1,
                         text = "You Have 1 Missed\nCall",
@@ -301,14 +344,11 @@ private fun HomeImageButton(
             )
         } else {
             val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
-
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.verticalGradient(
-                            ThemeManager.buttonGradient
-                        ),
+                        Brush.verticalGradient(ThemeManager.buttonGradient),
                         shape = shape
                     )
                     .then(
@@ -330,5 +370,3 @@ private fun HomeImageButton(
         )
     }
 }
-
-

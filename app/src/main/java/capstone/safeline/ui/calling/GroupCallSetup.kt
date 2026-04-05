@@ -1,4 +1,4 @@
-package capstone.safeline.ui
+package capstone.safeline.ui.calling
 
 import androidx.compose.foundation.layout.statusBarsPadding
 import android.content.Intent
@@ -26,10 +26,15 @@ import capstone.safeline.R
 import capstone.safeline.apis.network.CallingApiClient
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
+import capstone.safeline.ui.friends.Contacts
+import capstone.safeline.ui.Home
+import capstone.safeline.ui.chatting.Chat
+import capstone.safeline.ui.community.Community
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.profile.Profile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
