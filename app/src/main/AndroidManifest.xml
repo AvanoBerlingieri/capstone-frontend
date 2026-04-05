@@ -105,6 +105,13 @@
             android:exported="true" />
 
         <activity
+            android:name=".ui.IncomingCallActivity"
+            android:exported="true"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            tools:targetApi="27" />
+
+        <activity
             android:name=".ui.community.AddServer"
             android:exported="true" />
 
