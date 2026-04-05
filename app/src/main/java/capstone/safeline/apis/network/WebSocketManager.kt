@@ -9,13 +9,10 @@ import capstone.safeline.apis.dto.messaging.IncomingMessage
 import capstone.safeline.apis.dto.messaging.OutgoingGroupMessage
 import capstone.safeline.apis.dto.messaging.OutgoingMessage
 import capstone.safeline.data.local.dao.MessageDao
-import capstone.safeline.data.local.entity.FriendEntity
-import capstone.safeline.data.local.entity.GroupChatEntity
 import capstone.safeline.data.local.entity.GroupMessageEntity
 import capstone.safeline.data.local.entity.MessageEntity
 import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.data.repository.FriendRepository
-import capstone.safeline.data.repository.MessageRepository
+
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +22,7 @@ import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
-import java.time.Instant
+import java.time.LocalDateTime
 
 class WebSocketManager {
     companion object {
@@ -41,37 +38,22 @@ class WebSocketManager {
 
     private var authRepository: AuthRepository? = null
     private var messageDao: MessageDao? = null
-    private var friendRepository: FriendRepository? = null
-    private var messageRepository: MessageRepository? = null
 
-    fun init(
-        authRepo: AuthRepository,
-        dao: MessageDao,
-        friendRepo: FriendRepository,
-        messageRepo: MessageRepository
-    ) {
-        this.authRepository = authRepo
+    fun init(repo: AuthRepository, dao: MessageDao) {
+        this.authRepository = repo
         this.messageDao = dao
-        this.friendRepository = friendRepo
-        this.messageRepository = messageRepo
     }
 
     private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
-
     @SuppressLint("CheckResult")
     fun connect(token: String) {
-        val authRepo = authRepository
+        val repo = authRepository
         val dao = messageDao
-        friendRepository
-        messageRepository
 
-        if (authRepo == null || dao == null) {
-            Log.e(
-                "WS",
-                "Cannot connect: Manager not fully initialized (Repo: ${authRepo != null}, Dao: ${dao != null})"
-            )
+        if (repo == null || dao == null) {
+            Log.e("WS", "Cannot connect: Manager not fully initialized (Repo: ${repo != null}, Dao: ${dao != null})")
             return
         }
 
@@ -100,18 +82,12 @@ class WebSocketManager {
                         if (authRepository == null) {
                             Log.e("WS", "AuthRepository is NULL")
                         }
-                        val myId = authRepo.userIdFlow.first() ?: return@launch
-
-                        syncFriends(myId)
-
-                        syncGroups(myId)
-
-                        subscribeToMessages()
-
-                        val success = authRepo.updateStatus("ONLINE")
+                        val success = repo.updateStatus("ONLINE")
                         Log.d("WS", "Status update successful: $success")
                     }
 
+                    subscribeToMessages()
+//                    subscribeToGroups()
                     stompClient?.send("/app/message.sync")?.subscribe({
                         Log.d("WS", "Sync request sent")
                     }, { Log.e("WS", "Sync failed", it) })
@@ -134,45 +110,8 @@ class WebSocketManager {
         stompClient?.connect(headers)
     }
 
-    // Helper methods to keep the connect block clean:
-    private suspend fun syncFriends(myId: String) {
-        Log.d("WS_SYNC", "Syncing Friends...")
-        friendRepository?.getAllFriends(myId)?.onSuccess { friendIds ->
-            Log.d("WS_SYNC", "Server returned ${friendIds.size} friends")
-            friendIds.forEach { fid ->
-                val existing = messageDao?.findFriend(fid)
-                if (existing != null) {
-                    Log.v("WS_SYNC", "Friend $fid already exists in local DB, skipping...")
-                    return@forEach
-                }
-
-                authRepository?.getUserById(fid)?.onSuccess { user ->
-                    Log.i("WS_SYNC", "Adding NEW friend to local DB: ${user.username}")
-                    messageDao?.insertFriend(FriendEntity(fid, user.id, user.username))
-                }?.onFailure { Log.e("WS_SYNC", "Failed to get user details for $fid") }
-            }
-        }?.onFailure { Log.e("WS_SYNC", "Failed to fetch friends list", it) }
-    }
-
-    private suspend fun syncGroups(myId: String) {
-        Log.d("WS_SYNC", "Syncing Groups...")
-        messageRepository?.getMyGroups()?.onSuccess { groups ->
-            Log.d("WS_SYNC", "User is member of ${groups.size} groups")
-            val ids = groups.map { it.groupId }
-
-            groups.forEach { group ->
-                Log.v("WS_SYNC", "Saving group metadata: ${group.groupName}")
-                messageDao?.insertGroup(GroupChatEntity(group.groupId, group.groupName))
-            }
-
-            if (ids.isNotEmpty()) {
-                subscribeToGroups(ids)
-            }
-        }?.onFailure { Log.e("WS_SYNC", "Failed to fetch groups", it) }
-    }
-
     @SuppressLint("CheckResult")
-    fun subscribeToMessages() {
+    private fun subscribeToMessages() {
         val gson = Gson()
         // Listen for private messages
         stompClient?.topic("/user/queue/messages")?.subscribe { topicMessage ->
@@ -182,7 +121,6 @@ class WebSocketManager {
             try {
                 // Parse the incoming message
                 val msg = gson.fromJson(payload, OutgoingMessage::class.java)
-                Log.d("WS_TIMESTAMP", "Incoming timestamp: ${msg.timestamp}")
 
                 CoroutineScope(Dispatchers.IO).launch {
                     // create message entity for room db
@@ -208,10 +146,9 @@ class WebSocketManager {
     }
 
     @SuppressLint("CheckResult")
-    fun subscribeToGroups(groupIds: List<String>) {
+    private fun subscribeToGroups(groupIds: List<String>) {
         val gson = Gson()
         groupIds.forEach { id ->
-            Log.d("WS", "Subscribing to group: $id")
             // Subscribing to each group's topic
             stompClient?.topic("/topic/room.$id")?.subscribe { topicMessage ->
                 try {
@@ -221,10 +158,8 @@ class WebSocketManager {
                     CoroutineScope(Dispatchers.IO).launch {
                         val myId = authRepository?.userIdFlow?.first() ?: ""
 
-                        if (msg.senderId == myId) {
-                            acknowledgeGroupMessage(msg.messageId)
-                            return@launch
-                        } else {
+                        // If user didn't send it, save it.
+                        if (msg.senderId != myId) {
                             val entity = GroupMessageEntity(
                                 messageId = msg.messageId,
                                 senderId = msg.senderId,
@@ -235,6 +170,8 @@ class WebSocketManager {
                                 isMine = false
                             )
                             messageDao?.insertGroupMessage(entity)
+                        } else{
+                            acknowledgeGroupMessage(msg.messageId)
                         }
                     }
                 } catch (e: Exception) {
@@ -266,7 +203,7 @@ class WebSocketManager {
                     senderId = myId,
                     receiverId = message.receiver,
                     content = message.content,
-                    timestamp = Instant.now().toString(),
+                    timestamp = LocalDateTime.now().toString(),
                     status = "SENT",
                     isMine = true
                 )
@@ -300,7 +237,7 @@ class WebSocketManager {
                     senderId = myId,
                     groupId = message.groupId,
                     content = message.content,
-                    timestamp = Instant.now().toString(),
+                    timestamp = LocalDateTime.now().toString(),
                     status = "SENT",
                     isMine = true
                 )
