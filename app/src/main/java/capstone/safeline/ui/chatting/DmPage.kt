@@ -54,7 +54,8 @@ import capstone.safeline.apis.dto.messaging.IncomingMessage
 import capstone.safeline.apis.network.WebSocketManager
 import capstone.safeline.data.local.AppDatabase
 import capstone.safeline.data.repository.AuthRepository
-import capstone.safeline.ui.CallingPage
+import capstone.safeline.data.repository.MessageRepository
+import capstone.safeline.ui.calling.CallingPage
 import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
@@ -96,6 +97,7 @@ fun DmPageScreen(
     val authRepo = remember { AuthRepository.getInstance(context) }
     val database = remember { AppDatabase.getDatabase(context) }
     val messageDao = database.messageDao()
+    val msgRepo = remember { MessageRepository.getInstance(context, messageDao) }
     val ws = WebSocketManager.getInstance()
 
     var partnerUserId by remember { mutableStateOf<String?>(null) }
@@ -105,6 +107,12 @@ fun DmPageScreen(
     LaunchedEffect(username) {
         authRepo.getIdByUsername(username).onSuccess { id ->
             partnerUserId = id
+        }
+    }
+
+    LaunchedEffect(partnerUserId) {
+        partnerUserId?.let { id ->
+            msgRepo.fetchPrivateHistory(id)
         }
     }
 
@@ -157,13 +165,16 @@ fun DmPageScreen(
                     onSend = {
                         val body = text.trim()
                         if (body.isNotEmpty() && partnerUserId != null) {
-                            ws.sendPrivateMessage(
-                                IncomingMessage(
-                                    messageId = UUID.randomUUID().toString(),
-                                    receiver = partnerUserId!!,
-                                    content = body
-                                )
+                            val messageId = UUID.randomUUID().toString()
+                            val newMessage = IncomingMessage(
+                                messageId = messageId,
+                                receiver = partnerUserId!!,
+                                content = body
                             )
+                            // Send to server
+                            ws.sendPrivateMessage(newMessage)
+
+                            // Clear input
                             text = ""
                         }
                     }

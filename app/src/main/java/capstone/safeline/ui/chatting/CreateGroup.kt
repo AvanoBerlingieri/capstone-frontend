@@ -46,9 +46,9 @@ import capstone.safeline.data.repository.MessageRepository
 import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class CreateGroup : ComponentActivity() {
@@ -65,23 +65,23 @@ class CreateGroup : ComponentActivity() {
                 onBack = { finish() },
                 onConfirm = { name ->
                     scope.launch {
-                        CoroutineScope(Dispatchers.IO).launch {
+                        val result = withContext(Dispatchers.IO) {
                             messageRepo.createGroup(
                                 CreateGroupRequest(
                                     groupId = newGroupId,
                                     name = name
                                 )
-                            ).onSuccess {
-                                // subscribe to room after creating it
-                                WebSocketManager.getInstance().subscribeToGroups(listOf(newGroupId))
-                                finish()
-                            }.onFailure {
-                                Toast.makeText(
-                                    this@CreateGroup,
-                                    "Error: ${it.message}",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            )
+                        }
+                        result.onSuccess {
+                            WebSocketManager.getInstance().subscribeToGroups(listOf(newGroupId))
+                            finish()
+                        }.onFailure {
+                            Toast.makeText(
+                                this@CreateGroup,
+                                "Error: ${it.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }

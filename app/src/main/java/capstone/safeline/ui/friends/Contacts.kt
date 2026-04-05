@@ -55,7 +55,6 @@ import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.first
 
-
 private data class UiContactItem(
     val friendId: String,
     val name: String,
@@ -104,7 +103,6 @@ private fun ContactsScreen(
     onGroupCall: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
-
     InitializeSocket()
 
     val context = LocalContext.current
@@ -133,7 +131,6 @@ private fun ContactsScreen(
             friendRepo.getAllFriends(userId)
                 .onSuccess { friendIds ->
                     val resolved = mutableListOf<UiContactItem>()
-
                     friendIds.forEach { fid ->
                         authRepo.getUserById(fid)
                             .onSuccess { user ->
@@ -185,7 +182,6 @@ private fun ContactsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-
             if (ThemeManager.currentTheme == ThemeManager.Theme.CLASSIC) {
                 Image(
                     painter = painterResource(R.drawable.contacts_bg),
@@ -193,17 +189,11 @@ private fun ContactsScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
             } else {
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                ThemeManager.backgroundGradient
-                            )
-                        )
+                        .background(Brush.verticalGradient(ThemeManager.backgroundGradient))
                 )
             }
 
@@ -227,15 +217,10 @@ private fun ContactsScreen(
                 when {
                     isLoading -> {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
+                            modifier = Modifier.fillMaxWidth().weight(1f),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Loading contacts…",
-                                color = Color.White
-                            )
+                            Text(text = "Loading contacts…", color = Color.White)
                         }
                     }
                     loadError != null -> {
@@ -258,9 +243,7 @@ private fun ContactsScreen(
                     }
                     contacts.isEmpty() -> {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
+                            modifier = Modifier.fillMaxWidth().weight(1f),
                             contentAlignment = Alignment.Center
                         ) {
                             StrokeText(
@@ -301,11 +284,13 @@ private fun ContactsScreen(
                     modifier = Modifier.size(127.dp, 76.dp)
                 )
 
+                // Your group call button ✅
                 Image(
                     painter = painterResource(R.drawable.calls_make_call_btn),
                     contentDescription = "Group Call",
                     modifier = Modifier
-                        .size(127.dp, 76.dp)
+                        .size(width = 127.dp, height = 76.dp)
+                        .padding(bottom = 10.dp)
                         .clickable { onGroupCall() }
                 )
 
@@ -346,9 +331,7 @@ private fun ContactRow(
                 modifier = Modifier.size(width = 60.dp, height = 56.dp),
                 contentScale = ContentScale.Fit
             )
-
             Spacer(modifier = Modifier.size(10.dp))
-
             StrokeText(
                 text = contact.name,
                 fontFamily = ThemeManager.fontFamily,
