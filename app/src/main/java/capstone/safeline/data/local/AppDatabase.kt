@@ -19,7 +19,7 @@ import capstone.safeline.data.local.entity.MessageEntity
         GroupChatEntity::class,
         FriendEntity::class
     ],
-    version = 3
+    version = 4
 )
 
 abstract class AppDatabase : RoomDatabase() {

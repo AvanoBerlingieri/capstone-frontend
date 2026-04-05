@@ -26,6 +26,7 @@ import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 class WebSocketManager {
     companion object {
@@ -59,6 +60,9 @@ class WebSocketManager {
     private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
     private var stompClient: StompClient? = null
     private var isConnecting = false
+
+    /** Avoid duplicate STOMP subscriptions when sync runs more than once while connected. */
+    private val subscribedGroupIds: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     @SuppressLint("CheckResult")
     fun connect(token: String) {
@@ -95,6 +99,7 @@ class WebSocketManager {
                 LifecycleEvent.Type.OPENED -> {
                     isConnecting = false
                     Log.d("WS", "Connected to Gateway!")
+                    subscribedGroupIds.clear()
 
                     CoroutineScope(Dispatchers.IO).launch {
                         if (authRepository == null) {
@@ -171,6 +176,17 @@ class WebSocketManager {
         }?.onFailure { Log.e("WS_SYNC", "Failed to fetch groups", it) }
     }
 
+    /**
+     * Refreshes the current user's groups from the REST API, upserts local rows, and subscribes to
+     * any new group topics. Call when the chat list should reflect server membership (e.g. after
+     * being added to a group while the app was already connected).
+     */
+    suspend fun syncGroupsForCurrentUser() {
+        val authRepo = authRepository ?: return
+        val myId = authRepo.userIdFlow.first() ?: return
+        syncGroups(myId)
+    }
+
     @SuppressLint("CheckResult")
     fun subscribeToMessages() {
         val gson = Gson()
@@ -209,8 +225,16 @@ class WebSocketManager {
 
     @SuppressLint("CheckResult")
     fun subscribeToGroups(groupIds: List<String>) {
+        if (stompClient?.isConnected != true) {
+            Log.d("WS", "subscribeToGroups: socket not connected yet, will run on next OPEN sync")
+            return
+        }
         val gson = Gson()
         groupIds.forEach { id ->
+            if (!subscribedGroupIds.add(id)) {
+                Log.d("WS", "Already subscribed to group $id, skipping")
+                return@forEach
+            }
             Log.d("WS", "Subscribing to group: $id")
             // Subscribing to each group's topic
             stompClient?.topic("/topic/room.$id")?.subscribe { topicMessage ->

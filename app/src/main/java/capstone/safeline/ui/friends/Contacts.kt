@@ -345,6 +345,10 @@ private fun ContactsScreen(
                     modifier = Modifier
                         .size(width = 127.dp, height = 76.dp)
                         .padding(bottom = 10.dp)
+                        .clickable {
+                            val intent = Intent(context, FriendRequests::class.java)
+                            context.startActivity(intent)
+                        },
                 )
             }
         }
