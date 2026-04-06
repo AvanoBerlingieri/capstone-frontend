@@ -44,17 +44,20 @@ class WebSocketManager {
     private var messageDao: MessageDao? = null
     private var friendRepository: FriendRepository? = null
     private var messageRepository: MessageRepository? = null
+    private var appContext: android.content.Context? = null
 
     fun init(
         authRepo: AuthRepository,
         dao: MessageDao,
         friendRepo: FriendRepository,
-        messageRepo: MessageRepository
+        messageRepo: MessageRepository,
+        context: android.content.Context
     ) {
         this.authRepository = authRepo
         this.messageDao = dao
         this.friendRepository = friendRepo
         this.messageRepository = messageRepo
+        this.appContext = context.applicationContext
     }
 
     private val gatewayWsUrl = "ws://10.0.2.2:8091/ws"
@@ -210,6 +213,23 @@ class WebSocketManager {
 
                     // ack the message
                     acknowledgeMessage(msg.messageId)
+
+                    // notification
+                    appContext?.let { ctx ->
+                        val notificationHelper =
+                            capstone.safeline.notifications.NotificationHelper(ctx)
+                        var displaySenderName = msg.senderId
+                        try {
+                            // OPTION B: Using your MessageDao!
+                            val localFriend = messageDao?.findFriend(msg.senderId)
+                            if (localFriend != null) {
+                                displaySenderName = localFriend.username
+                            }
+                        } catch (e: Exception) {
+                            Log.e("WS", "Failed to fetch username from Dao", e)
+                        }
+                        notificationHelper.showNewMessageNotification("New Message", msg.content)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("WS", "Error processing message", e)
@@ -245,6 +265,11 @@ class WebSocketManager {
                                 isMine = false
                             )
                             messageDao?.insertGroupMessage(entity)
+
+                            appContext?.let { ctx ->
+                                val notificationHelper = capstone.safeline.notifications.NotificationHelper(ctx)
+                                notificationHelper.showNewMessageNotification("Group Message", msg.content)
+                            }
                         }
                     }
                 } catch (e: Exception) {
