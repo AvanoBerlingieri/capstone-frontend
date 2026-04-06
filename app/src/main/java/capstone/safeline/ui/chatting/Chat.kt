@@ -64,7 +64,7 @@ import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.InitializeSocket
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
-import capstone.safeline.ui.Contacts
+import capstone.safeline.ui.friends.Contacts
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
 import kotlinx.coroutines.Dispatchers

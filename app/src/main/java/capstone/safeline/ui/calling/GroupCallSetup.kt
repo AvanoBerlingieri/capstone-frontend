@@ -1,4 +1,4 @@
-package capstone.safeline.ui
+package capstone.safeline.ui.calling
 
 import androidx.compose.foundation.layout.statusBarsPadding
 import android.content.Intent
@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -23,9 +24,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
+import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.apis.network.CallingApiClient
+import capstone.safeline.data.local.AppDatabase
 import capstone.safeline.data.local.DataStoreManager
+import capstone.safeline.data.repository.AuthRepository
+import capstone.safeline.data.repository.MessageRepository
 import capstone.safeline.data.security.CryptoManager
+import capstone.safeline.ui.Home
 import capstone.safeline.ui.calling.Call
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.community.Community
@@ -33,6 +39,7 @@ import capstone.safeline.ui.components.BackButton
 import capstone.safeline.ui.components.BottomNavBar
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.friends.Contacts
 import capstone.safeline.ui.profile.Profile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -41,6 +48,7 @@ private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 private val Tapestry = FontFamily(Font(R.font.tapestry_regular))
 
 private data class GroupContact(
+    val userId: String,
     val name: String,
     var isSelected: Boolean = false
 )
@@ -49,26 +57,49 @@ class GroupCallSetup : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val groupId = intent.getStringExtra("groupId") ?: ""
+
         val cryptoManager = CryptoManager()
         val dataStoreManager = DataStoreManager(this, cryptoManager)
-
-        // Hardcoded contacts — replace with real contacts from your API later
-        val initialContacts = listOf(
-            GroupContact("Friend 1"),
-            GroupContact("Friend 2"),
-            GroupContact("Friend 3"),
-            GroupContact("Friend 4"),
-            GroupContact("Friend 5"),
-            GroupContact("Friend 6"),
-            GroupContact("Friend 7"),
-            GroupContact("Friend 8")
-        )
+        val db = AppDatabase.getDatabase(this)
+        val authRepo = AuthRepository.getInstance(this)
+        val messageRepo = MessageRepository.getInstance(this, db.messageDao())
 
         setContent {
             val scope = rememberCoroutineScope()
-            var contacts by remember { mutableStateOf(initialContacts) }
-            var isLoading by remember { mutableStateOf(false) }
+            var contacts by remember { mutableStateOf<List<GroupContact>>(emptyList()) }
+            var isLoading by remember { mutableStateOf(true) }
             var statusMessage by remember { mutableStateOf("") }
+
+            // Load real group members
+            LaunchedEffect(groupId) {
+                try {
+                    val token = dataStoreManager.tokenFlow.first()
+                    val myUserId = token?.let { extractUserIdFromJwt(it) } ?: ""
+
+                    if (groupId.isNotBlank()) {
+                        val rows = messageRepo.getGroupMembersWithCache(groupId)
+                        val members = rows.mapNotNull { row ->
+                            // Skip current user
+                            if (row.userId == myUserId) return@mapNotNull null
+                            authRepo.getUserById(row.userId).getOrNull()?.let { user ->
+                                GroupContact(
+                                    userId = user.id.toString(),
+                                    name = user.username
+                                )
+                            } ?: GroupContact(
+                                userId = row.userId,
+                                name = row.username.ifBlank { row.userId.take(8) }
+                            )
+                        }
+                        contacts = members
+                    }
+                } catch (e: Exception) {
+                    statusMessage = "Failed to load members"
+                } finally {
+                    isLoading = false
+                }
+            }
 
             val selectedContacts = contacts.filter { it.isSelected }
 
@@ -79,14 +110,11 @@ class GroupCallSetup : ComponentActivity() {
                 isLoading = isLoading,
                 onContactToggle = { contact ->
                     contacts = contacts.map {
-                        if (it.name == contact.name) it.copy(isSelected = !it.isSelected)
+                        if (it.userId == contact.userId) it.copy(isSelected = !it.isSelected)
                         else it
                     }
                 },
-                onBack = {
-                    startActivity(Intent(this, Contacts::class.java))
-                    finish()
-                },
+                onBack = { finish() },
                 onStartGroupCall = {
                     if (selectedContacts.isEmpty()) {
                         statusMessage = "Select at least 1 contact"
@@ -96,15 +124,16 @@ class GroupCallSetup : ComponentActivity() {
                     scope.launch {
                         isLoading = true
                         try {
-                            val currentUserId = dataStoreManager.usernameFlow.first()
+                            val token = dataStoreManager.tokenFlow.first()
+                            val currentUserId = token?.let {
+                                extractUserIdFromJwt(it)
+                            } ?: dataStoreManager.usernameFlow.first()
 
-                            // Create room in backend
                             val response = CallingApiClient.service.createGroupRoom(currentUserId)
                             if (response.isSuccessful) {
                                 val room = response.body()
                                 val roomId = room?.roomId ?: ""
 
-                                // Navigate to group call room screen
                                 val intent = Intent(this@GroupCallSetup, GroupCallRoom::class.java)
                                 intent.putExtra("roomId", roomId)
                                 intent.putExtra("currentUserId", currentUserId)
@@ -153,10 +182,7 @@ private fun GroupCallSetupScreen(
     Scaffold(
         topBar = {},
         bottomBar = {
-            BottomNavBar(
-                currentScreen = "contacts",
-                onNavigate = onNavigate
-            )
+            BottomNavBar(currentScreen = "contacts", onNavigate = onNavigate)
         },
         containerColor = Color.Transparent
     ) { innerPadding ->
@@ -165,7 +191,6 @@ private fun GroupCallSetupScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Same background as contacts screen
             Image(
                 painter = painterResource(R.drawable.contacts_bg),
                 contentDescription = null,
@@ -182,10 +207,7 @@ private fun GroupCallSetupScreen(
                     .padding(top = 22.dp)
             )
 
-            BackButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart)
-            )
+            BackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
 
             Column(
                 modifier = Modifier
@@ -193,7 +215,6 @@ private fun GroupCallSetupScreen(
                     .padding(top = 75.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Selected count indicator
                 if (selectedCount > 0) {
                     StrokeText(
                         text = "$selectedCount selected",
@@ -206,7 +227,6 @@ private fun GroupCallSetupScreen(
                     )
                 }
 
-                // Status message
                 if (statusMessage.isNotEmpty()) {
                     Text(
                         text = statusMessage,
@@ -217,26 +237,45 @@ private fun GroupCallSetupScreen(
                     )
                 }
 
-                // Contact list with checkboxes
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    items(contacts) { contact ->
-                        GroupContactRow(
-                            contact = contact,
-                            onClick = { onContactToggle(contact) }
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color.White)
+                    }
+                } else if (contacts.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        StrokeText(
+                            text = "No other members in this group",
+                            fontFamily = Tapestry,
+                            fontSize = 16.sp,
+                            fillColor = Color.White,
+                            strokeColor = Color(0xFF0066FF),
+                            strokeWidth = 1f
                         )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(contacts, key = { it.userId }) { contact ->
+                            GroupContactRow(
+                                contact = contact,
+                                onClick = { onContactToggle(contact) }
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Start Group Call button
                 Box(
                     modifier = Modifier
                         .size(width = 127.dp, height = 76.dp)
@@ -251,12 +290,7 @@ private fun GroupCallSetupScreen(
                         contentScale = ContentScale.Fit
                     )
                     if (isLoading) {
-                        Text(
-                            text = "...",
-                            color = Color.White,
-                            fontFamily = Vampiro,
-                            fontSize = 20.sp
-                        )
+                        Text(text = "...", color = Color.White, fontFamily = Vampiro, fontSize = 20.sp)
                     }
                 }
 
@@ -277,7 +311,6 @@ private fun GroupContactRow(
             .height(60.dp)
             .clickable { onClick() }
     ) {
-        // Use answered bg when selected, normal bg when not
         Image(
             painter = painterResource(
                 if (contact.isSelected) R.drawable.calls_anwsered_bg
@@ -313,7 +346,6 @@ private fun GroupContactRow(
                 modifier = Modifier.weight(1f)
             )
 
-            // Checkmark when selected
             if (contact.isSelected) {
                 Image(
                     painter = painterResource(R.drawable.calls_anwsered_icon),

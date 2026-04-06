@@ -30,8 +30,8 @@ import capstone.safeline.R
 import capstone.safeline.apis.network.CallingApiClient
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
-import capstone.safeline.ui.ContactCall
-import capstone.safeline.ui.Contacts
+import capstone.safeline.ui.calling.ContactCall
+import capstone.safeline.ui.friends.Contacts
 import capstone.safeline.ui.Home
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.community.Community

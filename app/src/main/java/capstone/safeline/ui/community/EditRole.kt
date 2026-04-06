@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import capstone.safeline.R
 import capstone.safeline.ui.calling.Call
-import capstone.safeline.ui.Contacts
+import capstone.safeline.ui.friends.Contacts
 import capstone.safeline.ui.Home
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.components.BackButton

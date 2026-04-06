@@ -48,7 +48,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.community.Community
-import capstone.safeline.ui.Contacts
+import capstone.safeline.ui.friends.Contacts
 
 class UserChat : ComponentActivity(){
     @RequiresApi(Build.VERSION_CODES.O)

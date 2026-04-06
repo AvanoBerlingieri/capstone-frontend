@@ -1,4 +1,4 @@
-package capstone.safeline.ui
+package capstone.safeline.ui.friends
 
 import android.content.Intent
 import android.os.Bundle
@@ -43,7 +43,9 @@ import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.repository.AuthRepository
 import capstone.safeline.data.repository.FriendRepository
+import capstone.safeline.ui.Home
 import capstone.safeline.ui.calling.Call
+import capstone.safeline.ui.calling.GroupCallSetup
 import capstone.safeline.ui.chatting.Chat
 import capstone.safeline.ui.community.Community
 import capstone.safeline.ui.components.BackButton
@@ -53,7 +55,9 @@ import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
 import capstone.safeline.ui.profile.Profile
 import capstone.safeline.ui.theme.ThemeManager
+import capstone.safeline.ui.friends.ContactProfile
 import kotlinx.coroutines.flow.first
+import kotlin.jvm.java
 
 private data class UiContactItem(
     val friendId: String,

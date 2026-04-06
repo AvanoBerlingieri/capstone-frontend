@@ -1,4 +1,6 @@
-package capstone.safeline.ui
+package capstone.safeline.ui.calling
+
+
 
 import android.content.Intent
 import android.os.Bundle
@@ -30,10 +32,12 @@ import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.components.StrokeTitle
+import capstone.safeline.ui.friends.Contacts
 import capstone.safeline.webrtc.SignalingClient
 import capstone.safeline.webrtc.WebRTCManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.jvm.java
 
 private val Vampiro = FontFamily(Font(R.font.vampiro_one_regular))
 private val Tapestry = FontFamily(Font(R.font.tapestry_regular))

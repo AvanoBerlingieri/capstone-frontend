@@ -1,4 +1,5 @@
-package capstone.safeline.ui
+package capstone.safeline.ui.calling
+
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -24,12 +25,14 @@ import capstone.safeline.apis.extractUserIdFromJwt
 import capstone.safeline.data.local.DataStoreManager
 import capstone.safeline.data.security.CryptoManager
 import capstone.safeline.ui.components.StrokeText
+import capstone.safeline.ui.friends.Contacts
 import capstone.safeline.ui.theme.ThemeManager
 import capstone.safeline.webrtc.SignalingClient
 import capstone.safeline.webrtc.WebRTCManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.webrtc.*
+import kotlin.jvm.java
 
 class ContactCall : ComponentActivity() {
 
