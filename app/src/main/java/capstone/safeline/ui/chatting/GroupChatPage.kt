@@ -49,6 +49,7 @@ import capstone.safeline.apis.network.WebSocketManager
 import capstone.safeline.data.local.AppDatabase
 import capstone.safeline.data.local.entity.GroupMessageEntity
 import capstone.safeline.data.repository.MessageRepository
+import capstone.safeline.ui.calling.GroupCallSetup
 import capstone.safeline.ui.components.StrokeText
 import capstone.safeline.ui.theme.ThemeManager
 import java.util.UUID
@@ -71,16 +72,13 @@ class GroupChatPage : ComponentActivity() {
             }
             val wsManager = WebSocketManager.getInstance()
 
-            // Observe Repository Flow
             val chatMessages by messageRepo.getGroupChatMessagesFlow(groupId)
                 .collectAsState(initial = emptyList())
 
-            // sort handles ISO strings better
             val sortedMessages = remember(chatMessages) {
                 chatMessages.sortedBy { it.timestamp }
             }
 
-            // Sync history on entry
             LaunchedEffect(groupId) {
                 messageRepo.fetchGroupHistory(groupId)
             }
@@ -105,6 +103,11 @@ class GroupChatPage : ComponentActivity() {
                         putExtra("groupName", groupName)
                     }
                     startActivity(intent)
+                },
+                onGroupCall = {
+                    val intent = Intent(this, GroupCallSetup::class.java)
+                    intent.putExtra("groupId", groupId)
+                    startActivity(intent)
                 }
             )
         }
@@ -119,6 +122,7 @@ fun GroupChatScreen(
     messages: List<GroupMessageEntity>,
     onBack: () -> Unit,
     onSettings: () -> Unit,
+    onGroupCall: () -> Unit,
     onSendMessage: (String) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
@@ -147,7 +151,12 @@ fun GroupChatScreen(
             Column(modifier = Modifier
                 .fillMaxSize()
                 .imePadding()) {
-                GroupHeader(groupName, onBack, onSettings)
+                GroupHeader(
+                    username = groupName,
+                    onBack = onBack,
+                    onSettings = onSettings,
+                    onGroupCall = onGroupCall
+                )
 
                 LazyColumn(
                     state = listState,
@@ -180,7 +189,12 @@ fun GroupChatScreen(
 }
 
 @Composable
-fun GroupHeader(username: String, onBack: () -> Unit, onSettings: () -> Unit) {
+fun GroupHeader(
+    username: String,
+    onBack: () -> Unit,
+    onSettings: () -> Unit,
+    onGroupCall: () -> Unit
+) {
     Box(modifier = Modifier
         .fillMaxWidth()
         .statusBarsPadding()
@@ -204,6 +218,7 @@ fun GroupHeader(username: String, onBack: () -> Unit, onSettings: () -> Unit) {
                     .background(Brush.horizontalGradient(ThemeManager.headerGradient))
             )
         }
+
         Image(
             painter = painterResource(R.drawable.back_for_dm),
             contentDescription = null,
@@ -214,6 +229,7 @@ fun GroupHeader(username: String, onBack: () -> Unit, onSettings: () -> Unit) {
                 .clickable { onBack() },
             contentScale = ContentScale.FillBounds
         )
+
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -221,14 +237,25 @@ fun GroupHeader(username: String, onBack: () -> Unit, onSettings: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // ✅ Group Call Button
+            Image(
+                painter = painterResource(R.drawable.calls_make_call_btn),
+                contentDescription = "Group Call",
+                modifier = Modifier
+                    .size(width = 39.dp, height = 31.dp)
+                    .clickable { onGroupCall() },
+                contentScale = ContentScale.Fit
+            )
+
             Image(
                 painter = painterResource(R.drawable.group_settings),
                 contentDescription = null,
                 modifier = Modifier
                     .size(width = 39.dp, height = 31.dp)
-                    .clickable { onSettings() },
+                    .clickable { onSettings() }
             )
         }
+
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
