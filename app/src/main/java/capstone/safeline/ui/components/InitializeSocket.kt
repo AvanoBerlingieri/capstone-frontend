@@ -21,7 +21,7 @@ fun InitializeSocket() {
     val ws = remember { WebSocketManager.getInstance() }
 
     LaunchedEffect(Unit) {
-        ws.init(authRepo, db.messageDao(), friendRepo, msgRepo)
+        ws.init(authRepo, db.messageDao(), friendRepo, msgRepo, context)
 
         authRepo.tokenFlow.collect { token ->
             if (!token.isNullOrBlank()) {
